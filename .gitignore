@@ -2,3 +2,8 @@
 Debug/
 resource/
 sounds/
+
+#Eclipse Neon C++ files
+*.settings/
+*.cproject
+*.project
