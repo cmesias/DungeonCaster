@@ -1,5 +1,5 @@
 /*
- * Players.h
+ * Player.h
  *
  *  Created on: Dec 18, 2016
  *      Author: Carl
@@ -11,23 +11,16 @@
 #include "Engine/Helper.h"
 #include "Engine/LTexture.h"
 #include "Engine/LWindow.h"
-#include "Engine/Particless.h"
 #include "Engine/TileC.h"
 #include "Engine/Tiles.h"
 
 #include <SDL2/SDL_ttf.h>
+#include "Engine/Particle.h"
 
 //Player
-class Players: public Helper {
+class Player: public Helper {
 public:
 	enum Result { QUIT, LOADMENU, PLAYGAME, QUITPLAYGAME };
-public:
-	// Joystick Sensitivity
-	const int JOYSTICK_DEAD_ZONE = 8000;
-	void OnKeyDown( Players &player, SDL_Keycode sym );
-	void OnKeyUp( Players &player, SDL_Keycode sym );
-	void mouseClickState(Players &player, SDL_Event &e);
-	void updateJoystick(Players &player, SDL_Event &e);
 
 public:	// resources
 	// Local resources
@@ -76,14 +69,15 @@ public:	// In-game variables
 	int collectedKeys;			// Number of keys accumulated for that Stage Level
 
 public:	// variables
+	std::string tag;
+	std::string name;
 	int timer = 0;
 	int w 		= 10;
 	int h 		= 6;			// render size in pixels
-	int radius 	= w/2;			// player radius
 	float x 	= 0;
 	float y 	= 0;
 	float x2;
-	float y2;					// player circle center
+	float y2;
 
 
 	int panTimer 		= 0;
@@ -112,28 +106,16 @@ public:	// Movement Variables
 public: // Variables
 
 
-	std::string name;
 	bool shift 			= false;
 	int timer2 			= 0;
 	double time 		= 0;
-	bool deathScreen	= false;
 	bool alive			= false;
-	bool returned		= false;
 	Uint8 alpha			= 255;
 	unsigned int score	= 0;
 	unsigned int highscore = 0;
-	int HW				= 0;
-	int increment		= 35;
-	int wave			= 0;
-	double accuracy		= 0.0;
-	float totalShot		= 0;		// Total shot
-	float hits			= 0;		// Total hits
-	int bg 				= 1;
 
 	// Fire-rate
 	//string power-up 		= "LAZER";
-	int newmx			= 0;	// new mouse position
-	int newmy			= 0;	// new mouse position
 	int powerup 		= 1;
 	double barrelW		= 0;	// whether to add width or subtract from gun barrel position
 	double barrelH		= 0;
@@ -153,7 +135,6 @@ public: // Variables
 	bool renderFlash	= false; // shuts off right after 1 frame
 
 	// Lives
-	int lives;
 	double health;
 	double maxHealth;
 	double healthDecay;			 // gives the effect of a decaying health bar
@@ -164,20 +145,12 @@ public: // Variables
 	int shieldT;
 	bool shield;
 
-	double tempc, temps;
-	SDL_Rect continueButton[3];
-
 	// High-Score display
 	std::string highList[10];
 	int indx 		= 0;
-	float travel 	= 0.0;
-	int position	= 0;
-	int position2	= 0;
-	int dir 		= 1;
 	int indexSaved 	= -1;
 
 	bool moving = false;
-	std::string tag;
 
 public:	// Team Variables
 
@@ -236,8 +209,14 @@ public:	// controls
 
 public:	// Core Functions
 
+	// Set position
+	void SetPosition(int newX, int newY);
+
+	// Set name
+	void SetName(std::string newName);
+
 	// Initialize
-	void Init(std::string newName, bool respawn);
+	void Init();
 
 	// Load resources
 	void Load(SDL_Renderer* gRenderer);
@@ -261,10 +240,27 @@ public:	// Core Functions
 				TTF_Font *gFont, TTF_Font *gFont2,
 				SDL_Color color, int &PARTICLES, LTexture gText);
 
-public:	// Player functions
+	// Player shoot
+	void fire(Particle particle[], Particle &p_dummy, int mx, int my,
+			  Mix_Chunk* sLazer, Mix_Chunk* sGrenade, Mix_Chunk* sGrenadePickup,
+			  Mix_Chunk* sPistolReload);
 
-	// Spawn Player at target location
-	void SetPosition(int newX, int newY);
+	// Player controls
+	void move(Particle particle[], Particle &p_dummy,
+			   TileC &tc, TileC tilec[],
+			   Tile &tl, Tile tile[],
+			   int mx, int my);
+
+public:	// Game-player functions
+
+	// Applies a shield to Player
+	void applyShield();
+
+	// Do a spell (think of this function as a gun, and the things
+	// you are inputting are the bullets (velocity, size of the bullet)
+	void CastSpell();
+
+public:	// Other functions
 
 	// Reset highscore
 	void resetHighScore();
@@ -278,19 +274,15 @@ public:	// Player functions
 	// Check collision
 	bool checkCollision(int x, int y, int w, int h, int x2, int y2, int w2, int h2);
 
-	// Applies a shield to Player
-	void applyShield();
+public:	// Control functions
 
-	// Player shoot
-	void fire(Particle particle[], Particle &p_dummy, int mx, int my,
-			  Mix_Chunk* sLazer, Mix_Chunk* sGrenade, Mix_Chunk* sGrenadePickup,
-			  Mix_Chunk* sPistolReload);
+	// Joystick Sensitivity
+	const int JOYSTICK_DEAD_ZONE = 8000;
+	void OnKeyDown( Player &player, SDL_Keycode sym );
+	void OnKeyUp( Player &player, SDL_Keycode sym );
+	void mouseClickState(Player &player, SDL_Event &e);
+	void updateJoystick(Player &player, SDL_Event &e);
 
-	// Player controls
-	void move(Particle particle[], Particle &p_dummy,
-			   TileC &tc, TileC tilec[],
-			   Tile &tl, Tile tile[],
-			   int mx, int my);
 };
 
 #endif /* LOCAL_PLAYERS_H_ */

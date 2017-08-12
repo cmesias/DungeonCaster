@@ -7,8 +7,8 @@
 
 
 
-#ifndef LOCAL_PARTICLESS_H_
-#define LOCAL_PARTICLESS_H_
+#ifndef LOCAL_PARTICLE_H_
+#define LOCAL_PARTICLE_H_
 
 #include "Helper.h"
 #include "LTexture.h"
@@ -135,4 +135,4 @@ public:	// Star
 	void renderStarParticle(Particle particle[], int camX, int camY, float playerZ, SDL_Renderer* gRenderer);
 };
 
-#endif /* LOCAL_PARTICLESS_H_ */
+#endif /* LOCAL_PARTICLE_H_ */

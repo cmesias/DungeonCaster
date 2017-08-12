@@ -51,48 +51,48 @@ public:	// instance variables
 	bool collide;		// collision with player
 
 public:	// Initial
-	void initTile(Tile tile[]);
+	void Init(Tile tile[]);
 
-	void load(SDL_Renderer *gRenderer);
+	void Load(SDL_Renderer *gRenderer);
 
-	void free();
+	void Free();
 
-public:	// editor functions
-	void placeTile(Tile tile[], float x, float y, int w, int h, int id, int layer, SDL_Rect clip);
+public:	// Editor functions
+	void Spawn(Tile tile[], float x, float y, int w, int h, int id, int layer, SDL_Rect clip);
 
-	void copyTile(Tile tile[]);
+	void Copy(Tile tile[]);
 
 	void ChangeCollision(Tile tile[], int click);
 
-	void changeTileLayer(Tile tile[], int value);
+	void ChangeLayer(Tile tile[], int value);
 
-	void removeTile(Tile tile[], int click);
+	// This will remove underlying Tile(s) before Tile placement
+	void Remove(Tile tile[], int click);
 
-	void removeAllTiles(Tile tile[]);
+	void RemoveAll(Tile tile[]);
 
-	/* Place Tile */
-	void spawnTile(Tile tile[], int newMx, int newMy, int camx, int camy, SDL_Rect rTiles[]);
+	void SpawnMultiple(Tile tile[], int newMx, int newMy, int camx, int camy, SDL_Rect rTiles[]);
 
 public:	// core game functions
-	void updateTile(Tile tile[], LWindow &gWindow, int newMx, int newMy, int mex, int mey, int camx, int camy, SDL_Rect rTiles[]);
+
+	void Update(Tile tile[], LWindow &gWindow, int newMx, int newMy, int mex, int mey, int camx, int camy, SDL_Rect rTiles[]);
 
 	bool checkCollisionRect( SDL_Rect a, SDL_Rect b );
 
-	// Tile collision check, player x position
 	void checkCollision(Tile tile[], float x, float y, int w, int h, float &coordinateXY, float &velocity);
 
-	void renderTile(SDL_Renderer *gRenderer, Tile tile[], int layer_dummy, int camx, int camy);
+	void Render(SDL_Renderer *gRenderer, Tile tile[], int layer_dummy, int camx, int camy);
 
-	// Render Tile Debug info
 	void RenderDebug(SDL_Renderer *gRenderer, Tile tile[], int newMx, int newMy, int mex, int mey,
 						 int camx, int camy, SDL_Rect rTiles[], int tileSize);
 
 public: // tile saving functions
-	// Load Tile data
-	void loadTiles(Tile tile[], int level);
 
-	// Save Tile data
-	std::string saveTiles(Tile tile[]);
+	// Load data
+	void LoadData(Tile tile[], int level);
+
+	// Save data
+	std::string SaveData(Tile tile[]);
 };
 
 #endif /* LOCAL_TILES_H_ */

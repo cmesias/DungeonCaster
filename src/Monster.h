@@ -9,7 +9,7 @@
 #define GAME_ZOMBIE_H_
 
 #include "Engine/Helper.h"
-#include "Players.h"
+#include "Player.h"
 
 class Monster : public Helper {
 public:	// Media
@@ -36,6 +36,17 @@ public:
 	/* Type of monster we are spawning
 	 * 0: Skeleton
 	 * 1: Goblin
+	 * 2: Ghost Mage
+	 * 3: Dino Bear?
+	 * 4: Bear looking creature
+	 * 5: Lizard
+	 * 6: Yellow goblin
+	 * 7: Ghoul
+	 * 8: Ghost/Reaper
+	 * 9: 1-eyed monster
+	 * 10: Snake
+	 * 11: Pumpkin Head
+	 *
 	 */
 	int type;
 	int id;				// Monster clip from texture
@@ -79,28 +90,34 @@ public:	// variables used for calculating shooting barrel coordinates
 	/* Location of Enemy's Barrel for shooting */
 	double barrelX, barrelY;
 
-public:
+public:	// Core functions
+
 	void Init(Monster monster[]);
+
 	void Load(SDL_Renderer* gRenderer);
+
 	void Free();
 
-	void RemoveAll(Monster monster[]);
-	void spawn(Monster monster[], float x, float y,
+	void Spawn(Monster monster[], float x, float y,
 			   float w, float h, int imageW, int imageH,
 			   float angle, float speed,
 			   double id, double type, double health,
 			   int distanceHeadIsFromCenterOfImage, int bulletW, int bulletH);
-	void update(Monster monster[], Particle particle[], Particle &p_dummy,
-				Players &player, Mix_Chunk* sLazer,
+
+	void RemoveAll(Monster monster[]);
+
+	void Update(Monster monster[], Particle particle[], Particle &p_dummy,
+				Player &player, Mix_Chunk* sLazer,
 				int camx, int camy);
-	void render(SDL_Renderer* gRenderer, Monster monster[], int camx, int camy);
+	void Render(SDL_Renderer* gRenderer, Monster monster[], int camx, int camy);
 
-public: // tile saving functions
-	// Load Tile data
-	void loadTiles(Monster monster[], int level);
+public: // Save functions
 
-	// Save Tile data
-	std::string saveTiles(Monster monster[]);
+	// Load data
+	void LoadData(Monster monster[], int level);
+
+	// Save data
+	std::string SaveData(Monster monster[]);
 };
 
 #endif /* GAME_ZOMBIE_H_ */

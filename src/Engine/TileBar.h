@@ -52,29 +52,37 @@ public:
 	SDL_Rect rRect[6];				// Colors 64x64, [0: Green], [1: Orange], [2: White], [3: Blue], [4: Purple], [5: Dark Green fill, White border]
 	bool touching;					// Player is hovering over Tile Bar
 
+public:	// Core functions
+	void Load(SDL_Renderer *gRenderer);
+
+	void Init(TileBar tilebar[]);
+
+	void Free();
+
+public:	// Editor functions
+
+	void Spawn(TileBar tilebar[], int x, int y, int w, int h,
+								  int startx, int starty, int endW, int endH,
+								  std::string collision);
+
+	void SpawnMultiple(TileBar tilebar[]);
+
+	// Select a tile from the tilebar
+	void Select(TileBar tilebar[], int &tile_selection);
+
+	// Move the tilebar
+	void Move(TileBar tilebar[], std::string direction);
+
+public:	// Game-play functions
+
+	void Update(TileBar tilebar[], LWindow gWindow, int mx, int my, float camx, float camy);
+
+	void Render(SDL_Renderer *gRenderer, TileBar tilebar[], int tile_selection);
+
+public:	// Other functions
+
 	bool checkCollision(int x, int y, int w, int h, int x2, int y2, int w2, int h2);
 
-	void load(SDL_Renderer *gRenderer);
-
-	void init(TileBar tilebar[]);
-
-	void free();
-
-	void placeTile(TileBar tilebar[], int x, int y, int w, int h,
-									int startx, int starty, int endW, int endH,
-									std::string collision);
-
-	void placeTileBar(TileBar tilebar[]);
-
-	void update(TileBar tilebar[], LWindow gWindow, int mx, int my, float camx, float camy);
-
-	void selectBlock(TileBar tilebar[], int &tile_selection);
-
-	void selectBlockMultiple(TileBar tilebar[], int &tile_selection, int mx, int my);
-
-	void moveBarSelection(TileBar tilebar[], std::string direction);
-
-	void render(SDL_Renderer *gRenderer, TileBar tilebar[], int tile_selection);
 };
 
 #endif /* LOCAL_TILEBAR_H_ */

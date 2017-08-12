@@ -9,11 +9,11 @@
 #define PLAYGAME_H_
 
 #include "../Monster.h"
-#include "../Players.h"
-#include "../Spawners.h"
+#include "../Player.h"
+#include "Spawners.h"
 #include "Helper.h"
+#include "Item.h"
 #include "Options.h"
-#include "Object.h"
 #include "Maps.h"
 #include "TileBar.h"
 #include "Tiles.h"
@@ -116,7 +116,7 @@ public:	// Other classes
 	Spawner spaw;
 	Spawner spawner[200];
 	// Player
-	Players player;
+	Player player;
 	// Tiles
 	Tile tl;
 	Tile tile[5000];
@@ -131,9 +131,9 @@ public:	// Other classes
 	TileBar tilebar[80];
 	SDL_Rect rTiles[80];		// how many unique tiles are, on the tile-bar
 
-	// Objects
-	Object obj;
-	Object object[100];
+	// Items
+	Item obj;
+	Item item[100];
 public:
     // camera
     int camx;
@@ -186,8 +186,8 @@ public:	// Functions mixed with other classes
 	// Check collision between Grenade Particle & Enemies
 	void checkCollisionGrenadePlayer();
 
-	// Check collision between Objects & Player
-	void checkCollisionObjectPlayer();
+	// Check collision between Items & Player
+	void checkCollisionItemPlayer();
 
 	// Check collision between certain Tiles & Player
 	void checkCollisionTilePlayer();

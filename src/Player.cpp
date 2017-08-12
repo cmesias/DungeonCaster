@@ -1,9 +1,11 @@
 /*
- * Players.cpp
+ * Player.cpp
  *
  *  Created on: Dec 18, 2016
  *      Author: Carl
  */
+
+#include "Player.h"
 
 #include <iostream>
 #include <math.h>
@@ -22,21 +24,17 @@
 
 //#include "Input.h"
 
-#include "Players.h"
 
-// Check collision between 2 objects
-bool Players::checkCollision(int x, int y, int w, int h, int x2, int y2, int w2, int h2){
-	bool collide;
-	if (x+w > x2 && x < x2 + w2 && y+h > y2 && y < y2 + h2){
-		collide = true;
-	}else{
-		collide = false;
-	}
-	return collide;
+void Player::SetPosition(int newX, int newY) {
+	x = newX;
+	y = newY;
 }
 
-// Load asteroid resources
-void Players::Load(SDL_Renderer* gRenderer){
+void Player::SetName(std::string newName) {
+	name = newName;
+}
+
+void Player::Load(SDL_Renderer* gRenderer){
 
 	// open joystick index 0
     joy = SDL_JoystickOpen(0);
@@ -49,136 +47,24 @@ void Players::Load(SDL_Renderer* gRenderer){
 	for (int i=0; i<4; i++){setClips(rThrusters[i], i*15, 0, 15, 30);}
 }
 
-void Players::Free(){
+void Player::Free(){
     SDL_JoystickClose(joy);
     gPlayer.free();
     gShield.free();
 }
 
-void Players::SetPosition(int newX, int newY) {
-	x = newX;
-	y = newY;
-}
-
-void Players::resetHighScore(){
-	// Overwrite "highscores.txt"
-	std::ofstream fileS;
-	fileS.open("highscores.txt");
-	for (int i=0; i<10; i++){
-		fileS << "AAA 0" << "\n";
-	}
-	fileS.close();
-}
-
-// Load Player high score data
-void Players::loadScore(){
-	indx = 0;
-	bool getHighest = true;
-	std::ifstream fileO("highscores.txt");
-	std::string str;
-	while (std::getline(fileO, str))
-	{
-		// Read current line
-		std::stringstream iss(str);
-		std::string temps[2];
-		iss >> temps[0] >> temps[1];
-
-		// Store first line as highscore
-		if (getHighest){
-			getHighest = false;
-			highscore = atoi(temps[1].c_str());
-		}
-
-		// Load highscore data
-		std::stringstream tempss;
-		tempss << temps[0] << " " << temps[1];
-		highList[indx] = tempss.str().c_str();
-		indx++;
-	}
-
-	fileO.close();
-}
-
-// Save high score
-void Players::saveHighScore() {
-	std::ifstream fileO("highscores.txt");
-	std::string str;
-	std::stringstream tempss;
-	std::vector<std::string> t_name;
-	std::vector<int> t_score;
-	int indx = 0;
-	bool replace = true;
-
-	while (getline(fileO, str)){
-		// Read current line
-		std::stringstream iss(str);
-
-		// Temp string to store Name & Score
-		std::string temps[2];
-
-		// Store Name & Score in temp string
-		iss >> temps[0] >> temps[1];
-
-		// Now store everything in a vector for checking
-		t_name.push_back(temps[0]);
-		t_score.push_back( atoi(temps[1].c_str()) );
-	}
-	fileO.close();
-
-
-	// If score > saveScore, then insert current score at current index, and remove last index
-	for (unsigned int i=0; i<t_name.size(); i++){
-		if (score > t_score[i])
-		{
-			// Insert Player data if we haven't yet
-			if (replace)
-			{
-				replace = false;
-				// Insert data at current index
-				t_name.insert(t_name.begin()+i, name);
-				t_score.insert(t_score.begin()+i, score);
-				indexSaved = i;
-
-				// Remove last index
-				t_score.pop_back();
-				t_name.pop_back();
-			}
-		}
-	}
-
-	// After replacing data
-	for (unsigned int i=0; i<t_name.size(); i++){
-		tempss << t_name[i] << " " << t_score[i] << std::endl;
-	}
-
-	// Overwrite "highscores.txt"
-	std::ofstream fileS;
-	fileS.open("highscores.txt");
-	fileS << tempss.str().c_str();
-	fileS.close();
-
-	// Update score display
-	loadScore();
-}
-
-// Reset game
-void Players::Init(std::string newName, bool respawn) {
+void Player::Init() {
 	x = 0;
 	y = 0;
-	name = newName;
-	accuracy = 0.0;
-	hits = 0.0;
-	totalShot = 0.0;
 	vX = 0.0;
 	vY = 0.0;
+	score = 0;
 	initialshot = false;
 	moveLeft = false;
 	moveRight = false;
 	moveUp = false;
 	moveDown = false;
-	deathScreen = false;
 	alive = true;
-	returned = false;
 	indexSaved = -1;
 	shieldFrame = 1;
 	shieldTick = 0;
@@ -212,7 +98,6 @@ void Players::Init(std::string newName, bool respawn) {
 	tag = "player";
 
 	/* Health */
-	lives = 1;
 	health = 225;
 	maxHealth = 225;
 	healthDecay = 225;
@@ -262,25 +147,9 @@ void Players::Init(std::string newName, bool respawn) {
 	mana = maxMana;
 	manaRegenRate = 3.3;
 	manaTick = 0.0;
-
-	if (!respawn) {
-		score = 0;
-		wave = 0;
-		increment = 35;
-		lives = 1;
-	}
 }
 
-// Applies a shield to Player
-void Players::applyShield(){
-	shieldFrame			= 1;
-	shieldTick			= 0;
-	shieldT				= 300;
-	shield				= true;
-}
-
-// Player shoot
-void Players::fire(Particle particle[], Particle &p_dummy, int mx, int my,
+void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 		 	 	   Mix_Chunk* sLazer, Mix_Chunk* sGrenade, Mix_Chunk* sGrenadePickup,
 				   Mix_Chunk* sPistolReload){
 
@@ -370,6 +239,9 @@ void Players::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 			manaTick = 0;
 			mana += manaRegenRate;
 		}
+	}
+	if (mana > maxMana) {
+		mana = maxMana;
 	}
 
 	///////////////////////////////////////////////////////////////////////
@@ -625,8 +497,7 @@ void Players::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 	//}
 }
 
-// Controls
-void Players::move(Particle particle[], Particle &p_dummy,
+void Player::move(Particle particle[], Particle &p_dummy,
 				   TileC &tc, TileC tilec[],
 				   Tile &tl, Tile tile[],
 				   int mx, int my){
@@ -719,29 +590,14 @@ void Players::move(Particle particle[], Particle &p_dummy,
 	}
 }
 
-// Update Player
-void Players::Update(Particle particle[], Particle &p_dummy,
+void Player::Update(Particle particle[], Particle &p_dummy,
 					 TileC &tc, TileC tilec[],
 					 Tile &tl, Tile tile[],
 					 int mx, int my, int camx, int camy,
 					 LWindow gWindow, SDL_Renderer* gRenderer,
 					 LTexture gText, TTF_Font *gFont, SDL_Color color,
 					 Mix_Chunk *sAtariBoom, Mix_Chunk* sLazer, Mix_Chunk* sGrenade,
-					 Mix_Chunk* sGrenadePickup, Mix_Chunk* sPistolReload)
-{
-	// Reset upon leaving pause menu
-	if (returned){
-		returned 	= false;
-		leftclick 	= false;
-		initialshot = false;
-		moveLeft	= false;
-		moveRight	= false;
-		moveUp		= false;
-		moveDown	= false;
-		A			= false;
-		RB			= false;
-	}
-
+					 Mix_Chunk* sGrenadePickup, Mix_Chunk* sPistolReload) {
 	// Player alive
 	if (alive)
 	{
@@ -770,163 +626,30 @@ void Players::Update(Particle particle[], Particle &p_dummy,
 			}
 		}
 
-		// Check high score MAX
+		// Set current score max
 		if (score > 999999999){
 			score = 999999999;
 		}
+	}
 
-		// Player death
-		/*if (health <=0)
-		{
-			//Spawn explosion after asteroid death
-			// spawn blood particle effect
-			for (double i=0.0; i< 360.0; i+=rand() % 10 + 10){
-				int rands = rand() % 9 + 2;
-				float newX = x+w/2;
-				float newY = y+h/2;
-				p_dummy.spawnParticleAngle(particle, tag, 2,
-									newX-rands/2,
-									newY-rands/2,
-								   rands, rands,
-								   i, randDouble(2.1, 5.1),
-								   0.0,
-								   {255, 0, 0, 255}, 1,
-								   1, 1,
-								   rand() % 100 + 150, rand() % 2 + 5,
-								   rand() % 50 + 90, 0,
-								   true, 0.11);
-			}
+	// Player is currently dead
+	else{
 
-			// Take away lives
-			lives-= 1;
-
-			// Reset Player
-			Init(name, true);
-
-			// Player ran out of lives, que Death Screen
-			if (lives<=0){
-
-				// Set variables
-				shieldT 	= 300;
-				shield 		= true;
-				alive 		= false;
-				deathScreen = true;
-
-				// SAVE HIGH SCORE
-				saveHighScore();
-			}
-		}*/
-
-		// Update Player score and Wave
-		if (score > highscore){
-			highscore = score;
-		}
-		/*
-		if (wave > HW){
-			HW 	= wave;
-		}*/
-	}else{
-		// High-Score moving
-		travel += 0.05 * dir;
-		if (travel > 10){
-			dir = -1;
-		}
-		if (travel < -10){
-			dir = 1;
-		}
-
-		// Continue YES or NO Screen
-		if (deathScreen)
-		{
-			SDL_ShowCursor(true);
-			// Set button position
-			continueButton[0] = {0 + screenWidth/2 -96/2-100, screenHeight/2-gText.getHeight()/2, 96, 33};
-			continueButton[1] = {0 + screenWidth/2 -96/2+100, screenHeight/2-gText.getHeight()/2, 96, 33};
-			continueButton[2] = {0 + screenWidth/2 -256/2 , screenHeight-gText.getHeight()-72, 256, 39};
-
-			// High Score display position
-			position  = 0+travel;
-			position2 = continueButton[1].x+continueButton[1].w-gText.getWidth()+travel;
-
-			// Left click
-			if (leftclick)
-			{
-				// Option: Yes, reset everything
-				if (checkCollision(mx, my, 1, 1, continueButton[0].x, continueButton[0].y, continueButton[0].w, continueButton[0].h))
-				{
-					leftclick			= false;
-
-					// Reset Player
-					std::string newName;
-					newName="AAA";
-					/////////input.getInput(gameLoop, quit, newName, gWindow, gRenderer);
-					Init(newName, false);
-
-					// Clear Asteroids & Enemies
-					SDL_ShowCursor(false);
-				}
-
-				// Option: No, go to Main Menu
-				if (checkCollision(mx, my, 1, 1, continueButton[1].x, continueButton[1].y, continueButton[1].w, continueButton[1].h))
-				{
-					score = 0;
-					leftclick  = false;
-					deathScreen = false;
-				}
-
-				// Option: Reset high scores
-				if (checkCollision(mx, my, 1, 1, continueButton[2].x, continueButton[2].y, continueButton[2].w, continueButton[2].h))
-				{
-					// Reset high scores
-					resetHighScore();
-
-					// Load again
-					loadScore();
-				}
-			}
-		// Menu Screen
-		}else{
-			SDL_ShowCursor(true);
-			// Set button position
-			continueButton[0] = {screenWidth/2-96/2, screenHeight/2-gText.getHeight()/2, 96, 33};
-			continueButton[2] = {screenWidth/2-256/2 , screenHeight-gText.getHeight()-72, 256, 39};
-
-			// High Score display position
-			position 	= continueButton[0].w/2-gText.getWidth()/2-100+travel;
-			position2 = continueButton[0].x+continueButton[0].w/2-gText.getWidth()/2+100+travel;
-
-			// Left click
-			if (leftclick)
-			{
-				// Option: Play
-				if (checkCollision(mx, my, 1, 1, continueButton[0].x, continueButton[0].y, continueButton[0].w, continueButton[0].h))
-				{
-					// Reset Player
-					std::string newName;
-					newName="AAA";
-					///////////input.getInput(gameLoop, quit, newName, gWindow, gRenderer);
-					Init(newName, false);
-
-					// Clear Asteroids & Enemies
-					SDL_ShowCursor(false);
-				}
-
-				// Option: Reset high scores
-				if (checkCollision(mx, my, 1, 1, continueButton[2].x, continueButton[2].y, continueButton[2].w, continueButton[2].h))
-				{
-					// Reset high scores
-					resetHighScore();
-
-					// Load again
-					loadScore();
-				}
-			}
-		}
 	}
 }
 
-// Render Player
-void Players::Render(int mx, int my, int camx, int camy, LWindow gWindow, SDL_Renderer* gRenderer,
+void Player::applyShield(){
+	shieldFrame			= 1;
+	shieldTick			= 0;
+	shieldT				= 300;
+	shield				= true;
+}
+
+void Player::CastSpell() {
+
+}
+
+void Player::Render(int mx, int my, int camx, int camy, LWindow gWindow, SDL_Renderer* gRenderer,
 					TTF_Font *gFont, TTF_Font *gFont2, SDL_Color color, int &PARTICLES, LTexture gText) {
 	gText.setAlpha(255);
 	// If alive
@@ -1024,97 +747,10 @@ void Players::Render(int mx, int my, int camx, int camy, LWindow gWindow, SDL_Re
 
 
 
-	}else{
-		// Continue YES or NO Screen
-		if (deathScreen)
-		{
-			// Render Text
-			gText.loadFromRenderedText(gRenderer, "You have died. Continue?", color, gFont2);
-			gText.render(gRenderer, screenWidth/2-gText.getWidth()/2, screenHeight/2-gText.getHeight()/2-50, gText.getWidth(), gText.getHeight());
+	}
+	// Player is currently dead
+	else{
 
-			// Render buttons: Yes
-			SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 255);
-			SDL_RenderDrawRect(gRenderer, &continueButton[0]);
-
-			// Render buttons: No
-			SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, 255);
-			SDL_RenderDrawRect(gRenderer, &continueButton[1]);
-
-			// Render buttons: ResetHighScore
-			SDL_SetRenderDrawColor(gRenderer, 0, 255, 255, 255);
-			SDL_RenderDrawRect(gRenderer, &continueButton[2]);
-
-			// Render button texts: Yes or No
-			gText.loadFromRenderedText(gRenderer, "Yes", color, gFont2);
-			gText.render(gRenderer,  continueButton[0].x+continueButton[0].w/2-gText.getWidth()/2,
-									 continueButton[0].y+continueButton[0].h/2-gText.getHeight()/2,
-									 gText.getWidth(), gText.getHeight());
-
-			gText.loadFromRenderedText(gRenderer, "No", color, gFont2);
-			gText.render(gRenderer,  continueButton[1].x+continueButton[1].w/2-gText.getWidth()/2,
-									 continueButton[1].y+continueButton[1].h/2-gText.getHeight()/2,
-									 gText.getWidth(), gText.getHeight());
-
-			// Render Text
-			gText.loadFromRenderedText(gRenderer, "Reset High Scores", color, gFont2);
-			gText.render(gRenderer, continueButton[2].x+continueButton[2].w/2-gText.getWidth()/2,
-									 continueButton[2].y+continueButton[2].h/2-gText.getHeight()/2,
-									 gText.getWidth(), gText.getHeight());
-		// Player Menu screen
-		}else{
-
-			// Render buttons: Play
-			SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 255);
-			SDL_RenderDrawRect(gRenderer, &continueButton[0]);
-
-			// Render buttons: ResetHighScore
-			SDL_SetRenderDrawColor(gRenderer, 0, 255, 255, 255);
-			SDL_RenderDrawRect(gRenderer, &continueButton[2]);
-
-			// Render Text
-			gText.loadFromRenderedText(gRenderer, "PLAY", color, gFont2);
-			gText.render(gRenderer, continueButton[0].x+continueButton[0].w/2-gText.getWidth()/2,
-									 continueButton[0].y+continueButton[0].h/2-gText.getHeight()/2,
-									 gText.getWidth(), gText.getHeight());
-
-			// Render Text
-			gText.loadFromRenderedText(gRenderer, "Reset High Scores", color, gFont2);
-			gText.render(gRenderer, continueButton[2].x+continueButton[2].w/2-gText.getWidth()/2,
-									 continueButton[2].y+continueButton[2].h/2-gText.getHeight()/2,
-									 gText.getWidth(), gText.getHeight());
-		}
-
-		// Render High Score text
-		for (int i=0; i<10; i++){
-			std::stringstream tempString(highList[i].c_str());
-			std::string line;
-			while (getline(tempString, line)) {
-				std::stringstream iss(line);
-				std::string temps[2];
-				iss >> temps[0] >> temps[1];
-
-				// Show Player where they are ranked
-				if (indexSaved==i){
-					gText.loadFromRenderedText(gRenderer, temps[0].c_str(), {244,144,20}, gFont);
-					gText.setAlpha(255-i*10);
-					gText.render(gRenderer, continueButton[0].x+position,
-							continueButton[0].y+continueButton[0].h+20+i*14,
-							gText.getWidth(), gText.getHeight());
-				}else{
-					gText.loadFromRenderedText(gRenderer, temps[0].c_str(), color, gFont);
-					gText.setAlpha(255-i*10);
-					gText.render(gRenderer, continueButton[0].x+position,
-							continueButton[0].y+continueButton[0].h+20+i*14,
-							gText.getWidth(), gText.getHeight());
-				}
-
-				gText.loadFromRenderedText(gRenderer, temps[1].c_str(), color, gFont);
-				gText.setAlpha(255-i*10);
-				gText.render(gRenderer, position2,
-						continueButton[1].y+continueButton[1].h+20+i*14,
-						gText.getWidth(), gText.getHeight());
-			}
-		}
 	}
 
 	// Render Visual Collision Box
@@ -1197,10 +833,7 @@ void Players::Render(int mx, int my, int camx, int camy, LWindow gWindow, SDL_Re
 	gText.render(gRenderer, 60, 80, gText.getWidth(), gText.getHeight());*/
 }
 
-
-
-// Key Pressed
-void Players::OnKeyDown( Players &player, SDL_Keycode sym )
+void Player::OnKeyDown( Player &player, SDL_Keycode sym )
 {
 	switch (sym){
 	case SDLK_w:					// Thrust space ship
@@ -1281,8 +914,7 @@ void Players::OnKeyDown( Players &player, SDL_Keycode sym )
 	}
 }
 
-// Key Released
-void Players::OnKeyUp( Players &player, SDL_Keycode sym )
+void Player::OnKeyUp( Player &player, SDL_Keycode sym )
 {
 	switch (sym){
 	case SDLK_w:					// Thrust space ship
@@ -1306,8 +938,7 @@ void Players::OnKeyUp( Players &player, SDL_Keycode sym )
 	}
 }
 
-// Player Mouse Pressed
-void Players::mouseClickState(Players &player, SDL_Event &e){
+void Player::mouseClickState(Player &player, SDL_Event &e){
 	if (e.type == SDL_MOUSEBUTTONDOWN) {
 		if (e.button.button == SDL_BUTTON_LEFT) {
 			player.controls = 0;
@@ -1330,7 +961,7 @@ void Players::mouseClickState(Players &player, SDL_Event &e){
 }
 
 // Update XBOX 360 controls
-void Players::updateJoystick(Players &player, SDL_Event &e){
+void Player::updateJoystick(Player &player, SDL_Event &e){
 
 	/* Xbox 360 Controls */
 
@@ -1440,4 +1071,147 @@ void Players::updateJoystick(Players &player, SDL_Event &e){
 			break;
 		}
 	}
+}
+
+void Player::resetHighScore(){
+	// Overwrite "highscores.txt"
+	std::ofstream fileS;
+	fileS.open("highscores.txt");
+	for (int i=0; i<10; i++){
+		fileS << "AAA 0" << "\n";
+	}
+	fileS.close();
+}
+
+void Player::loadScore(){
+	indx = 0;
+	bool getHighest = true;
+	std::ifstream fileO("highscores.txt");
+	std::string str;
+	while (std::getline(fileO, str))
+	{
+		// Read current line
+		std::stringstream iss(str);
+		std::string temps[2];
+		iss >> temps[0] >> temps[1];
+
+		// Store first line as highscore
+		if (getHighest){
+			getHighest = false;
+			highscore = atoi(temps[1].c_str());
+		}
+
+		// Load highscore data
+		std::stringstream tempss;
+		tempss << temps[0] << " " << temps[1];
+		highList[indx] = tempss.str().c_str();
+		indx++;
+	}
+
+	fileO.close();
+	/////////////////////////////////////////////////////////////
+	/*
+	// Render High Score text
+	for (int i=0; i<10; i++){
+		std::stringstream tempString(highList[i].c_str());
+		std::string line;
+		while (getline(tempString, line)) {
+			std::stringstream iss(line);
+			std::string temps[2];
+			iss >> temps[0] >> temps[1];
+
+			// Show Player where they are ranked
+			if (indexSaved==i){
+				gText.loadFromRenderedText(gRenderer, temps[0].c_str(), {244,144,20}, gFont);
+				gText.setAlpha(255-i*10);
+				gText.render(gRenderer, continueButton[0].x+position,
+						continueButton[0].y+continueButton[0].h+20+i*14,
+						gText.getWidth(), gText.getHeight());
+			}else{
+				gText.loadFromRenderedText(gRenderer, temps[0].c_str(), color, gFont);
+				gText.setAlpha(255-i*10);
+				gText.render(gRenderer, continueButton[0].x+position,
+						continueButton[0].y+continueButton[0].h+20+i*14,
+						gText.getWidth(), gText.getHeight());
+			}
+
+			gText.loadFromRenderedText(gRenderer, temps[1].c_str(), color, gFont);
+			gText.setAlpha(255-i*10);
+			gText.render(gRenderer, position2,
+					continueButton[1].y+continueButton[1].h+20+i*14,
+					gText.getWidth(), gText.getHeight());
+		}
+	}
+	 */
+}
+
+void Player::saveHighScore() {
+	std::ifstream fileO("highscores.txt");
+	std::string str;
+	std::stringstream tempss;
+	std::vector<std::string> t_name;
+	std::vector<int> t_score;
+	int indx = 0;
+	bool replace = true;
+
+	while (getline(fileO, str)){
+		// Read current line
+		std::stringstream iss(str);
+
+		// Temp string to store Name & Score
+		std::string temps[2];
+
+		// Store Name & Score in temp string
+		iss >> temps[0] >> temps[1];
+
+		// Now store everything in a vector for checking
+		t_name.push_back(temps[0]);
+		t_score.push_back( atoi(temps[1].c_str()) );
+	}
+	fileO.close();
+
+
+	// If score > saveScore, then insert current score at current index, and remove last index
+	for (unsigned int i=0; i<t_name.size(); i++){
+		if (score > t_score[i])
+		{
+			// Insert Player data if we haven't yet
+			if (replace)
+			{
+				replace = false;
+				// Insert data at current index
+				t_name.insert(t_name.begin()+i, name);
+				t_score.insert(t_score.begin()+i, score);
+				indexSaved = i;
+
+				// Remove last index
+				t_score.pop_back();
+				t_name.pop_back();
+			}
+		}
+	}
+
+	// After replacing data
+	for (unsigned int i=0; i<t_name.size(); i++){
+		tempss << t_name[i] << " " << t_score[i] << std::endl;
+	}
+
+	// Overwrite "highscores.txt"
+	std::ofstream fileS;
+	fileS.open("highscores.txt");
+	fileS << tempss.str().c_str();
+	fileS.close();
+
+	// Update score display
+	loadScore();
+}
+
+bool Player::checkCollision(int x, int y, int w, int h, int x2, int y2, int w2, int h2){
+	bool collide;
+	if (x+w > x2 && x < x2 + w2 && y+h > y2 && y < y2 + h2){
+		collide = true;
+	}else{
+		collide = false;
+	}
+	return collide;
 }

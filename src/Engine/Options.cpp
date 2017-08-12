@@ -52,22 +52,6 @@ void Options::FreeAudioFiles() {
 	sKeyPickup = NULL;
 }
 
-
-void Options::saveCFG(){
-	/*std::ofstream fileSettings;
-	fileSettings.open( "cfg/config.cfg" );
-		std::stringstream tempss;
-		tempss << MASTER_VOL << " "
-			   << MUSIC_VOL  << " "
-			   << SFX_VOL 	 << " "
-			   << RESOLUTION << " "
-			   << ANTI_ALIAS << " "
-			   << VSYNC 	 << " "
-			   << FULLSCREEN;
-		fileSettings << tempss.str().c_str();
-	fileSettings.close();*/
-}
-
 // Load video configurations
 void Options::loadVideoCFG(){
 	// open config file
@@ -178,7 +162,7 @@ void Options::applyMasterAudioCFG() {
 }
 
 //Get's input from user and returns it
-void Options::start(LWindow &gWindow, SDL_Renderer *gRenderer, Players &player)
+void Options::start(LWindow &gWindow, SDL_Renderer *gRenderer, Player &player)
 {
 	// Create title bar names
 	au.init(bar);
@@ -372,7 +356,7 @@ void Options::SaveLevel(LWindow &gWindow, SDL_Renderer *gRenderer, bool &mainLoo
 						std::string SpawnCoordinatesData,
 						std::string TileSaveData,
 						std::string CollisionTileSaveData,
-						std::string ObjectSaveData,
+						std::string ItemSaveData,
 						std::string MonsterSaveData){
 
 	// Loop bool
@@ -515,11 +499,11 @@ void Options::SaveLevel(LWindow &gWindow, SDL_Renderer *gRenderer, bool &mainLoo
 					// Set directory to save
 					PathDir << defaultDir.str().c_str();
 					// Set file name and extension
-					PathDir << inputDirectory.c_str() << "Items.mp";
+					PathDir << inputDirectory.c_str() << "Item.mp";
 					// Open File
 					newObjectFile.open(PathDir.str().c_str());
 					// Store data given from Editor to store in File
-					newObjectFile << ObjectSaveData;
+					newObjectFile << ItemSaveData;
 					// Close
 					newObjectFile.close();
 					//------------------------------ Save Object Data ---------------------------//
@@ -533,7 +517,7 @@ void Options::SaveLevel(LWindow &gWindow, SDL_Renderer *gRenderer, bool &mainLoo
 					// Set directory to save
 					PathDir << defaultDir.str().c_str();
 					// Set file name and extension
-					PathDir << inputDirectory.c_str() << "Monsters.mp";
+					PathDir << inputDirectory.c_str() << "Monster.mp";
 					// Open File
 					newMonsterFile.open(PathDir.str().c_str());
 					// Store data given from Editor to store in File
@@ -773,7 +757,7 @@ std::string Options::GetInput(LWindow &gWindow, SDL_Renderer *gRenderer, bool &m
 }
 
 // Key Pressed
-void Options::OnKeyDown(SDL_Keycode sym, Players &player) {
+void Options::OnKeyDown(SDL_Keycode sym, Player &player) {
 	switch (sym) {
 	case SDLK_UP:
 		if (index > 0) {
@@ -794,14 +778,13 @@ void Options::OnKeyDown(SDL_Keycode sym, Players &player) {
 	}
 }
 
-void Options::OnKeyUp(SDL_Keycode sym, Players &player) {
+void Options::OnKeyUp(SDL_Keycode sym, Player &player) {
 	switch (sym) {
 	case SDLK_RETURN:
 		// PauseMenu
 		if (type==0)
 		{
 			if (index==0) {
-				player.returned = true;
 				pauseLoop 		= false;
 			}
 			// Enter Settings
@@ -857,14 +840,13 @@ void Options::OnKeyUp(SDL_Keycode sym, Players &player) {
 }
 
 // Mouse Pressed
-void Options::mousePressed(Players &player) {
+void Options::mousePressed(Player &player) {
 	for (int i=0; i<5; i++) {
 		if (helper.checkCollision(mx, my, 1, 1, title[i].x-3, title[i].y-3, title[i].w+3, title[i].h+3)) {
 			// PauseMenu controls
 			if (type==0) {
 				// Resume Game
 				if (index==0) {
-					player.returned = true;
 					pauseLoop 		= false;
 				}
 				// Go into 'Settings'

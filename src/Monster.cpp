@@ -5,10 +5,7 @@
  *      Author: Carl
  */
 
-
 #include "Engine/LTexture.h"
-#include "Engine/Particless.h"
-
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -19,14 +16,8 @@
 #include <SDL2/SDL_image.h>
 
 #include "Monster.h"
+#include "Engine/Particle.h"
 
-// Clear all monster
-void Monster::RemoveAll(Monster monster[]){
-	count = 0;
-	for (int i = 0; i < max; i++) {
-		monster[i].alive = false;
-	}
-}
 
 void Monster::Init(Monster monster[]){
 	int i = 0;
@@ -83,10 +74,7 @@ void Monster::Free(){
 	gMonster.free();
 }
 
-
-
-// Create an monster
-void Monster::spawn(Monster monster[], float x, float y,
+void Monster::Spawn(Monster monster[], float x, float y,
 		           float w, float h, int realw, int realh,
 				   float angle, float speed,
 				   double id, double type,
@@ -152,22 +140,14 @@ void Monster::spawn(Monster monster[], float x, float y,
 	}
 }
 
-// TODO [ ] - do something about having a mix chunk in this class, maybe have all manipulator code inside of PlayerGame class
-// TODO [ ] - inside Player class, after player dies and comes back to life, zombies position is persistent, fix this.
-//			- Following up on the last sentence, the players animations (rustling) do not move as well
+void Monster::RemoveAll(Monster monster[]){
+	count = 0;
+	for (int i = 0; i < max; i++) {
+		monster[i].alive = false;
+	}
+}
 
-// TODO [x] - for the enemy, also render a circle to see where the enemy is, we will be doing
-//			- circle collision for this game
-
-// TODO [x] - get circle collision boxes for monster, and also change position of particle that comes out of player
-// 			- and make it be on the green box, not the white (if possible)
-
-// TODO [ ] - instead of the enemy turning their body instantly towards the player,
-// 			- have them do a turn of some sort to face the player. This will probably
-// 			- require the use of creating a distance formula in the angle (0-360)
-
-// Update monster
-void Monster::update(Monster monster[], Particle particle[], Particle &p_dummy, Players &player, Mix_Chunk* sLazer,
+void Monster::Update(Monster monster[], Particle particle[], Particle &p_dummy, Player &player, Mix_Chunk* sLazer,
 		int camx, int camy) {
 	int playerX = player.x - 3;
 	int playerY = player.y - 9;
@@ -490,26 +470,42 @@ void Monster::update(Monster monster[], Particle particle[], Particle &p_dummy, 
 	}
 }
 
-void Monster::render(SDL_Renderer* gRenderer, Monster monster[], int camx, int camy) {
+void Monster::Render(SDL_Renderer* gRenderer, Monster monster[], int camx, int camy) {
 	for (int i = 0; i < max; i++) {
 		if (monster[i].alive) {
 			// Render all Monsters
 			gMonster.setAlpha(255);
+			// Monster moving, render correct frame
 			if (monster[i].moving) {
+				int incrementToNextRowAmount = 9;
+				int monsterId = (monster[i].frame+2*monster[i].facing) + monster[i].type * incrementToNextRowAmount;
 				gMonster.render(gRenderer, monster[i].x-camx, monster[i].y-camy,
 						monster[i].realw, monster[i].realh,
-						&clip[monster[i].frame+2*monster[i].facing]);
+						&clip[monsterId]);
 			}
+			// Monster stopped moving, render still sprite
 			else{
+				int numberOfFramesPerRow = monster[i].id + 2 * monster[i].facing ;
+				int incrementToNextRowAmount = 9;
+				int monsterId = (monster[i].type * incrementToNextRowAmount) + numberOfFramesPerRow;
 				gMonster.render(gRenderer, monster[i].x-camx, monster[i].y-camy,
 						monster[i].realw, monster[i].realh,
-						&clip[monster[i].id+2*monster[i].facing]);
+						&clip[monsterId]);
 			}
+		}
+		// Render Monster death sprite
+		else{
+			int numberOfFramesPerRow = 8;
+			int incrementToNextRowAmount = 9;
+			int monsterId = (monster[i].type * incrementToNextRowAmount) + numberOfFramesPerRow;
+			gMonster.render(gRenderer, monster[i].x-camx, monster[i].y-camy,
+					monster[i].realw, monster[i].realh,
+					&clip[monsterId]);
 		}
 	}
 }
 
-void Monster::loadTiles(Monster monster[], int level){
+void Monster::LoadData(Monster monster[], int level){
 	//Load Tile
 	count = 0;
 	Init(monster);
@@ -518,7 +514,7 @@ void Monster::loadTiles(Monster monster[], int level){
 	std::stringstream fileName;
 	fileName << "resource/data/maps/";
 	fileName << "level" << level;
-	fileName << "/Monsters.mp";
+	fileName << "/Monster.mp";
 	std::fstream fileTileDataL(fileName.str().c_str());
 	// Read first line for monster count
 	fileTileDataL >> count;
@@ -544,7 +540,7 @@ void Monster::loadTiles(Monster monster[], int level){
 	fileTileDataL.close();
 }
 
-std::string Monster::saveTiles(Monster monster[]){
+std::string Monster::SaveData(Monster monster[]){
 	// Create new file to store Tile data
 	std::ofstream tileDataFile;
 	// Create stringstream to store Tile Data

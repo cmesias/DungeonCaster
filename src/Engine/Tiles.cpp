@@ -23,12 +23,12 @@
 
 #include "Tiles.h"
 
-void Tile::load(SDL_Renderer *gRenderer) {
+void Tile::Load(SDL_Renderer *gRenderer) {
 	gTiles.loadFromFile(gRenderer, "resource/gfx/tile00.png");
 	gFont12 = TTF_OpenFont("resource/fonts/Viga-Regular.ttf", 12);
 }
 
-void Tile::free() {
+void Tile::Free() {
 	gTiles.free();
 	gText.free();
 	TTF_CloseFont(gFont12);
@@ -36,7 +36,7 @@ void Tile::free() {
 }
 
 
-void Tile::initTile(Tile tile[]) {
+void Tile::Init(Tile tile[]) {
 	levelWidth = 64;
 	levelHeight = 64;
 	layer 		= 0;
@@ -61,7 +61,7 @@ void Tile::initTile(Tile tile[]) {
 	}
 }
 
-void Tile::placeTile(Tile tile[], float x, float y, int w, int h, int id, int layer, SDL_Rect clip) {
+void Tile::Spawn(Tile tile[], float x, float y, int w, int h, int id, int layer, SDL_Rect clip) {
 	for (int i = 0; i < max; i++) {
 		if (!tile[i].alive){
 			tile[i].x 		= x;
@@ -86,7 +86,7 @@ void Tile::placeTile(Tile tile[], float x, float y, int w, int h, int id, int la
 		}
 	}
 }
-void Tile::copyTile(Tile tile[]) {
+void Tile::Copy(Tile tile[]) {
 	for (int i = 0; i < max; i++) {
 		if (tile[i].alive){
 			if (tile[i].mouse){
@@ -120,7 +120,7 @@ void Tile::ChangeCollision(Tile tile[], int click) {
 	}
 }
 
-void Tile::changeTileLayer(Tile tile[], int value) {
+void Tile::ChangeLayer(Tile tile[], int value) {
 	for (int i = 0; i < max; i++) {
 		if (tile[i].alive){
 			if (tile[i].mouse){
@@ -131,7 +131,7 @@ void Tile::changeTileLayer(Tile tile[], int value) {
 		}
 	}
 }
-void Tile::removeTile(Tile tile[], int click) {
+void Tile::Remove(Tile tile[], int click) {
 	for (int i = 0; i < max; i++) {
 		if (tile[i].alive){
 			// Left click
@@ -155,7 +155,7 @@ void Tile::removeTile(Tile tile[], int click) {
 	}
 }
 
-void Tile::removeAllTiles(Tile tile[]) {
+void Tile::RemoveAll(Tile tile[]) {
 	for (int i = 0; i < max; i++) {
 		if (tile[i].alive){
 			tile[i].alive = false;
@@ -164,19 +164,18 @@ void Tile::removeAllTiles(Tile tile[]) {
 	tileCount = 0;
 }
 
-/* Place Tile */
-void Tile::spawnTile(Tile tile[], int newMx, int newMy, int camx, int camy, SDL_Rect rTiles[]) {
-	removeTile(tile, 0);
+void Tile::SpawnMultiple(Tile tile[], int newMx, int newMy, int camx, int camy, SDL_Rect rTiles[]) {
+	Remove(tile, 0);
 	for (int j = 0; j < multiW; j++) {
 		for (int h = 0; h < multiH; h++) {
 			int x = int(newMx + j * tilew + camx);
 			int y = int(newMy + h * tileh + camy);
-			placeTile(tile, x, y, tilew, tileh, id, layer, rTiles[id]);
+			Spawn(tile, x, y, tilew, tileh, id, layer, rTiles[id]);
 		}
 	}
 }
 
-void Tile::updateTile(Tile tile[], LWindow &gWindow, int newMx, int newMy, int mex, int mey, int camx, int camy, SDL_Rect rTiles[]) {
+void Tile::Update(Tile tile[], LWindow &gWindow, int newMx, int newMy, int mex, int mey, int camx, int camy, SDL_Rect rTiles[]) {
 	//std::cout << "newMx: " << newMx << std::endl;
 	//std::cout << "newMy: " << newMy << std::endl;
 	int tileW = tilew*multiW;
@@ -265,7 +264,6 @@ void Tile::updateTile(Tile tile[], LWindow &gWindow, int newMx, int newMy, int m
 	}
 }
 
-
 bool Tile::checkCollisionRect( SDL_Rect a, SDL_Rect b )
 {
     //The sides of the rectangles
@@ -311,7 +309,6 @@ bool Tile::checkCollisionRect( SDL_Rect a, SDL_Rect b )
     return true;
 }
 
-// Tile collision check, player x position
 void Tile::checkCollision(Tile tile[], float x, float y, int w, int h, float &coordinateXY, float &velocity) {
 	SDL_Rect rectA;
 	rectA.x = x;
@@ -402,7 +399,7 @@ void Tile::checkCollision(Tile tile[], float x, float y, int w, int h, float &co
 
 }
 
-void Tile::renderTile(SDL_Renderer *gRenderer, Tile tile[], int layer_dummy, int camx, int camy) {
+void Tile::Render(SDL_Renderer *gRenderer, Tile tile[], int layer_dummy, int camx, int camy) {
 	for (int i = 0; i < max; i++) {
 		if (tile[i].alive){
 			// Tile trasparency on Player collision
@@ -444,7 +441,7 @@ void Tile::renderTile(SDL_Renderer *gRenderer, Tile tile[], int layer_dummy, int
 		}
 	}
 }
-// Render Tile Debug info
+
 void Tile::RenderDebug(SDL_Renderer *gRenderer, Tile tile[], int newMx, int newMy, int mex, int mey, int camx, int camy, SDL_Rect rTiles[], int tileSize){
 	// Render Tile info
 	for (int i = 0; i < max; i++) {
@@ -523,7 +520,7 @@ void Tile::RenderDebug(SDL_Renderer *gRenderer, Tile tile[], int newMx, int newM
 	}
 }
 
-void Tile::loadTiles(Tile tile[], int level){
+void Tile::LoadData(Tile tile[], int level){
 	//Load Tile
 	tileCount = 0;
 	levelWidth = 64;
@@ -568,8 +565,7 @@ void Tile::loadTiles(Tile tile[], int level){
 	fileTileDataL.close();
 }
 
-
-std::string Tile::saveTiles(Tile tile[]){
+std::string Tile::SaveData(Tile tile[]){
 	// Create new file to store Tile data
 	std::ofstream tileDataFile;
 	// Create stringstream to store Tile Data

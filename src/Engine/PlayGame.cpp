@@ -18,8 +18,8 @@
 #include <SDL2/SDL_ttf.h>
 
 #include "LTexture.h"
-#include "Particless.h"
 #include "PlayGame.h"
+#include "Particle.h"
 
 // TODO [VERY USEFUL] - if you initialize a font at a decent size but render it half
 //						of its original width and height, it will look much better
@@ -83,8 +83,8 @@ void PlayGame::Init() {
 	rDoor[1] = {16, 0, 16, 16};
 	rDoor[2] = {32, 0, 16, 16};
 	// Initialize
-	// Objects
-	obj.Init(object);
+	// Items
+	obj.Init(item);
     // Zombies
 	mon.Init(monster);
 	// Particles
@@ -92,17 +92,17 @@ void PlayGame::Init() {
 	// Spawners
 	spaw.init(spawner);
 	// Player
-	player.Init("Player1", false);
-	player.loadScore();
+	player.Init();
+	player.SetName("Carl");
 	// Text
 	tex.init(text);
 	// Tiles
-	tl.initTile(tile);
+	tl.Init(tile);
 	// Collision Tiles
 	tc.init(tilec);
 	// Tilebar
-	tb.init(tilebar);
-	tb.placeTileBar(tilebar);
+	tb.Init(tilebar);
+	tb.SpawnMultiple(tilebar);
 }
 /*
 void PlayGame::saveCFG(std::string fileName){
@@ -195,8 +195,8 @@ void PlayGame::Load(LWindow &gWindow, SDL_Renderer *gRenderer) {
 	part.load(gRenderer);
 	player.Load(gRenderer);
 	spaw.load(gRenderer);
-	tb.load(gRenderer);
-	tl.load(gRenderer);
+	tb.Load(gRenderer);
+	tl.Load(gRenderer);
 	obj.Load(gRenderer);
 	mon.Load(gRenderer);
 
@@ -226,7 +226,7 @@ void PlayGame::Free() {
 	part.free();
 	player.Free();
 	spaw.free();
-	tl.free();
+	tl.Free();
 	obj.Free();
 	mon.Free();
 }
@@ -322,26 +322,26 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 
 							// Save Data for Tiles
 							std::stringstream TileSaveData;
-							TileSaveData << tl.saveTiles(tile);
+							TileSaveData << tl.SaveData(tile);
 
 							// Save Data for Collision Tiles
 							std::stringstream CollisionTileSaveData;
 							CollisionTileSaveData << tc.saveTiles(tilec);
 
-							// Save Data for Objects
-							std::stringstream ObjectSaveData;
-							ObjectSaveData << obj.saveTiles(object);
+							// Save Data for Items
+							std::stringstream ItemSaveData;
+							ItemSaveData << obj.SaveData(item);
 
-							// Save Data for Objects
+							// Save Data for Items
 							std::stringstream MonsterSaveData;
-							MonsterSaveData << mon.saveTiles(monster);
+							MonsterSaveData << mon.SaveData(monster);
 
 							// Go to saving interface
 							SaveLevel(gWindow, gRenderer, quit,
 									  SpawnCoordinatesData.str().c_str(),
 									  TileSaveData.str().c_str(),
 									  CollisionTileSaveData.str().c_str(),
-									  ObjectSaveData.str().c_str(),
+									  ItemSaveData.str().c_str(),
 									  MonsterSaveData.str().c_str());
 							// Editor visual message
 							tempss.str(std::string());
@@ -466,7 +466,7 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 			// Render foreground
 			RenderFG(gRenderer, gWindow);
 
-			// Render objects
+			// Render items
 			Render(gRenderer, gWindow);
 
 		//Reset render target
@@ -483,7 +483,7 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 			RenderLights(gRenderer);
 
 			/// Render Scene
-			// If in editor mode, turn off lights (which is actually just setting our Scene Texture from "ADD to "BLEND" blend mode
+			// If in editor mode, turn off lights (which is actually just setting our Scene Texture from "ADD to "BLEND" blend mode)
 			if (editor) {
 				gTargetTexture.setBlendMode(SDL_BLENDMODE_BLEND);
 			}else{
@@ -581,17 +581,17 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 		mouseY = newMy;
 	}
 
-	// Update Objects
-	obj.Update(object, mouseX+camx, mouseY+camy, mx+camx, my+camy, camx, camy);
+	// Update Items
+	obj.Update(item, mouseX+camx, mouseY+camy, mx+camx, my+camy, camx, camy);
 
 	// Update tiles
-	tl.updateTile(tile, gWindow, mouseX+camx, mouseY+camy, mx+camx, my+camy, camx, camy, &rTiles[0]);
+	tl.Update(tile, gWindow, mouseX+camx, mouseY+camy, mx+camx, my+camy, camx, camy, &rTiles[0]);
 
 	// Update collision tiles
 	tc.update(tilec, mouseX+camx, mouseY+camy, mx+camx, my+camy, camx, camy, screenWidth, screenHeight);
 
 	// Update Tile bar
-	tb.update(tilebar, gWindow, mx, my, camx, camy);
+	tb.Update(tilebar, gWindow, mx, my, camx, camy);
 
 	// Editor
 	if (editor) {
@@ -600,37 +600,31 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 			if (!tb.touching) {
 				if (editor) {
 					if (place_type == 0) {
-						tl.spawnTile(tile, mouseX, mouseY, camx, camy, &rTiles[0]);
+						tl.SpawnMultiple(tile, mouseX, mouseY, camx, camy, &rTiles[0]);
 					}else if (place_type == 1) {
 						tc.spawn(tilec, mouseX, mouseY, camx, camy);
 					}else if (place_type == 2) {
-						obj.Spawn(object, mouseX+camx, mouseY+camy, 16, 16);
+						obj.Spawn(item, mouseX+camx, mouseY+camy, 16, 16);
 					}
 				}
 			}else{
-				if (shift) {
-					tb.selectBlockMultiple(tilebar, tl.id, mx, my);
-				/* Pen Tool, select a Tile from the TileBar */
-				}else{
-					tb.selectBlock(tilebar, tl.id);
-				}
+				tb.Select(tilebar, tl.id);
 			}
 		}
 		if (rightClick) {
-			/* If not on Tile-bar, place other tiles */
+			// If not on Tile-bar, place other tiles
 			if (!tb.touching) {
 				if (editor) {
 					if (place_type == 0) {
-						tl.removeTile(tile, 1);
+						tl.Remove(tile, 1);
 					}else if (place_type == 1) {
 						tc.remove(tilec, 1);
 					}else if (place_type == 2) {
-						obj.Remove(object, 1);
+						obj.Remove(item, 1);
 					}
 				}
 			}else{
-				/* Pen Tool, select a Tile from the TileBar */
-				tb.selectBlock(tilebar, tl.id);
+				tb.Select(tilebar, tl.id);
 			}
 		}
 	}
@@ -663,7 +657,7 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 	if (player.alive && !editor) {
 
 		// update zombies
-		mon.update(monster, particles, part, player, sLazer, camx, camy);
+		mon.Update(monster, particles, part, player, sLazer, camx, camy);
 	}
 
 	// Collision, particle & monster
@@ -678,8 +672,8 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 	// Collision: Grenade Particle & Monster
 	checkCollisionGrenadePlayer();
 
-	// Check collision between Objects & Player
-	checkCollisionObjectPlayer();
+	// Check collision between Items & Player
+	checkCollisionItemPlayer();
 
 	// Collision: Particle & Collision Tiles
 	checkCollisionParticleTile();
@@ -690,7 +684,7 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 	// Update Player manually
 	UpdatePlayer();
 
-	// Handle collision of objects and Level Size
+	// Handle collision of items and Level Size
 	UpdateLevelSize();
 
 	// Damage text: for monster
@@ -758,12 +752,11 @@ void PlayGame::Render(SDL_Renderer *gRenderer, LWindow &gWindow) {
 	spaw.render(spawner, camx, camy, gRenderer);
 
 	// Render Tiles
-	tl.renderTile(gRenderer, tile, 0, camx, camy);
-	tl.renderTile(gRenderer, tile, 1, camx, camy);
+	tl.Render(gRenderer, tile, 0, camx, camy);
+	tl.Render(gRenderer, tile, 1, camx, camy);
 
 	// Render spawn point and exit door
 	{
-
 		// Render Player spawn point
 		gDoor.render(gRenderer, spawnX-camx, spawnY-camy, 16, 16, &rDoor[2]);
 		/*SDL_Rect tempRect = {spawnX-camx, spawnY-camy, 16, 16};
@@ -778,8 +771,8 @@ void PlayGame::Render(SDL_Renderer *gRenderer, LWindow &gWindow) {
 		}
 	}
 
-	// Render Objects
-	obj.Render(gRenderer, object, camx, camy);
+	// Render Items
+	obj.Render(gRenderer, item, camx, camy);
 
 	// Render our player
 	player.Render(mx, my, camx, camy, gWindow,
@@ -788,17 +781,17 @@ void PlayGame::Render(SDL_Renderer *gRenderer, LWindow &gWindow) {
 				{255,255,255}, part.count, gText);
 
 	// Render zombies
-	mon.render(gRenderer, monster, camx, camy);
+	mon.Render(gRenderer, monster, camx, camy);
 
 	// Render particles
 	part.renderBulletParticle(particles, camx, camy, 1, gRenderer);
 
 	// Render tile, appliances
-	tl.renderTile(gRenderer, tile, 2, camx, camy);
-	tl.renderTile(gRenderer, tile, 3, camx, camy);
-	tl.renderTile(gRenderer, tile, 4, camx, camy);
-	tl.renderTile(gRenderer, tile, 5, camx, camy);
-	tl.renderTile(gRenderer, tile, 6, camx, camy);
+	tl.Render(gRenderer, tile, 2, camx, camy);
+	tl.Render(gRenderer, tile, 3, camx, camy);
+	tl.Render(gRenderer, tile, 4, camx, camy);
+	tl.Render(gRenderer, tile, 5, camx, camy);
+	tl.Render(gRenderer, tile, 6, camx, camy);
 }
 
 void PlayGame::RenderLights(SDL_Renderer *gRenderer) {
@@ -877,53 +870,53 @@ void PlayGame::RenderLights(SDL_Renderer *gRenderer) {
 	}
 
 	for (int i = 0; i < obj.max; i++) {
-		if (object[i].alive) {
-			if (object[i].id == 0) {
+		if (item[i].alive) {
+			if (item[i].id == 0) {
 				gLight.setAlpha(255);
 				gLight.setColor(189, 203, 197);
 				//gLight.setColor(255, 255, 255);
 				gLight.setBlendMode(SDL_BLENDMODE_ADD);
-				int newWidth = object[i].w*3 + dimSize;
-				int newHeight = object[i].h*3 + dimSize;
-				gLight.render( gRenderer, object[i].x2-newWidth/2-camx,
-										  object[i].y2-newHeight/2-camy,
+				int newWidth = item[i].w*3 + dimSize;
+				int newHeight = item[i].h*3 + dimSize;
+				gLight.render( gRenderer, item[i].x2-newWidth/2-camx,
+										  item[i].y2-newHeight/2-camy,
 										  newWidth, newHeight);
 
 			}
-			else if (object[i].id == 7 || object[i].id == 8) {
+			else if (item[i].id == 7 || item[i].id == 8) {
 				gLight.setAlpha(255);
 				//gLight.setColor(251, 236, 68);
 				gLight.setColor(255, 255, 0);
 				gLight.setBlendMode(SDL_BLENDMODE_ADD);
-				int newWidth = object[i].w*3 + dimSize;
-				int newHeight = object[i].h*3 + dimSize;
-				gLight.render( gRenderer, object[i].x2-newWidth/2-camx,
-										  object[i].y2-newHeight/2-camy,
+				int newWidth = item[i].w*3 + dimSize;
+				int newHeight = item[i].h*3 + dimSize;
+				gLight.render( gRenderer, item[i].x2-newWidth/2-camx,
+										  item[i].y2-newHeight/2-camy,
 										  newWidth, newHeight);
 
 			}
-			else if (object[i].id == 10) {
+			else if (item[i].id == 10) {
 				gLight.setAlpha(255);
 				gLight.setColor(9, 159, 220);
 				//gLight.setColor(255, 255, 255);
 				gLight.setBlendMode(SDL_BLENDMODE_ADD);
-				int newWidth = object[i].w*3 + dimSize;
-				int newHeight = object[i].h*3 + dimSize;
-				gLight.render( gRenderer, object[i].x2-newWidth/2-camx,
-										  object[i].y2-newHeight/2-camy,
+				int newWidth = item[i].w*3 + dimSize;
+				int newHeight = item[i].h*3 + dimSize;
+				gLight.render( gRenderer, item[i].x2-newWidth/2-camx,
+										  item[i].y2-newHeight/2-camy,
 										  newWidth, newHeight);
 
 			}
 			// Mana pot
-			else if (object[i].id == 25) {
+			else if (item[i].id == 25) {
 				gLight.setAlpha(255);
 				//gLight.setColor(9, 159, 220);
 				gLight.setColor(108, 80, 225);
 				gLight.setBlendMode(SDL_BLENDMODE_ADD);
-				int newWidth = object[i].w*3 + dimSize;
-				int newHeight = object[i].h*3 + dimSize;
-				gLight.render( gRenderer, object[i].x2-newWidth/2-camx,
-										  object[i].y2-newHeight/2-camy,
+				int newWidth = item[i].w*3 + dimSize;
+				int newHeight = item[i].h*3 + dimSize;
+				gLight.render( gRenderer, item[i].x2-newWidth/2-camx,
+										  item[i].y2-newHeight/2-camy,
 										  newWidth, newHeight);
 
 			}
@@ -944,7 +937,7 @@ void PlayGame::RenderDebug(SDL_Renderer *gRenderer)
 		// Render circle
 		gCircle.setColor(255,255,255);
 		gCircle.setAlpha(180);
-		gCircle.render(gRenderer, player.x-camx,player.y-camy, player.radius*2, player.radius*2);
+		gCircle.render(gRenderer, player.x-camx,player.y-camy, player.w, player.h);
 
 		// Original box, untouched
 		SDL_Rect tempRect = {player.x-camx, player.y-camy, player.w, player.h};
@@ -1155,15 +1148,15 @@ void PlayGame::RenderText(SDL_Renderer *gRenderer, LWindow &gWindow) {
 					}
 				}
 			}else if (place_type == 2) {
-				// Render Object in Hand
+				// Render Item in Hand
 				// Render mouse coordinates snapped to grid
-				obj.gObject.setAlpha(110);
-				obj.gObject.render(gRenderer, mouseX, mouseY, 16, 16, &obj.rClips[obj.id]);
+				obj.gItem.setAlpha(110);
+				obj.gItem.render(gRenderer, mouseX, mouseY, 16, 16, &obj.rClips[obj.id]);
 				SDL_Rect tempRect = {mouseX, mouseY, 16, 16};
 				SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
 				SDL_RenderDrawRect(gRenderer, &tempRect);
 			}else if (place_type == 3) {
-				// Render Object in Hand
+				// Render Item in Hand
 				// Render mouse coordinates snapped to grid
 				mon.gMonster.setAlpha(110);
 				mon.gMonster.render(gRenderer, mouseX, mouseY, 16, 16, &mon.clip[0]);
@@ -1174,7 +1167,7 @@ void PlayGame::RenderText(SDL_Renderer *gRenderer, LWindow &gWindow) {
 		}
 
 		// Render Tile Bar
-		tb.render(gRenderer, tilebar, tl.id);
+		tb.Render(gRenderer, tilebar, tl.id);
 	}
 }
 
@@ -1234,7 +1227,7 @@ void PlayGame::RenderUI(SDL_Renderer *gRenderer) {
 
 	// Render Player amount of Keys
 	tempRect = {0,0,16,16};
-	obj.gObject.render(gRenderer, 5, 18, 8, 8, &tempRect);
+	obj.gItem.render(gRenderer, 5, 18, 8, 8, &tempRect);
 	std::stringstream tempss;
 	tempss <<  "x " << player.keys;
 	tempss << " (" << player.collectedKeys;
@@ -1248,7 +1241,7 @@ void PlayGame::RenderUI(SDL_Renderer *gRenderer) {
 
 	// Render Player amount of Coins
 	tempRect = {0,16,16,16};
-	obj.gObject.render(gRenderer, 5, 26, 8, 8, &tempRect);
+	obj.gItem.render(gRenderer, 5, 26, 8, 8, &tempRect);
 	tempss.str(std::string());
 	tempss <<  "x " << player.coins;
 	gText.setAlpha(255);
@@ -1652,72 +1645,72 @@ void PlayGame::checkCollisionGrenadePlayer() {
 		}
 }
 
-void PlayGame::checkCollisionObjectPlayer() {
+void PlayGame::checkCollisionItemPlayer() {
 	int playerX = player.x - 3;
 	int playerY = player.y - 9;
 	int playerW = 16;
 	int playerH = 16;
 	for (int i = 0; i < obj.max; i++) {
-		if (object[i].alive) {
+		if (item[i].alive) {
 			// Collision with Keys
-			if (object[i].id == 0) {
-				if (checkCollision(playerX, playerY, playerW, playerH, object[i].x, object[i].y, object[i].w, object[i].h-8) ) {
+			if (item[i].id == 0) {
+				if (checkCollision(playerX, playerY, playerW, playerH, item[i].x, item[i].y, item[i].w, item[i].h-8) ) {
 					// increase player keys
 					player.keys++;
 					// also keep track of how many keys we have picked up iin this Stage Level
 					player.collectedKeys++;
 					// ply sound effect
 					Mix_PlayChannel(-1, sKeyPickup, 0);
-					// remove object
-					object[i].alive = false;
+					// remove item
+					item[i].alive = false;
 					obj.count--;
 				}
 			}
 			// Collision with Small Yellow coin
-			if (object[i].id == 7) {
-				if (checkCollision(playerX, playerY, playerW, playerH, object[i].x, object[i].y, object[i].w, object[i].h-8) ) {
+			if (item[i].id == 7) {
+				if (checkCollision(playerX, playerY, playerW, playerH, item[i].x, item[i].y, item[i].w, item[i].h-8) ) {
 					// increase player coins
 					player.coins++;
 					// ply sound effect
 					Mix_PlayChannel(-1, sKeyPickup, 0);
-					// remove object
-					object[i].alive = false;
+					// remove item
+					item[i].alive = false;
 					obj.count--;
 				}
 			}
 			// Collision with Large Yellow coin
-			if (object[i].id == 8) {
-				if (checkCollision(playerX, playerY, playerW, playerH, object[i].x, object[i].y, object[i].w, object[i].h-8) ) {
+			if (item[i].id == 8) {
+				if (checkCollision(playerX, playerY, playerW, playerH, item[i].x, item[i].y, item[i].w, item[i].h-8) ) {
 					// increase player coins
 					player.coins += 10;
 					// ply sound effect
 					Mix_PlayChannel(-1, sKeyPickup, 0);
-					// remove object
-					object[i].alive = false;
+					// remove item
+					item[i].alive = false;
 					obj.count--;
 				}
 			}
 			// Collision with Large Diamond
-			if (object[i].id == 10) {
-				if (checkCollision(playerX, playerY, playerW, playerH, object[i].x, object[i].y, object[i].w, object[i].h-8) ) {
+			if (item[i].id == 10) {
+				if (checkCollision(playerX, playerY, playerW, playerH, item[i].x, item[i].y, item[i].w, item[i].h-8) ) {
 					// increase player coins
 					player.coins += 100;
 					// ply sound effect
 					Mix_PlayChannel(-1, sKeyPickup, 0);
-					// remove object
-					object[i].alive = false;
+					// remove item
+					item[i].alive = false;
 					obj.count--;
 				}
 			}
 			// Collision with Mana Pot
-			if (object[i].id == 25) {
-				if (checkCollision(playerX, playerY, playerW, playerH, object[i].x, object[i].y, object[i].w, object[i].h-8) ) {
+			if (item[i].id == 25) {
+				if (checkCollision(playerX, playerY, playerW, playerH, item[i].x, item[i].y, item[i].w, item[i].h-8) ) {
 					// increase player coins
 					player.mana += 100;
 					// ply sound effect
 					Mix_PlayChannel(-1, sKeyPickup, 0);
-					// remove object
-					object[i].alive = false;
+					// remove item
+					item[i].alive = false;
 					obj.count--;
 				}
 			}
@@ -2012,13 +2005,13 @@ void PlayGame::UpdateLevelSize() {
 ////////////////////////////////////////////// MULTIPLE PURPOSE /////////////////////////////////////////////
 
 void PlayGame::knockbackEffect(float targetX, float targetY, int targetW, int targetH,
-							   float objectX, float objectY, int objectW, int objectH,
-							   float &objectVX,float &objectVY, float force) {
+							   float itemX, float itemY, int itemW, int itemH,
+							   float &itemVX,float &itemVY, float force) {
 	// monster target
 	float bmx2 = targetX+targetW/2;
 	float bmy2 = targetY+targetH/2;
-	float bmx  = objectX+objectW/2;
-	float bmy  = objectY+objectH/2;
+	float bmx  = itemX+itemW/2;
+	float bmy  = itemY+itemH/2;
 
 	// monster distance from target
 	float distance = sqrt( (bmx - bmx2) * (bmx - bmx2)    +   (bmy - bmy2) * (bmy - bmy2) );
@@ -2037,8 +2030,8 @@ void PlayGame::knockbackEffect(float targetX, float targetY, int targetW, int ta
 	}
 
 	// positive means going towards bmx, and bmy
-	objectVX += force * (cos( (3.14159265/180)*(angle) ));
-	objectVY += force * (sin( (3.14159265/180)*(angle) ));
+	itemVX += force * (cos( (3.14159265/180)*(angle) ));
+	itemVY += force * (sin( (3.14159265/180)*(angle) ));
 }
 
 double PlayGame::checkDistance(double x2, double y2, double targetX, double targetY) {
@@ -2094,9 +2087,9 @@ void PlayGame::loadSpawnPoint(int level){
 }
 
 void PlayGame::ClearLevel() {
-	tl.removeAllTiles(tile);
+	tl.RemoveAll(tile);
 	tc.RemoveAll(tilec);
-	obj.RemoveAll(object);
+	obj.RemoveAll(item);
 	part.RemoveAll(particles);
 	mon.RemoveAll(monster);
 }
@@ -2105,8 +2098,9 @@ void PlayGame::LoadLevel(int level) {
 	// Reset Player movements and direction
 	player.facing = 0;
 	player.keys = 0;
-	player.coins = 0;
 	player.collectedKeys = 0;
+	player.mana = player.maxMana;
+	player.health = 225;
 	player.moveLeft = false;
 	player.moveRight = false;
 	player.moveUp = false;
@@ -2114,13 +2108,13 @@ void PlayGame::LoadLevel(int level) {
 	// Remove Particles
 	part.RemoveAll(particles);
 	// Load Tiles
-	tl.loadTiles(tile, level);
+	tl.LoadData(tile, level);
 	// Load Collision Tiles
 	tc.loadTiles(tilec, level);
-	// Load Objects (Items) Tiles
-	obj.loadTiles(object, level);
+	// Load Items (Items) Tiles
+	obj.LoadData(item, level);
 	// Load Monsters
-	mon.loadTiles(monster, level);
+	mon.LoadData(monster, level);
 	// Load level spawn point
 	loadSpawnPoint(level);
 }
@@ -2128,14 +2122,13 @@ void PlayGame::LoadLevel(int level) {
 void PlayGame::ResetLevel() {
 	player.facing = 0;
 	player.keys = 0;
-	player.coins = 0;
 	player.collectedKeys = 0;
+	player.mana = player.maxMana;
+	player.health = 225;
 	player.moveLeft = false;
 	player.moveRight = false;
 	player.moveUp = false;
 	player.moveDown = false;
-	player.mana = player.maxMana;
-	player.health = 225;
 	LoadLevel(playerStateLevel);
 }
 //------------------------------------------------------ Save Functions ------------------------------------------------------//
@@ -2156,10 +2149,10 @@ PlayGame::Result PlayGame::mousePressed(SDL_Event event){
 		if (event.button.button == SDL_BUTTON_RIGHT) {
 			rightClick = true;
 			if (place_type == 3) {
-				mon.spawn(monster, mouseX+camx, mouseY+camy,
+				mon.Spawn(monster, mouseX+camx, mouseY+camy,
 								  16, 16, 16, 16,
 								  0.0, 1.0,
-								  0, 0, 100,
+								  0, tl.layer, 100,
 								  0, 0, 0);
 			}
 		}
@@ -2225,22 +2218,22 @@ void PlayGame::editorOnKeyDown( SDL_Keycode sym )
 		break;
 	case SDLK_w:
 		if (shift) {
-			tb.moveBarSelection(tilebar, "up");
+			tb.Move(tilebar, "up");
 		}
 		break;
 	case SDLK_s:
 		if (shift) {
-			tb.moveBarSelection(tilebar, "down");
+			tb.Move(tilebar, "down");
 		}
 		break;
 	case SDLK_a:
 		if (shift) {
-			tb.moveBarSelection(tilebar, "left");
+			tb.Move(tilebar, "left");
 		}
 		break;
 	case SDLK_d:
 		if (shift) {
-			tb.moveBarSelection(tilebar, "right");
+			tb.Move(tilebar, "right");
 		}
 		break;
 	case SDLK_q:								// Change place type (i.e. Tiles or Collision Tiles)
@@ -2294,14 +2287,14 @@ void PlayGame::editorOnKeyDown( SDL_Keycode sym )
 		break;
 	case SDLK_PERIOD:							// Tile, change Layer
 		if (shift)
-			tl.changeTileLayer(tile, -1);
+			tl.ChangeLayer(tile, -1);
 		else
-			tl.changeTileLayer(tile, 1);
+			tl.ChangeLayer(tile, 1);
 		break;
 	case SDLK_c:								// Tile, copy Tile
 		if (editor) {
 			if (place_type == 0 ) {
-				tl.copyTile(tile);
+				tl.Copy(tile);
 			}else if (place_type == 1) {
 				tc.copy(tilec);
 			}

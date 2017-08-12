@@ -11,11 +11,10 @@
 #include "Helper.h"
 #include "LTexture.h"
 #include "LWindow.h"
-#include "../Players.h"
-
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_ttf.h>
+#include "../Player.h"
 
 class Options {
 public:
@@ -290,9 +289,6 @@ public: // Load Resources
 
 public:	// functions
 
-	// Save configurations
-	void saveCFG();
-
 	// Load video configurations
 	void loadVideoCFG();
 
@@ -308,23 +304,23 @@ public:	// functions
 	void applyMasterAudioCFG();
 
 	// Load Options menu
-	void start(LWindow &gWindow, SDL_Renderer *gRenderer, Players &player);
+	void start(LWindow &gWindow, SDL_Renderer *gRenderer, Player &player);
 
 	// Save a level to a directory
 	void SaveLevel(LWindow &gWindow, SDL_Renderer *gRenderer, bool &mainLoop,
 				   std::string SpawnCoordinatesData,
 				   std::string TileSaveData,
 				   std::string CollisionTileSaveData,
-				   std::string ObjectSaveData,
+				   std::string ItemSaveData,
 				   std::string MonsterSaveData);
 
 	// Return a string the user has entered (hint is used to give the Editor an idea of what to write)
 	std::string GetInput(LWindow &gWindow, SDL_Renderer *gRenderer, bool &mainLoop, std::string hint);
 
 	// User input
-	void OnKeyDown(SDL_Keycode sysm, Players &player);
-	void OnKeyUp(SDL_Keycode sysm, Players &player);
-	void mousePressed(Players &player);
+	void OnKeyDown(SDL_Keycode sysm, Player &player);
+	void OnKeyUp(SDL_Keycode sysm, Player &player);
+	void mousePressed(Player &player);
 	void mouseReleased(LWindow &gWindow);
 
 	// Render
