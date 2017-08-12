@@ -469,8 +469,6 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 			// Render objects
 			Render(gRenderer, gWindow);
 
-			// Render text
-			RenderDebug(gRenderer);
 		//Reset render target
 		SDL_SetRenderTarget( gRenderer, NULL );
 		//------------------------------------ Draw on Scene here ------------------------------------//
