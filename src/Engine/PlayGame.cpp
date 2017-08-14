@@ -42,6 +42,9 @@
 /* Monster.h */
 // TODO [ ] - create a monster class so we can spawn monsters
 
+/* Player.h */
+// TODO [ ] - Create a sort of "Gun Barrel", to cast spells so all we need to do is input the details of the bullet (spell)
+
 void PlayGame::Init() {
 	// Game mode VS Editor mode Variables
     camlock 			= true;
@@ -685,7 +688,7 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 	UpdatePlayer();
 
 	// Handle collision of items and Level Size
-	UpdateLevelSize();
+	ClampObjectsToLevelSize();
 
 	// Damage text: for monster
 	tex.update(text);
@@ -706,36 +709,41 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 
 	// center camera on target
 	if (camlock) {
-		//camx = player.x + player.w / 2 - gWindow.getWidth()/2;
-		//camy = player.y + player.h / 2 - gWindow.getHeight()/2;
-		float bmx, bmy;
-		bmx  = player.x+player.w/2-screenWidth/2;
-		bmy  = player.y+player.h/2-screenHeight/2;
-		float distance = sqrt((bmx - camx) * (bmx - camx)+
-							  (bmy - camy) * (bmy - camy));
+		// If Level is smaller than Render size, center camera on center of Level,
+		// otherwise it follows the Player, and also is bounded on the Level Size
+		if (tl.levelWidth <= 270 || tl.levelHeight <= 152) {
+			camx = 0 + tl.levelWidth / 2 - screenWidth/2;
+			camy = 0 + tl.levelHeight / 2 - screenHeight/2;
+		}else{
+			float bmx, bmy;
+			bmx  = player.x+player.w/2-screenWidth/2;
+			bmy  = player.y+player.h/2-screenHeight/2;
+			float distance = sqrt((bmx - camx) * (bmx - camx)+
+								  (bmy - camy) * (bmy - camy));
 
-		// Camera target
-		float vX, vY;
-		if (distance >= 1){
-			vX 	= 2 * (10*distance/256) * (bmx - camx) / distance;
-			vY 	= 2 * (10*distance/256) * (bmy - camy) / distance;
-			camx += vX;
-			camy += vY;
-		}
+			// Camera target
+			float vX, vY;
+			if (distance >= 1){
+				vX 	= 2 * (10*distance/256) * (bmx - camx) / distance;
+				vY 	= 2 * (10*distance/256) * (bmy - camy) / distance;
+				camx += vX;
+				camy += vY;
+			}
 
-		// Camera bounds
-		/*if( camx < 0 ){
-			camx = 0;
+			// Camera bounds
+			if( camx < 0 ){
+				camx = 0;
+			}
+			if( camy < 0 ){
+				camy = 0;
+			}
+			if( camx+screenWidth > tl.levelWidth ){
+				camx = tl.levelWidth-screenWidth;
+			}
+			if( camy+screenHeight > tl.levelHeight ){
+				camy = tl.levelHeight-screenHeight ;
+			}
 		}
-		if( camy < 0 ){
-			camy = 0;
-		}
-		if( camx+screenWidth > tl.levelWidth ){
-			camx = tl.levelWidth-screenWidth;
-		}
-		if( camy+screenHeight > tl.levelHeight ){
-			camy = tl.levelHeight-screenHeight ;
-		}*/
 	}
 }
 
@@ -774,14 +782,17 @@ void PlayGame::Render(SDL_Renderer *gRenderer, LWindow &gWindow) {
 	// Render Items
 	obj.Render(gRenderer, item, camx, camy);
 
+	// Render monsters
+	mon.RenderBehind(gRenderer, monster, camx, camy, player.y, player.h);
+
 	// Render our player
 	player.Render(mx, my, camx, camy, gWindow,
 				gRenderer,
 				gFont13, gFont26,
 				{255,255,255}, part.count, gText);
 
-	// Render zombies
-	mon.Render(gRenderer, monster, camx, camy);
+	// Render monsters
+	mon.RenderInFront(gRenderer, monster, camx, camy, player.y, player.h);
 
 	// Render particles
 	part.renderBulletParticle(particles, camx, camy, 1, gRenderer);
@@ -943,6 +954,13 @@ void PlayGame::RenderDebug(SDL_Renderer *gRenderer)
 		SDL_Rect tempRect = {player.x-camx, player.y-camy, player.w, player.h};
 		SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
 		SDL_RenderDrawRect(gRenderer, &tempRect);
+		int playerX = player.x - 3;
+		int playerY = player.y - 9;
+		int playerW = 16;
+		int playerH = 16;
+		tempRect = {playerX-camx, playerY-camy, playerW, playerH};
+		SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
+		SDL_RenderDrawRect(gRenderer, &tempRect);
 		// Box, centered
 		/*tempRect = {player.x2-camx, player.y2-camy, player.radius, player.radius};
 		SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 255);
@@ -1102,7 +1120,7 @@ void PlayGame::RenderText(SDL_Renderer *gRenderer, LWindow &gWindow) {
 
 		// Render hand debug info
 		std::stringstream tempss;
-		tempss << "dimSize: "  << dimSize   << ", id: " 		 << tl.id
+		tempss << "place_type: "  << place_type   << ", id: " 		 << tl.id
 				   << ", layer: "     << tl.layer     << ", layerC: " 	 << tc.layer
 				   << ", editor: " 	 << editor
 			   << ", tl.multiW: " << tl.multiW    << ", tl.multiH: " << tl.multiH
@@ -1110,7 +1128,7 @@ void PlayGame::RenderText(SDL_Renderer *gRenderer, LWindow &gWindow) {
 			   << ", tl.tilew: "  << tl.tilew     << ", tl.tileh: "  << tl.tileh
 			   << ", tc.tilew: "  << tc.tilew     << ", tc.tileh: "  << tc.tileh
 			   << ", tl.Count: "  << tl.tileCount << ", tc.count: "  << tc.count
-			   << ", obj.count: " << obj.count << ", clampSize: " << clampSize;
+			   << ", obj.count: " << obj.count << ", part.count: " << part.count;
 		gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont, 200);
 		gText.setAlpha(255);
 		gText.render(gRenderer, 0+screenWidth-gText.getWidth()/4, 0, gText.getWidth()/4, gText.getHeight()/4);
@@ -1200,6 +1218,28 @@ void PlayGame::RenderUI(SDL_Renderer *gRenderer) {
 	tempRect = {5, 5, (40*player.healthDecay)/player.maxHealth, 4};
 	SDL_SetRenderDrawColor(gRenderer, 80, 5, 5, 255);
 	SDL_RenderFillRect(gRenderer, &tempRect);*/
+
+	for (unsigned int i=0; i<player.spell.size(); i++) {
+		// Render Mana background
+		SDL_Rect  tempRect = {75, 12 + i * 6, (40*player.spell[i].baseCooldown)/player.spell[i].baseCooldown, 4};
+		SDL_SetRenderDrawColor(gRenderer, 35, 35, 35, 255);
+		SDL_RenderFillRect(gRenderer, &tempRect);
+
+		// Render Spell Name
+		std::stringstream tempss;
+		tempss << player.spell[i].displayName;
+		gText.setAlpha(255);
+		gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), player.spell[i].color, gFont);
+		int newWidth = gText.getWidth()/4;
+		int newHeight = gText.getHeight()/4;
+		gText.render(gRenderer, tempRect.x + tempRect.w + 4, tempRect.y, newWidth, newHeight);
+
+		tempRect = {75, 12 + i * 6, (40*player.spell[i].cooldownTimer)/player.spell[i].baseCooldown, 4};
+		SDL_SetRenderDrawColor(gRenderer, player.spell[i].color.r, player.spell[i].color.g, player.spell[i].color.b, 255);
+		SDL_RenderFillRect(gRenderer, &tempRect);
+
+	}
+
 	if (player.healthDecay > player.health)
 			player.healthDecay -= 0.5;
 	// Render Mana background
@@ -1253,12 +1293,22 @@ void PlayGame::RenderUI(SDL_Renderer *gRenderer) {
 
 
 	tempss.str(std::string());
-	tempss <<  "Level: " << playerStateLevel;
+	tempss <<  "Level: " << player.spell[0].cooldownTimer;
 	gText.setAlpha(255);
 	gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont);
 	newWidth = gText.getWidth()/4;
 	newHeight = gText.getHeight()/4;
 	gText.render(gRenderer, screenWidth - newWidth - 2, 2, newWidth, newHeight);
+
+
+	// Render Player Spell cooldowns
+	/*tempss.str(std::string());
+	tempss <<  "Fireball: " << floor(player.spell[0].cooldownTimer / 60) << "s";
+	gText.setAlpha(255);
+	gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont);
+	newWidth = gText.getWidth()/4;
+	newHeight = gText.getHeight()/4;
+	gText.render(gRenderer, 5, screenHeight - newHeight - 8, newWidth, newHeight);*/
 
 
 
@@ -1384,19 +1434,6 @@ void PlayGame::checkCollisionParticleMonster() {
 					}
 				}
 			}
-			// Camera level bounds
-			if( monster[i].x < 0 ){
-				monster[i].x = 0;
-			}
-			if( monster[i].y < 0 ){
-				monster[i].y = 0;
-			}
-			if( monster[i].x+monster[i].w > tl.levelWidth ){
-				monster[i].x = tl.levelWidth-monster[i].w;
-			}
-			if( monster[i].y+monster[i].h > tl.levelHeight ){
-				monster[i].y = tl.levelHeight-monster[i].h ;
-			}
 		}
 	}
 }
@@ -1430,19 +1467,6 @@ void PlayGame::checkCollisionTileZombie() {
 						monster[i].y -= 1 * Sin;
 					}
 				}
-			}
-			// Camera level bounds
-			if( monster[i].x < 0 ){
-				monster[i].x = 0;
-			}
-			if( monster[i].y < 0 ){
-				monster[i].y = 0;
-			}
-			if( monster[i].x+monster[i].w > tl.levelWidth ){
-				monster[i].x = tl.levelWidth-monster[i].w;
-			}
-			if( monster[i].y+monster[i].h > tl.levelHeight ){
-				monster[i].y = tl.levelHeight-monster[i].h ;
 			}
 		}
 	}
@@ -1496,7 +1520,7 @@ void PlayGame::checkCollisionParticlePlayer() {
 												   true, 0.11);
 							}
 							// reduce player health
-							player.health -= particles[i].damage;
+							//player.health -= particles[i].damage;
 							// remove particle
 							particles[i].alive = false;
 							part.count--;
@@ -1725,42 +1749,87 @@ void PlayGame::checkCollisionTilePlayer() {
 	int playerH = 16;
 	// Move Player
 	if (!player.moveDelay) {
+		// Y axis
 		if (player.moveUp) {
-			player.vY = -1;
-			player.moving = true;
-			if (!shift) {
-				player.facing = 1;
-				player.angle = 270.0;
+			// If Player holds control, they will not move
+			if (!player.ctrl) {
+				player.vY = -1;
+				player.moving = true;
+			}
+			// If player holds shift, they will stay in current direction
+			if (!player.shift) {
+
 			}
 		}
 		else if (player.moveDown) {
-			player.vY = 1;
-			player.moving = true;
-			if (!shift) {
-				player.facing = 0;
-				player.angle = 90.0;
+			if (!player.ctrl) {
+				player.vY = 1;
+				player.moving = true;
 			}
 		}else {
 			player.vY = 0;
 		}
+		// X axis
 		if (player.moveLeft) {
-			player.vX = -1;
-			player.moving = true;
-			if (!shift) {
-				player.facing = 3;
-				player.angle = 180.0;
+			if (!player.ctrl) {
+				player.vX = -1;
+				player.moving = true;
 			}
 		}
 		else if (player.moveRight) {
-			player.vX = 1;
-			player.moving = true;
-			if (!shift) {
-				player.facing = 2;
-				player.angle = 0.0;
+			if (!player.ctrl) {
+				player.vX = 1;
+				player.moving = true;
 			}
 		}else{
 			player.vX = 0;
 		}
+
+		if (player.moveUp) {
+			if (!player.shift) {
+				player.angle = 270.0;
+				player.facing = 1;
+			}
+		}
+		if (player.moveDown) {
+			if (!player.shift) {
+				player.angle = 90.0;
+				player.facing = 0;
+			}
+		}
+		if (player.moveLeft) {
+			if (!player.shift) {
+				player.angle = 180.0;
+				player.facing = 3;
+			}
+		}
+		if (player.moveRight) {
+			if (!player.shift) {
+				player.angle = 0.0;
+				player.facing = 2;
+			}
+		}
+		if (player.moveUp && player.moveLeft) {
+			if (!player.shift) {
+				player.angle = 225.0;
+			}
+		}
+		if (player.moveUp && player.moveRight) {
+			if (!player.shift) {
+				player.angle = 315.0;
+			}
+		}
+		if (player.moveDown && player.moveLeft) {
+			if (!player.shift) {
+				player.angle = 135.0;
+			}
+		}
+		if (player.moveDown && player.moveRight) {
+			if (!player.shift) {
+				player.angle = 45.0;
+			}
+		}
+
 
 		// Update collision with Tiles
 		//tl.checkCollision(tile, x, y, w, h, y, vY);
@@ -1973,7 +2042,7 @@ void PlayGame::UpdatePlayer() {
 		ResetLevel();
 	}
 }
-void PlayGame::UpdateLevelSize() {
+void PlayGame::ClampObjectsToLevelSize() {
 
 	// Collision with door
 	if (player.collectedKeys == tl.requiredKeys) {
@@ -1984,7 +2053,7 @@ void PlayGame::UpdateLevelSize() {
 			LoadLevel(playerStateLevel);
 		}
 	}
-	// Player boundaries
+	// Player
 	if (player.x+player.w < 0) {
 		player.x = 0;
 	}
@@ -1996,6 +2065,23 @@ void PlayGame::UpdateLevelSize() {
 	}
 	if (player.y > 0+tl.levelHeight) {
 		player.y = 0+tl.levelHeight-player.h;
+	}
+	// Monster
+	for (int i = 0; i < mon.max; i++) {
+		if (monster[i].alive) {
+			if( monster[i].x < 0 ){
+				monster[i].x = 0;
+			}
+			if( monster[i].y < 0 ){
+				monster[i].y = 0;
+			}
+			if( monster[i].x+monster[i].w > tl.levelWidth ){
+				monster[i].x = tl.levelWidth-monster[i].w;
+			}
+			if( monster[i].y+monster[i].h > tl.levelHeight ){
+				monster[i].y = tl.levelHeight-monster[i].h ;
+			}
+		}
 	}
 }
 

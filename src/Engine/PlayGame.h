@@ -140,7 +140,7 @@ public:
     int camy;
     bool camlock;
 
-public:	// Variables
+public:	// Core functions
 
 	// Initialize
 	void Init();
@@ -169,8 +169,11 @@ public:	// Variables
 	// Render text
 	void RenderText(SDL_Renderer *gRenderer, LWindow &gWindow);
 
-	// Render Player UI
+	// Render Editor UI
 	void RenderUI(SDL_Renderer *gRenderer);
+
+	// Render Player GUI
+	void RenderGUI(SDL_Renderer *gRenderer);
 
 public:	// Functions mixed with other classes
 
@@ -204,7 +207,7 @@ public:	// Functions mixed with other classes
 public:	// Manual Updates
 
 	// Handle collision of objects and Level Size
-	void UpdateLevelSize();
+	void ClampObjectsToLevelSize();
 
 	void UpdatePlayer();
 

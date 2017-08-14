@@ -19,6 +19,7 @@ class Particle: public Helper {
 public:	// other variables
 	int ptimer = 0;
 	int count;
+	//const int max = 1024;
 	const int max = 1024;
 	LTexture gParticles;					// Particle Textures
 	SDL_Rect cParticles[ 2 ];				// [0: Blue], [1: Green], [2: Orange], [3: Red], [4: White], [5: Yellow] Particle
@@ -99,7 +100,7 @@ public:	// functions
 			int angleSpe, int angleDir,
 			double alpha, double alphaspeed,
 			double deathTimer, double deathTimerSpeed,
-			bool sizeDeath, float deathSpe,
+			bool sizeDeath = false, float deathSpe = 0.0,
 			bool decay = false, float decaySpeed = 0.0,
 			bool trail = false, float trailRate = 0.0, SDL_Color trailColor = {0, 255, 0},
 			float trailMinSize = 0.0, float trailMaxSize = 0.0);

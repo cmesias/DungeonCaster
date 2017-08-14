@@ -13,11 +13,9 @@
 #include <stdlib.h>
 #include <string>
 #include <sstream>
-#include <vector>
 #include <fstream>
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_net.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_mouse.h>
@@ -31,7 +29,7 @@ void Player::SetPosition(int newX, int newY) {
 }
 
 void Player::SetName(std::string newName) {
-	name = newName;
+	tag = newName;
 }
 
 void Player::Load(SDL_Renderer* gRenderer){
@@ -92,15 +90,13 @@ void Player::Init() {
 	zAxisRight = 0.0;
 	leftclick = false;
 	rightclick = false;
+	shift = false;
+	ctrl = false;
+
 	test = false;
 	trigger = false;
 	renderFlash = false;
 	tag = "player";
-
-	/* Health */
-	health = 225;
-	maxHealth = 225;
-	healthDecay = 225;
 
 	/* Ship */
 	angle = 0.0;
@@ -127,26 +123,47 @@ void Player::Init() {
 	frame = 0;
 	moving = false;
 
-	// Attacks
-	spell = 0;
-	casting = false;
-	shootAttack = false;
-	delay = false;
-	moveDelay = false;
-	attackTimer = 0.0;
-	attackSpeed = 4.5;
-	delayT = 0;
-	moveDelayTimer = 0;
-
-	// keys
+	// Used in-game
 	keys = 0;
 	coins = 0;
-
-	// Mana
+	health = 225;
+	maxHealth = 225;
+	healthDecay = 225;
 	maxMana = 300;
 	mana = maxMana;
 	manaRegenRate = 3.3;
 	manaTick = 0.0;
+
+	// Create Spells
+	// Fireball Spell
+	spell.push_back( Spell("Fireball",
+							2, 3, 1.2,
+						    25, {255,144,25},
+						    0, 0,
+						    0, 0,
+						    60, 0.68,
+						    false, 0.0,
+						    false, 0.0,
+						    true, 25, {244,144,25},
+						    4, 4,
+						    20, 60*3) );
+
+	spell.push_back( Spell("Lightning",
+							2, 2, 2.9,
+						    5, {255,144,244},
+						    0, 0,
+						    0, 0,
+						    60, 0.68,
+						    false, 0.0,
+						    false, 0.0,
+						    true, 25, {244,144,244},
+						    1, 3,
+						    10, 5) );
+
+	// Attacks
+	spellIndex = 0;
+	moveDelay = false;
+	moveDelayTimer = 0;
 }
 
 void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
@@ -232,18 +249,6 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 		newAngle = 360 - (-newAngle);
 	}*/
 
-	// Replenish mana
-	if (mana < maxMana) {
-		manaTick += manaRegenRate;
-		if (manaTick > 60) {
-			manaTick = 0;
-			mana += manaRegenRate;
-		}
-	}
-	if (mana > maxMana) {
-		mana = maxMana;
-	}
-
 	///////////////////////////////////////////////////////////////////////
 	//-------------------------------------------------------------------//
 	//---------------------- Handle Basic Shooting ----------------------//
@@ -273,15 +278,85 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 	//barrelY = turret1y + turret1h/2 - particleH/2 + barrelH;
 	/***** Get turrets nose angle *****/
 
-	// Do a spell cast
-	if (casting) {
+	// Handle casting Spells
+	for (unsigned int i = 0; i < spell.size(); i++) {
+		if (spell[i].activate) {
+			// If Player has enough mana, cast spell, otherwise stop spell casting
+			if (mana > spell[i].manaCost) {
+				// If spell not on cooldown, cast spell
+				if (!spell[i].cooldown) {
+					// Start cooldown
+					spell[i].cooldown = true;
+					// Reset cooldown timer
+					spell[i].cooldownTimer = 0;
+					// Spawn Spell as a particle
+					p_dummy.spawnParticleAngle(particle, tag, spell[i].type,
+							x2 - spell[i].size/2,
+							y2 - spell[i].size/2,
+							spell[i].size, spell[i].size,
+							angle, spell[i].speed,
+							spell[i].damage,
+							spell[i].color, 1,
+							spell[i].dir, spell[i].dirSpe,
+							spell[i].alpha, spell[i].alphaSpe,
+							spell[i].deathTimer, spell[i].deathTimerSpe,
+							spell[i].sizeDeath, spell[i].sizeDeathSpe,
+							spell[i].decay, spell[i].decaySpe,
+							spell[i].trail, spell[i].trailRate, spell[i].trailColor,
+							spell[i].trailMinSize, spell[i].trailMaxSize);
+					// Subtract mana from Player
+					mana -= spell[i].manaCost;
+					// play audio
+					Mix_PlayChannel(-1, sLazer, 0);
+				}
+				// Spell is on cooldown, handle timer
+				else if (spell[i].cooldown) {
+					if (spell[i].cooldownTimer < spell[i].baseCooldown) {
+						// Begin cooldown count down
+						spell[i].cooldownTimer += 1.0;
+					}
+					// If cool down is equal to baseCooldown0, the Player may activate again
+					else{
+						// Set Spell to no longer be on cooldown
+						spell[i].cooldown = false;
+						// Stop casting certain spell
+						spell[i].activate = false;
+					}
+				}
+			// Not enough mana to cast spell, stop activation
+			} else {
+				// Stop spell actication
+				spell[i].activate = false;
+				// Reset cooldown timer
+				spell[i].cooldownTimer = spell[i].baseCooldown;
+			}
+		}
+	}
+
+	// Replenish mana
+	if (mana < maxMana) {
+		manaTick += manaRegenRate;
+		if (manaTick > 60) {
+			manaTick = 0;
+			mana += manaRegenRate;
+		}
+	}
+	if (mana > maxMana) {
+		mana = maxMana;
+	}
+
+
+
+
+	// Do a spellIndex cast
+	/*if (casting) {
 		if (!shootAttack) {
 			shootAttack = true;
 			// play audio
 			Mix_PlayChannel(-1, sLazer, 0);
 			// spawn particle
-			// Determine spell
-			if (spell == 0 && mana > 20) {
+			// Determine spellIndex
+			if (spellIndex == 0 && mana > 20) {
 				p_dummy.spawnParticleAngle(particle, tag, 2,
 						x2 - particleW/2,
 						y2 - particleH/2,
@@ -299,7 +374,7 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 				// Reduce mana amount
 				mana -= 20;
 			}
-			else if (spell == 1 && mana > 50) {
+			else if (spellIndex == 1 && mana > 50) {
 				p_dummy.spawnParticleAngle(particle, tag, 2,
 						x2 - particleW/2,
 						y2 - particleH/2,
@@ -317,7 +392,7 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 				// Reduce mana amount
 				mana -= 50;
 			}
-			else if (spell == 2 && mana > 100) {
+			else if (spellIndex == 2 && mana > 100) {
 				p_dummy.spawnParticleAngle(particle, tag, 2,
 						x2 - particleW/2,
 						y2 - particleH/2,
@@ -342,31 +417,7 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 			casting = false;
 			shootAttack = false;
 		}
-
-		/*if (attack) {
-			casting = true;
-			attack = false;
-			// Fireball
-			if (spell == 0) {
-				// play audio
-				Mix_PlayChannel(-1, sLazer, 0);
-				// spawn particle
-				p_dummy.spawnParticleAngle(particle, tag, 2,
-						barrelX,
-						barrelY-1,
-						particleW, particleH,
-						angle, 1.8,
-					   1,
-					   {255,255,0}, 1,
-					   0, 0,
-					   0, 0,
-					   60, 1,
-					   false, 0.0,
-					   false, 0.0,
-					   true, 15, {244,144,25});
-			}
-		}*/
-	}
+	}*/
 
 	// Player move delay
 	if (moveDelay) {
@@ -376,15 +427,6 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 			moveDelay = false;
 		}
 	}
-
-	// Handle attack delay
-	/*else {
-		delayT += attackSpeed;
-		if (delayT > 60) {
-			delayT = 0;
-			casting = false;
-		}
-	}*/
 
 	//---------------------- Handle Basic Shooting ----------------------//
 	//-------------------------------------------------------------------//
@@ -430,8 +472,6 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 	//-------------------------------------------------------------------//
 	///////////////////////////////////////////////////////////////////////
 
-
-
 	/*bool trigger = false;
 	// Player shoot
 	if (controls==0){
@@ -439,62 +479,6 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 	}else if(controls==1){
 		trigger = A;
 	}*/
-
-	//if (test){
-		//if (!delay) {
-			//if (A) {
-				//A = false;
-				//trigger = false;
-				//delay = true;
-
-				// Remove shield
-				/*if (shield){
-					shield 	= false;
-					shieldT 	= 300;
-				}*/
-
-				// Shoot particle
-				/*if (powerup == "LAZER") {
-					totalShot++;
-					Mix_PlayChannel(-1, sLazer, 0);
-
-					// TODO [ ] - Create power up drops, and health drops
-					// TODO [ ] - Create option for Player to use Game Controller or Keyboard and Mouse
-					// TODO [ ] - Create proper title screen with options to setttings etc.
-					p_dummy.spawnParticleAngle(particle,
-							   x+w/2-4/2+(cos(radians)*9)+(sin(radians)*12),
-							   y+h/2-4/2+(sin(radians)*9)-(cos(radians)*12),
-							   4, 4,
-							   angle, 21,
-							   255, 0,
-							   100, 2,
-							   100, "LAZER",
-							   {255, 255,0}, 1,
-							   1, 1,
-							   false, 0);
-					p_dummy.spawnParticleAngle(particle,
-							   x+w/2-4/2+(cos(radians)*9)-(sin(radians)*12),
-							   y+h/2-4/2+(sin(radians)*9)+(cos(radians)*12),
-							   4, 4,
-							   angle, 21,
-							   255, 0,
-							   100, 2,
-							   100, "LAZER",
-							   {255, 255,0}, 1,
-							   1, 1,
-							   false, 0);
-				}*/
-			//}
-		/*}
-		//Start delay timer after our first shot!
-		if (delay) {
-			delayT += AttackSpeed;
-			if (delayT > 60) {
-				delay = false;
-				delayT = 0;
-			}
-		}*/
-	//}
 }
 
 void Player::move(Particle particle[], Particle &p_dummy,
@@ -502,70 +486,16 @@ void Player::move(Particle particle[], Particle &p_dummy,
 				   Tile &tl, Tile tile[],
 				   int mx, int my){
 
-	bool trigger = false;
-
+	/*bool trigger = false;
 	// Get Angle
 	if (controls==0){
-	//	trigger = thrust;
+		trigger = thrust;
 	}else if(controls==1){
-	//	angle = LAngle;
-	//	trigger = RB;
+		angle = LAngle;
+		trigger = RB;
 	}else if(controls==2){
-	//	trigger = thrust;
-	}
-
-	//Accelerate Player
-	/*if (trigger){
-		vX += cos(radians) * 0.05;
-		vY += sin(radians) * 0.05;
-
-		// Thrust effect
-		thrustT += 1;
-		if (thrustT > 2){
-			thrustT = 0;
-			float x1, x2, y1, y2, anglet;
-			int rands, randd, randdd;
-			//SDL_Color tempColor = { rand() % 255 + 1, rand() % 255 + 1, rand() % 255 + 1};
-			SDL_Color tempColor = { 255, 255, 255 };
-			x1 				= x+w/2,
-			y1 				= y+h/2;
-			x2 				= x+w/2 + cos(radians),
-			y2 				= y+h/2 + sin(radians);
-			anglet 			= atan2(y1 - y2, x1 - x2);
-			anglet 			= anglet * (180 / 3.1416);
-			rands 			= rand() % 3 + 6;
-			randd			= rand() % 2 + 1;
-			if (randd==1) {randdd = 1;} else {randdd = -1;}
-			p_dummy.spawnParticleAngle(particle, 2,
-							   x+w/2-rands/2, y+h/2-rands/2,
-							   rands, rands,
-							   anglet, rand() % 2 + 2,
-							   0.0,
-							   tempColor, 1,
-							   rand() % 4 + 5, randdd,
-							   rand() % 150 + 50, 4,
-							   100, 0,
-							   false, 0);
-		}
-	}else{
-	    // Use Stokes' law to apply drag to the ship
-		vX = vX - vX * 0.001;
-		vY = vY - vY * 0.001;
+		trigger = thrust;
 	}*/
-
-	/*zombie[i].angle = atan2(bmy - bmy2,bmx - bmx2);
-	zombie[i].angle = zombie[i].angle * (180 / 3.1416);
-	if (zombie[i].angle < 0) {
-		zombie[i].angle = 360 - (-zombie[i].angle);
-	}
-	*/
-
-	// Player movement (moved to PlayGame.h)
-
-
-
-
-
 
 
 	// Is Player moving?
@@ -632,7 +562,7 @@ void Player::Update(Particle particle[], Particle &p_dummy,
 		}
 	}
 
-	// Player is currently dead
+	// if Player is dead
 	else{
 
 	}
@@ -646,7 +576,20 @@ void Player::applyShield(){
 }
 
 void Player::CastSpell() {
-
+	/*p_dummy.spawnParticleAngle(particle, tag, 2,
+			x2 - particleW/2,
+			y2 - particleH/2,
+			particleW, particleH,
+			angle, 1.2,
+		   25,
+		   {244,144,25}, 1,
+		   0, 0,
+		   0, 0,
+		   60, 0.68,
+		   false, 0.0,
+		   false, 0.0,
+		   true, 25, {244,144,25},
+		   4, 4);*/
 }
 
 void Player::Render(int mx, int my, int camx, int camy, LWindow gWindow, SDL_Renderer* gRenderer,
@@ -836,51 +779,37 @@ void Player::Render(int mx, int my, int camx, int camy, LWindow gWindow, SDL_Ren
 void Player::OnKeyDown( Player &player, SDL_Keycode sym )
 {
 	switch (sym){
+	player.controls = 0;
 	case SDLK_w:					// Thrust space ship
-		player.controls = 0;
-		if (!player.casting) {
-		}
 		player.moveUp = true;
 		break;
 	case SDLK_s:					// Thrust space ship
-		player.controls = 0;
-		if (!player.casting) {
-		}
 		player.moveDown = true;
 		break;
 	case SDLK_a:					// turn left
-		player.controls = 0;
-		if (!player.casting) {
-		}
 		player.moveLeft = true;
 		break;
 	case SDLK_d:					// turn right
-		player.controls = 0;
-		if (!player.casting) {
-		}
 		player.moveRight = true;
 		break;
 	case SDLK_1:					// Fireball Spell
-		player.controls = 0;
 		//if (!player.casting && player.mana > 20) {
 		//	player.casting = true;
-			player.spell = 0;
+			player.spellIndex = 0;
 		//	player.moveDelay = true;
 		//}
 		break;
 	case SDLK_2:					// Fireball Spell
-		player.controls = 0;
 		//if (!player.casting && player.mana > 50) {
 		//	player.casting = true;
-			player.spell = 1;
+			player.spellIndex = 1;
 		//	player.moveDelay = true;
 		//}
 		break;
 	case SDLK_3:					// Fireball Spell
-		player.controls = 0;
 		//if (!player.casting && player.mana > 100) {
 	//		player.casting = true;
-			player.spell = 2;
+			player.spellIndex = 2;
 		//	player.moveDelay = true;
 		//}
 		break;
@@ -901,15 +830,23 @@ void Player::OnKeyDown( Player &player, SDL_Keycode sym )
 		player.camlocked = ( !player.camlocked );
 		break;
 	case SDLK_SPACE:
-		//player.initialshot = true;
 		player.controls = 0;
-		if (!player.casting) {
+		if (!player.spell[player.spellIndex].activate) {
+			player.spell[player.spellIndex].activate = true;
+		}
+		/*if (!player.casting) {
 			player.casting = true;
 		//	player.moveDelay = true;
-		}
+		}*/
 		break;
 	case SDLK_LSHIFT:
 		player.shift = true;
+		break;
+	case SDLK_LCTRL:
+		player.ctrl = true;
+		player.moving = false;
+		player.vX = 0;
+		player.vY = 0;
 		break;
 	}
 }
@@ -930,10 +867,13 @@ void Player::OnKeyUp( Player &player, SDL_Keycode sym )
 		player.moveRight = false;
 		break;
 	case SDLK_SPACE:
-		//player.initialshot 	= false;
+		//
 		break;
 	case SDLK_LSHIFT:
 		player.shift 		= false;
+		break;
+	case SDLK_LCTRL:
+		player.ctrl = false;
 		break;
 	}
 }
@@ -1180,7 +1120,7 @@ void Player::saveHighScore() {
 			{
 				replace = false;
 				// Insert data at current index
-				t_name.insert(t_name.begin()+i, name);
+				t_name.insert(t_name.begin()+i, tag);
 				t_score.insert(t_score.begin()+i, score);
 				indexSaved = i;
 

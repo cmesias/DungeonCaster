@@ -109,7 +109,12 @@ public:	// Core functions
 	void Update(Monster monster[], Particle particle[], Particle &p_dummy,
 				Player &player, Mix_Chunk* sLazer,
 				int camx, int camy);
-	void Render(SDL_Renderer* gRenderer, Monster monster[], int camx, int camy);
+
+	// Render Monster before rendering Target
+	void RenderBehind(SDL_Renderer* gRenderer, Monster monster[], int camx, int camy, float targetY, float targetH);
+
+	// Render Monster after rendering Target
+	void RenderInFront(SDL_Renderer* gRenderer, Monster monster[], int camx, int camy, float targetY, float targetH);
 
 public: // Save functions
 

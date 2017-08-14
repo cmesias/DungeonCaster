@@ -54,8 +54,8 @@ void Monster::Init(Monster monster[]){
 		monster[i].damage 			= 75;
 		//------------------------- Set default of Variables ---------------------//
 		//------------------------------------------------------------------------//
-		monster[i].x 				= 0;
-		monster[i].y 				= 0;
+		monster[i].x 				= -6000;
+		monster[i].y 				= -6000;
 		monster[i].w 				= 0;
 		monster[i].h 				= 0;
 		monster[i].speed 			= 0.0;
@@ -470,22 +470,37 @@ void Monster::Update(Monster monster[], Particle particle[], Particle &p_dummy, 
 	}
 }
 
-void Monster::Render(SDL_Renderer* gRenderer, Monster monster[], int camx, int camy) {
+void Monster::RenderBehind(SDL_Renderer* gRenderer, Monster monster[], int camx, int camy, float targetY, float targetH) {
+	int playerY = targetY - 9;
+	int playerH = 16;
 	for (int i = 0; i < max; i++) {
 		if (monster[i].alive) {
-			// Render all Monsters
-			gMonster.setAlpha(255);
-			// Monster moving, render correct frame
-			if (monster[i].moving) {
-				int incrementToNextRowAmount = 9;
-				int monsterId = (monster[i].frame+2*monster[i].facing) + monster[i].type * incrementToNextRowAmount;
-				gMonster.render(gRenderer, monster[i].x-camx, monster[i].y-camy,
-						monster[i].realw, monster[i].realh,
-						&clip[monsterId]);
+			if (monster[i].y+monster[i].h <= playerY+playerH) {
+				// Render all Monsters
+				gMonster.setAlpha(255);
+				// Monster moving, render correct frame
+				if (monster[i].moving) {
+					int incrementToNextRowAmount = 9;
+					int monsterId = (monster[i].frame+2*monster[i].facing) + monster[i].type * incrementToNextRowAmount;
+					gMonster.render(gRenderer, monster[i].x-camx, monster[i].y-camy,
+							monster[i].realw, monster[i].realh,
+							&clip[monsterId]);
+				}
+				// Monster stopped moving, render still sprite
+				else{
+					int numberOfFramesPerRow = monster[i].id + 2 * monster[i].facing ;
+					int incrementToNextRowAmount = 9;
+					int monsterId = (monster[i].type * incrementToNextRowAmount) + numberOfFramesPerRow;
+					gMonster.render(gRenderer, monster[i].x-camx, monster[i].y-camy,
+							monster[i].realw, monster[i].realh,
+							&clip[monsterId]);
+				}
 			}
-			// Monster stopped moving, render still sprite
-			else{
-				int numberOfFramesPerRow = monster[i].id + 2 * monster[i].facing ;
+		}
+		// Render Monster death sprite
+		else{
+			if (monster[i].y+monster[i].h <= playerY+playerH) {
+				int numberOfFramesPerRow = 8;
 				int incrementToNextRowAmount = 9;
 				int monsterId = (monster[i].type * incrementToNextRowAmount) + numberOfFramesPerRow;
 				gMonster.render(gRenderer, monster[i].x-camx, monster[i].y-camy,
@@ -493,14 +508,46 @@ void Monster::Render(SDL_Renderer* gRenderer, Monster monster[], int camx, int c
 						&clip[monsterId]);
 			}
 		}
+	}
+}
+
+void Monster::RenderInFront(SDL_Renderer* gRenderer, Monster monster[], int camx, int camy, float targetY, float targetH) {
+	int playerY = targetY - 9;
+	int playerH = 16;
+	for (int i = 0; i < max; i++) {
+		if (monster[i].alive) {
+			if (monster[i].y+monster[i].h > playerY+playerH) {
+				// Render all Monsters
+				gMonster.setAlpha(255);
+				// Monster moving, render correct frame
+				if (monster[i].moving) {
+					int incrementToNextRowAmount = 9;
+					int monsterId = (monster[i].frame+2*monster[i].facing) + monster[i].type * incrementToNextRowAmount;
+					gMonster.render(gRenderer, monster[i].x-camx, monster[i].y-camy,
+							monster[i].realw, monster[i].realh,
+							&clip[monsterId]);
+				}
+				// Monster stopped moving, render still sprite
+				else{
+					int numberOfFramesPerRow = monster[i].id + 2 * monster[i].facing ;
+					int incrementToNextRowAmount = 9;
+					int monsterId = (monster[i].type * incrementToNextRowAmount) + numberOfFramesPerRow;
+					gMonster.render(gRenderer, monster[i].x-camx, monster[i].y-camy,
+							monster[i].realw, monster[i].realh,
+							&clip[monsterId]);
+				}
+			}
+		}
 		// Render Monster death sprite
 		else{
-			int numberOfFramesPerRow = 8;
-			int incrementToNextRowAmount = 9;
-			int monsterId = (monster[i].type * incrementToNextRowAmount) + numberOfFramesPerRow;
-			gMonster.render(gRenderer, monster[i].x-camx, monster[i].y-camy,
-					monster[i].realw, monster[i].realh,
-					&clip[monsterId]);
+			if (monster[i].y+monster[i].h > playerY+playerH) {
+				int numberOfFramesPerRow = 8;
+				int incrementToNextRowAmount = 9;
+				int monsterId = (monster[i].type * incrementToNextRowAmount) + numberOfFramesPerRow;
+				gMonster.render(gRenderer, monster[i].x-camx, monster[i].y-camy,
+						monster[i].realw, monster[i].realh,
+						&clip[monsterId]);
+			}
 		}
 	}
 }

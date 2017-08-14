@@ -5,17 +5,19 @@
  *      Author: Carl
  */
 
-#ifndef LOCAL_PLAYERS_H_
-#define LOCAL_PLAYERS_H_
+#ifndef LOCAL_PLAYER_H_
+#define LOCAL_PLAYER_H_
 
 #include "Engine/Helper.h"
 #include "Engine/LTexture.h"
 #include "Engine/LWindow.h"
 #include "Engine/TileC.h"
 #include "Engine/Tiles.h"
+#include "Engine/Particle.h"
 
 #include <SDL2/SDL_ttf.h>
-#include "Engine/Particle.h"
+
+#include <vector>
 
 //Player
 class Player: public Helper {
@@ -33,6 +35,78 @@ public:	// resources
 	 * 4-5: walk right
 	 * 6-7: walk left */
 	SDL_Rect rPlayer[8];
+
+public:	// Spell class
+	class Spell {
+	public:
+		std::string displayName;	// name of spell for GUI
+		int type;
+		float size;
+		float speed;
+		float damage;
+		SDL_Color color;
+		float dir;
+		float dirSpe;
+		float alpha;
+		float alphaSpe;
+		float deathTimer;
+		float deathTimerSpe;
+		bool sizeDeath;
+		float sizeDeathSpe;
+		bool decay;
+		float decaySpe;
+		bool trail;
+		float trailRate;
+		SDL_Color trailColor;
+		float trailMinSize;
+		float trailMaxSize;
+	    enum SpellTarget {casterCenter, mouseCenter, targetCenter};
+	    float manaCost;
+	    float baseCooldown;
+	    float cooldownTimer;
+	    bool activate;
+	    bool cooldown;
+	    Spell(std::string newDisplayName,
+	    		int newType, float newSize, float newSpeed,
+				float newDamage, SDL_Color newColor,
+				float newDir, float newDirSpeed,
+				float newAlpha, float newAlphaSpeed,
+				float newDeathTimer, float newDeathTimerSpeed,
+				bool newSizeDeath, float newSizeDeathSpeed,
+				bool newDecay, float newDecaySpeed,
+				bool newTrail, float newTrailRate, SDL_Color newTrailColor,
+				float newTrailMinSize, float newTrailMaxSize,
+				float newManaCost, float newBaseCooldown) {
+	    	displayName = newDisplayName;
+			type = newType;
+			size = newSize;
+			speed = newSpeed;
+			damage = newDamage;
+			color = newColor;
+			dir = newDir;
+			dirSpe = newDirSpeed;
+			alpha = newAlpha;
+			alphaSpe = newAlphaSpeed;
+			deathTimer = newDeathTimer;
+			deathTimerSpe = newDeathTimerSpeed;
+			sizeDeath = newSizeDeath;
+			sizeDeathSpe = newSizeDeathSpeed;
+			decay = newDecay;
+			decaySpe = newDecaySpeed;
+			trail = newTrail;
+			trailRate = newTrailRate;
+			trailColor = newTrailColor;
+			trailMinSize = newTrailMinSize;
+			trailMaxSize = newTrailMaxSize;
+			manaCost = newManaCost;
+			baseCooldown = newBaseCooldown;
+			cooldownTimer = newBaseCooldown;
+			activate = false;
+			cooldown = false;
+	    }
+	};
+	// Create vector to store Spells
+	std::vector<Spell> spell;
 
 public:	// Animations
 	/*
@@ -53,24 +127,24 @@ public:	// Attacks
 	 * 1: Blue Spell (Lightning?)
 	 * 2: Copper-reddish Spell (Maybe like a big burst?)
 	 */
-	int spell;
-	bool casting;				// If the Player is currently casting a spell
-	bool shootAttack;			// Shoots during casting
-	bool delay;
-	bool moveDelay;				// How long a Player must wait after doing a spell cast
-	double attackTimer;
-	double attackSpeed;
-	double delayT;
+	int spellIndex;
+	bool moveDelay;
 	double moveDelayTimer;
 
 public:	// In-game variables
 	int coins;					// Number of coins the Player has
 	int keys;					// Number of keys in Player inventory
 	int collectedKeys;			// Number of keys accumulated for that Stage Level
+	double health;
+	double maxHealth;
+	double healthDecay;			 // gives the effect of a decaying health bar
+	double mana;				// Current mana
+	double maxMana;				// Max mana capacity
+	double manaRegenRate;		// Mana regeneration rate
+	double manaTick;			// Current tick
 
 public:	// variables
 	std::string tag;
-	std::string name;
 	int timer = 0;
 	int w 		= 10;
 	int h 		= 6;			// render size in pixels
@@ -107,6 +181,7 @@ public: // Variables
 
 
 	bool shift 			= false;
+	bool ctrl 			= false;
 	int timer2 			= 0;
 	double time 		= 0;
 	bool alive			= false;
@@ -133,11 +208,6 @@ public: // Variables
 	bool initialshot 	= false;
 	bool trigger 		= false;
 	bool renderFlash	= false; // shuts off right after 1 frame
-
-	// Lives
-	double health;
-	double maxHealth;
-	double healthDecay;			 // gives the effect of a decaying health bar
 
 	// Shield
 	int shieldFrame;
@@ -174,12 +244,6 @@ public: // Player abilities
 	bool reload = false;		// reload
 	double reloadSpeed = 30.0;	// reload speed
 	double reloadTimer = 0.0;	// reload timer
-
-	// Mana
-	double mana;				// Current mana
-	double maxMana;				// Max mana capacity
-	double manaRegenRate;		// Mana regeneration rate
-	double manaTick;			// Current tick
 
 public:	// controls
 	// Player controls
@@ -256,8 +320,8 @@ public:	// Game-player functions
 	// Applies a shield to Player
 	void applyShield();
 
-	// Do a spell (think of this function as a gun, and the things
-	// you are inputting are the bullets (velocity, size of the bullet)
+	// Cast a spell (think of this function as the structure of a Pistol, and what you
+	// put in as bullets are the Spells info, such as Velocity and Speed (the bullet)
 	void CastSpell();
 
 public:	// Other functions
@@ -285,4 +349,4 @@ public:	// Control functions
 
 };
 
-#endif /* LOCAL_PLAYERS_H_ */
+#endif /* LOCAL_PLAYER_H_ */
