@@ -14,21 +14,30 @@
 class Monster : public Helper {
 public:	// Media
 	LTexture gMonster;
+	LTexture gBlueDragon;
 	/*
 	 * 12 monsters in Total
 	 * 108 clips
 	 * 9 x 12 ( 9 clips going to the right, 12  going down)
 	 */
 	SDL_Rect clip[108];
+
+	/* Dragon clips
+	 * 0-2 facing right neutral
+	 * 3-5 facing right head-bounce
+	 * 6-8 facing right attack
+	 */
+	SDL_Rect dragonClips[9];
 	int count;
 	const int max = 100;
-	bool asteroidsClear;
+	const int maxTypes = 12;	// max number of unique Monsters
+	int multiW = 1;
+	int multiH = 1;
 public:
 	float x2, y2;
 	int radius;
 	float x,y;
 	float w,h;			// Enemy collision size
-	int realw, realh;	// Enemy size in pixels being drawn
 	float angle;
 	float vX,vY;
 	float velX,velY;	// Apply to monster for knockback effect
@@ -47,17 +56,28 @@ public:
 	 * 10: Snake
 	 * 11: Pumpkin Head
 	 *
+	 * 12: Dragon Boss
 	 */
 	int type;
-	int id;				// Monster clip from texture
+	int id;					// Monster clip from texture
 	double health;
+	double healthDecay;
+	double maxHealth;
 	double damage;
 	double timer;			// Used for shooting
 	float distance;
+	float targetDistanceX;
+	float targetDistanceY;
 	std::string tag;
 	bool alive;
 	bool collision;
 	bool onScreen;
+	bool mouse;				// mouse is on top of Monster
+	bool mouseBox;			// if tile placement size of on top of monster
+
+public:	// Patrol Variables
+	bool alert;				// Monster is alerted
+	float thinkTimer;
 
 public:	// Walking variables
 	/*
@@ -99,12 +119,18 @@ public:	// Core functions
 	void Free();
 
 	void Spawn(Monster monster[], float x, float y,
-			   float w, float h, int imageW, int imageH,
+			   float w, float h,
 			   float angle, float speed,
 			   double id, double type, double health,
 			   int distanceHeadIsFromCenterOfImage, int bulletW, int bulletH);
 
+	void SpawnMultiple(Monster monster[], int newMx, int newMy, int camx, int camy);
+
+	void Remove(Monster monster[], int click);
+
 	void RemoveAll(Monster monster[]);
+
+	void EditorUpdate(Monster monster[], int newMx, int newMy, int mex, int mey, int camx, int camy);
 
 	void Update(Monster monster[], Particle particle[], Particle &p_dummy,
 				Player &player, Mix_Chunk* sLazer,
@@ -115,6 +141,12 @@ public:	// Core functions
 
 	// Render Monster after rendering Target
 	void RenderInFront(SDL_Renderer* gRenderer, Monster monster[], int camx, int camy, float targetY, float targetH);
+
+	// Render health bars
+	void RenderGUI(SDL_Renderer *gRenderer, Monster monster[], int camx, int camy);
+
+	// Render debug informtation
+	void RenderDebug(SDL_Renderer *gRenderer, Monster monster[], int camx, int camy);
 
 public: // Save functions
 

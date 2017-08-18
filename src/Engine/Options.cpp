@@ -20,7 +20,8 @@
 //			  After coding of Options Menu, the goal is to remove the Pause.cpp class.
 
 void Options::LoadAudioFiles() {
-	sAmbientMusic = Mix_LoadMUS("sounds/ambient_space.mp3");
+	sAmbientMusic = Mix_LoadMUS("sounds/Menu Music.mp3");
+	sStrangeMusic = Mix_LoadMUS("sounds/Strange Dungeon.mp3");
 	sRockBreak = Mix_LoadWAV("sounds/rock_break.wav");
 	sLazer = Mix_LoadWAV("sounds/snd_spell_fire.wav");
 	sAtariBoom = Mix_LoadWAV("sounds/atari_boom.wav");
@@ -29,27 +30,35 @@ void Options::LoadAudioFiles() {
 	sGrenadePickup = Mix_LoadWAV("sounds/snd_grenade_pickup.wav");
 	sPistolReload = Mix_LoadWAV("sounds/snd_reload_pistol.wav");
 	sKeyPickup = Mix_LoadWAV("sounds/snd_key_pickup.wav");
+	sPlayerHurt = Mix_LoadWAV("sounds/snd_player_hurt.wav");
+	sSkeletonHurt = Mix_LoadWAV("sounds/snd_skeleton_hurt.wav");
 }
 
 void Options::FreeAudioFiles() {
 	Mix_FreeChunk(sRockBreak);
 	Mix_FreeChunk(sLazer);
 	Mix_FreeMusic(sAmbientMusic);
+	Mix_FreeMusic(sStrangeMusic);
 	Mix_FreeChunk(sAtariBoom);
 	Mix_FreeChunk(sGrenade);
 	Mix_FreeChunk(sSpellExplode);
 	Mix_FreeChunk(sGrenadePickup);
 	Mix_FreeChunk(sPistolReload);
 	Mix_FreeChunk(sKeyPickup);
+	Mix_FreeChunk(sPlayerHurt);
+	Mix_FreeChunk(sSkeletonHurt);
 	sRockBreak 		= NULL;
 	sAtariBoom 		= NULL;
 	sLazer 			= NULL;
 	sAmbientMusic 	= NULL;
+	sStrangeMusic 	= NULL;
 	sGrenade 		= NULL;
 	sSpellExplode = NULL;
 	sGrenadePickup = NULL;
 	sPistolReload = NULL;
 	sKeyPickup = NULL;
+	sPlayerHurt = NULL;
+	sSkeletonHurt = NULL;
 }
 
 // Load video configurations
@@ -119,13 +128,38 @@ void Options::loadAudioCFG(){
 	fileSettings.close();
 }
 
+void Options::saveVideoCFG(){
+	// open config file
+	std::stringstream tempss;
+	// set default directory
+	tempss << defDir;
+	// set filename
+	tempss << "video.cfg";
+	std::ofstream fileSettings( tempss.str().c_str() );
+	if (fileSettings.is_open()) {
+		fileSettings <<  RESOLUTION << " " << ANTI_ALIAS << " " << VSYNC << " " << FULLSCREEN;
+	}
+	fileSettings.close();
+}
 
-/* Set Video Settings */
+void Options::saveAudioCFG(){
+	// open config file
+	std::stringstream tempss;
+	// set default directory
+	tempss << defDir;
+	// set filename
+	tempss << "audio.cfg";
+	std::ofstream fileSettings( tempss.str().c_str() );
+	if (fileSettings.is_open()) {
+		fileSettings << MASTER_VOL << " " << MUSIC_VOL << " " << SFX_VOL;
+	}
+	fileSettings.close();
+}
+
 void Options::applyVideoCFG(LWindow &gWindow) {
 	gWindow.applySettings(RESOLUTION, ANTI_ALIAS, VSYNC, FULLSCREEN);
 }
 
-/* Set Audio Settings */
 void Options::applyCustomAudioCFG(int MUSIC_VOL, int SFX_VOL) {
 	Mix_VolumeMusic(MUSIC_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sRockBreak, SFX_VOL*(MASTER_VOL*0.01));
@@ -136,6 +170,8 @@ void Options::applyCustomAudioCFG(int MUSIC_VOL, int SFX_VOL) {
 	Mix_VolumeChunk(sGrenadePickup, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sPistolReload, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sKeyPickup, SFX_VOL*(MASTER_VOL*0.01));
+	Mix_VolumeChunk(sPlayerHurt, SFX_VOL*(MASTER_VOL*0.01));
+	Mix_VolumeChunk(sSkeletonHurt, SFX_VOL*(MASTER_VOL*0.01));
 }
 
 void Options::applyOldAudioCFG() {
@@ -147,6 +183,9 @@ void Options::applyOldAudioCFG() {
 	Mix_VolumeChunk(sSpellExplode, SFX_VOL);
 	Mix_VolumeChunk(sGrenadePickup, SFX_VOL);
 	Mix_VolumeChunk(sPistolReload, SFX_VOL);
+	Mix_VolumeChunk(sKeyPickup, SFX_VOL);
+	Mix_VolumeChunk(sPlayerHurt, SFX_VOL);
+	Mix_VolumeChunk(sSkeletonHurt, SFX_VOL);
 }
 
 void Options::applyMasterAudioCFG() {
@@ -159,10 +198,12 @@ void Options::applyMasterAudioCFG() {
 	Mix_VolumeChunk(sGrenadePickup, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sPistolReload, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sKeyPickup, SFX_VOL*(MASTER_VOL*0.01));
+	Mix_VolumeChunk(sPlayerHurt, SFX_VOL*(MASTER_VOL*0.01));
+	Mix_VolumeChunk(sSkeletonHurt, SFX_VOL*(MASTER_VOL*0.01));
 }
 
 //Get's input from user and returns it
-void Options::start(LWindow &gWindow, SDL_Renderer *gRenderer, Player &player)
+void Options::start(LWindow &gWindow, SDL_Renderer *gRenderer)
 {
 	// Create title bar names
 	au.init(bar);
@@ -268,7 +309,7 @@ void Options::start(LWindow &gWindow, SDL_Renderer *gRenderer, Player &player)
 
 			if (e.type == SDL_KEYDOWN && e.key.repeat == 0) {
 				key = 0;
-				OnKeyDown(e.key.keysym.sym, player);
+				OnKeyDown(e.key.keysym.sym);
 			}
 			//If Key Released
 			else if (e.type == SDL_KEYUP && e.key.repeat == 0) {
@@ -280,14 +321,14 @@ void Options::start(LWindow &gWindow, SDL_Renderer *gRenderer, Player &player)
 					//
 					break;
 				}
-				OnKeyUp(e.key.keysym.sym, player);
+				OnKeyUp(e.key.keysym.sym);
 			}
 
 			// Mouse clicked
 			if (e.type==SDL_MOUSEBUTTONDOWN) {
 				if (e.button.button == SDL_BUTTON_LEFT) {
 					leftclick = true;
-					mousePressed(player);
+					mousePressed();
 				}
 			}
 			if (e.type==SDL_MOUSEBUTTONUP) {
@@ -757,7 +798,7 @@ std::string Options::GetInput(LWindow &gWindow, SDL_Renderer *gRenderer, bool &m
 }
 
 // Key Pressed
-void Options::OnKeyDown(SDL_Keycode sym, Player &player) {
+void Options::OnKeyDown(SDL_Keycode sym) {
 	switch (sym) {
 	case SDLK_UP:
 		if (index > 0) {
@@ -778,7 +819,7 @@ void Options::OnKeyDown(SDL_Keycode sym, Player &player) {
 	}
 }
 
-void Options::OnKeyUp(SDL_Keycode sym, Player &player) {
+void Options::OnKeyUp(SDL_Keycode sym) {
 	switch (sym) {
 	case SDLK_RETURN:
 		// PauseMenu
@@ -840,7 +881,11 @@ void Options::OnKeyUp(SDL_Keycode sym, Player &player) {
 }
 
 // Mouse Pressed
-void Options::mousePressed(Player &player) {
+void Options::mousePressed() {
+}
+
+// Update buttons
+void Options::mouseReleased(LWindow &gWindow) {
 	for (int i=0; i<5; i++) {
 		if (helper.checkCollision(mx, my, 1, 1, title[i].x-3, title[i].y-3, title[i].w+3, title[i].h+3)) {
 			// PauseMenu controls
@@ -897,10 +942,6 @@ void Options::mousePressed(Player &player) {
 			}
 		}
 	}
-}
-
-// Update buttons
-void Options::mouseReleased(LWindow &gWindow) {
 
 	/* Mouse on Keep or Revert button */
 	for (int i=0; i<2; i++) {
@@ -970,6 +1011,8 @@ void Options::mouseReleased(LWindow &gWindow) {
 			tempss << MASTER_VOL << " "
 				   << MUSIC_VOL  << " "
 				   << SFX_VOL;
+			// Save Audio Settings
+			saveAudioCFG();
 		}
 
 		// Keep new Video Settings
@@ -984,6 +1027,8 @@ void Options::mouseReleased(LWindow &gWindow) {
 				   << ANTI_ALIAS << " "
 				   << VSYNC 	 << " "
 				   << FULLSCREEN;
+			// Save Video Settings
+			saveVideoCFG();
 		}
 
 		// save .cfg file

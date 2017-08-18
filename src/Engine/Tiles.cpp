@@ -131,6 +131,7 @@ void Tile::ChangeLayer(Tile tile[], int value) {
 		}
 	}
 }
+
 void Tile::Remove(Tile tile[], int click) {
 	for (int i = 0; i < max; i++) {
 		if (tile[i].alive){
@@ -427,6 +428,9 @@ void Tile::Render(SDL_Renderer *gRenderer, Tile tile[], int layer_dummy, int cam
 						gTiles.setAlpha(tile[i].alpha);
 						gTiles.render(gRenderer, tile[i].x - camx, tile[i].y - camy, tile[i].w, tile[i].h, &tile[i].clip);
 					}
+					/*SDL_Rect tempr = {tile[i].x - camx, tile[i].y - camy, tile[i].w, tile[i].h};
+					SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
+					SDL_RenderDrawRect(gRenderer, &tempr);*/
 					//if (player.y+player.h >= tile[i].y+tile[i].h) {
 						//gTiles.setAlpha(tile[i].alpha);
 						//gTiles.render(gRenderer, tile[i].x - camx, tile[i].y - camy, tile[i].w, tile[i].h, &tile[i].clip);

@@ -50,6 +50,9 @@ public:	// instance variables
 	std::string side;	// collision with player
 	bool collide;		// collision with player
 
+public:	// Test variables
+
+	int distanceP;		// Distance from Player
 public:	// Initial
 	void Init(Tile tile[]);
 

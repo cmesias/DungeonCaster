@@ -6,9 +6,9 @@
  */
 
 #include <iostream>
+#include <sstream>
 #include <algorithm>    // std::max
 #include <stdlib.h>
-
 
 #include "Helper.h"
 
@@ -22,6 +22,50 @@ bool Helper::checkCollision(int x, int y, int w, int h, int x2, int y2, int w2, 
 	return collide;
 }
 
+bool Helper::checkCollisionRect( SDL_Rect a, SDL_Rect b )
+{
+    //The sides of the rectangles
+    int leftA,   leftB;
+    int rightA,  rightB;
+    int topA, 	 topB;
+    int bottomA, bottomB;
+
+    //Calculate the sides of rect A
+    leftA 	= a.x;
+    rightA 	= a.x + a.w;
+    topA 	= a.y;
+    bottomA = a.y + a.h;
+
+    //Calculate the sides of rect B
+    leftB 	= b.x;
+    rightB 	= b.x + b.w;
+    topB 	= b.y;
+    bottomB = b.y + b.h;
+
+    //If any of the sides from A are outside of B
+    if( bottomA < topB )
+    {
+        return false;
+    }
+
+    if( topA > bottomB )
+    {
+        return false;
+    }
+
+    if( rightA < leftB )
+    {
+        return false;
+    }
+
+    if( leftA > rightB )
+    {
+        return false;
+    }
+
+    //If none of the sides from A are outside B
+    return true;
+}
 
 // Generate a random double number
 double Helper::randDouble(double fMin, double fMax)
@@ -96,4 +140,82 @@ bool Helper::doIntersect(Point p1, Point q1, Point p2, Point q2)
     if (o4 == 0 && onSegment(p2, q1, q2)) return true;
 
     return false; // Doesn't fall in any of the above cases
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+void Helper::renderDialogText(SDL_Renderer *gRenderer, std::string speakerName,
+					  std::string speakerText,
+					  float x, float y, float w, float h,
+					  SDL_Color speakerNameColor, SDL_Color speakerTextColor,
+					  SDL_Color colorBG, SDL_Color colorBorder,
+					  SDL_Color colorBGSpeaker, SDL_Color colorBorderSpeaker,
+					  TTF_Font *gFontName, TTF_Font *gFontDialog, LTexture &gText){
+
+	SDL_Rect tempr = {x, y, w, h};
+	SDL_SetRenderDrawColor(gRenderer, colorBG.r, colorBG.g, colorBG.b, 255);
+	SDL_RenderFillRect(gRenderer, &tempr);
+	SDL_SetRenderDrawColor(gRenderer, colorBorder.r, colorBorder.g, colorBorder.b, 255);
+	SDL_RenderDrawRect(gRenderer, &tempr);
+
+	std::stringstream tempss;
+		// Speaker Name
+		tempss.str(std::string());
+		tempss << speakerName;
+		gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), speakerNameColor, gFontName);
+
+			//
+			SDL_Rect tempRect = {x, y-gText.getHeight()-10, gText.getWidth()+15, gText.getHeight()+8};
+			SDL_SetRenderDrawColor(gRenderer, colorBGSpeaker.r, colorBGSpeaker.g, colorBGSpeaker.b, 255);
+			SDL_RenderFillRect(gRenderer, &tempRect);
+
+			SDL_SetRenderDrawColor(gRenderer, colorBorderSpeaker.r, colorBorderSpeaker.g, colorBorderSpeaker.b, 255);
+			SDL_RenderDrawRect(gRenderer, &tempRect);
+
+		gText.render(gRenderer, x+5, y-gText.getHeight() - 5, gText.getWidth(), gText.getHeight());
+
+
+		// Speaker Text
+		tempss.str(std::string());
+		tempss << speakerText;
+		gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), speakerTextColor, gFontDialog);
+
+		gText.render(gRenderer, x+10, y+10, gText.getWidth(), gText.getHeight());
+}
+
+void Helper::renderStatusBar(SDL_Renderer *gRenderer, float x, float y, float w, float h,
+		 	 	 	 float yDistanceFromTarget,
+					 double health, double healthDecay, double maxHealth,
+					 SDL_Color bgColor, SDL_Color decayColor,
+					 SDL_Color healthColor, SDL_Color borderColor,
+					 bool border){
+
+	SDL_Rect healthRect;
+	healthRect.x = x-w/2;
+	healthRect.y = y-h-yDistanceFromTarget;
+	healthRect.h = h;
+
+	/* Healthbar Background */
+	healthRect.w = ((w*maxHealth)/maxHealth);
+	SDL_SetRenderDrawColor(gRenderer, bgColor.r, bgColor.g, bgColor.b, 255);
+	SDL_RenderFillRect(gRenderer, &healthRect);
+
+	/* Healthbar Decay */
+	healthRect.w = (w*healthDecay)/maxHealth;
+	SDL_SetRenderDrawColor(gRenderer, decayColor.r, decayColor.g, decayColor.b, 255);
+	SDL_RenderFillRect(gRenderer, &healthRect);
+
+	/* Healthbar current Health */
+	healthRect.w = ((w*health)/maxHealth);
+	SDL_SetRenderDrawColor(gRenderer, healthColor.r, healthColor.g, healthColor.b, 255);
+	SDL_RenderFillRect(gRenderer, &healthRect);
+
+	/* Healthbar border */
+	if (border) {
+		healthRect.w = ((w*maxHealth)/maxHealth);
+		SDL_SetRenderDrawColor(gRenderer, borderColor.r, borderColor.g, borderColor.b, 255);
+		SDL_RenderDrawRect(gRenderer, &healthRect);
+	}
 }

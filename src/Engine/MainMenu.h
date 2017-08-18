@@ -10,6 +10,7 @@
 
 #include "LTexture.h"
 #include "Helper.h"
+#include "Options.h"
 
 #include <fstream>
 #include <limits>
@@ -17,17 +18,17 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_mixer.h>
 
-class MainMenu: public Helper {
+class MainMenu: public Helper, public Options {
 public:	// Resources
+	LTexture gMenu;
 	LTexture gText;
-	TTF_Font *gFont13 			= NULL;
-	TTF_Font *gFont26 			= NULL;
 public:
 	enum MenuResult { Nothing, NewGame, HowToPlay, Options, Credits, Exit };
 	void Show(LWindow &gWindow, SDL_Renderer *gRenderer, MainMenu::MenuResult &result);
 	MainMenu::MenuResult mousePressed(SDL_Event event);
-	MainMenu::MenuResult mouseReleased(SDL_Event event);
+	MainMenu::MenuResult mouseReleased(LWindow gWindow, SDL_Renderer *gRenderer, SDL_Event event);
 public:
 
 	// Initialize

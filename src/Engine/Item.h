@@ -20,6 +20,10 @@ public:	// Resources
 	int WIDTH = 7;
 	int HEIGHT = 8;
 
+public:	// Variables
+	float hoverAmount;
+	float hoverDir;
+
 public:	// Core functions
 
 	// Initialize

@@ -14,7 +14,6 @@
 #include "Helper.h"
 #include "Item.h"
 #include "Options.h"
-#include "Maps.h"
 #include "TileBar.h"
 #include "Tiles.h"
 #include "TileC.h"
@@ -154,6 +153,22 @@ public:	// Core functions
 	// Update everything
 	void Update(LWindow &gWindow, SDL_Renderer *gRenderer);
 
+public:	// Render Editor UI
+
+	// Render debug information
+	void RenderDebug(SDL_Renderer *gRenderer);
+
+	// Render tile in hand
+	void RenderHand(SDL_Renderer *gRenderer);
+
+	// Render text
+	void RenderText(SDL_Renderer *gRenderer, LWindow &gWindow);
+
+	// Render Editor GUI
+	void RenderUI(SDL_Renderer *gRenderer);
+
+public:	// Render Player GUI (or what the Player sees including Tiles)
+
 	// Render foreground
 	void RenderFG(SDL_Renderer *gRenderer, LWindow &gWindow);
 
@@ -163,17 +178,9 @@ public:	// Core functions
 	// Render lights
 	void RenderLights(SDL_Renderer *gRenderer);
 
-	// Render debug information
-	void RenderDebug(SDL_Renderer *gRenderer);
-
-	// Render text
-	void RenderText(SDL_Renderer *gRenderer, LWindow &gWindow);
-
-	// Render Editor UI
-	void RenderUI(SDL_Renderer *gRenderer);
-
 	// Render Player GUI
 	void RenderGUI(SDL_Renderer *gRenderer);
+
 
 public:	// Functions mixed with other classes
 
@@ -181,7 +188,7 @@ public:	// Functions mixed with other classes
 	void checkCollisionParticleMonster();
 
 	// Check collision between Tile & Monster
-	void checkCollisionTileZombie();
+	void checkCollisionTileMonster();
 
 	// Check collision between Particle & Player
 	void checkCollisionParticlePlayer();
@@ -209,7 +216,11 @@ public:	// Manual Updates
 	// Handle collision of objects and Level Size
 	void ClampObjectsToLevelSize();
 
+	// Update Player
 	void UpdatePlayer();
+
+	// Have Monster find the shortest path towards the Player
+	void UpdateMonsterPlayer(SDL_Renderer *gRenderer);
 
 public:	// Functions that serve multiple purposes
 
@@ -227,6 +238,12 @@ public:	// Editor Variables & functions
 	float spawnX = 0, spawnY = 0;
 	float doorX;
 	float doorY;
+	/* Placement types
+	 * 0: Tiles
+	 * 2: Collision Tiles (depreciated)
+	 * 3: Monsters
+	 *
+	 */
 	int place_type;				// 0: Tiles, 1: Collision Tiles
 	int clampSize;				// Magnet pixel size
 	float mouseX;

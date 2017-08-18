@@ -51,6 +51,7 @@ public:	// Settings that can be changed by user
 	TTF_Font *gFont26 			= NULL;
 	// Audio
 	Mix_Music *sAmbientMusic 	= NULL;
+	Mix_Music *sStrangeMusic 	= NULL;
 	Mix_Chunk *sRockBreak 		= NULL;
 	Mix_Chunk *sLazer 			= NULL;
 	Mix_Chunk *sAtariBoom 		= NULL;
@@ -59,6 +60,8 @@ public:	// Settings that can be changed by user
 	Mix_Chunk *sGrenadePickup 	= NULL;
 	Mix_Chunk *sPistolReload 	= NULL;
 	Mix_Chunk *sKeyPickup 		= NULL;
+	Mix_Chunk *sPlayerHurt 		= NULL;
+	Mix_Chunk *sSkeletonHurt	= NULL;
 	// Audio, Video Settings
 	int MASTER_VOL;
 	int MUSIC_VOL;
@@ -295,6 +298,12 @@ public:	// functions
 	// Load audio configurations
 	void loadAudioCFG();
 
+	// Save video configurations
+	void saveVideoCFG();
+
+	// Save audio configurations
+	void saveAudioCFG();
+
 	// Apply video configurations
 	void applyVideoCFG(LWindow &gWindow);
 
@@ -304,7 +313,7 @@ public:	// functions
 	void applyMasterAudioCFG();
 
 	// Load Options menu
-	void start(LWindow &gWindow, SDL_Renderer *gRenderer, Player &player);
+	void start(LWindow &gWindow, SDL_Renderer *gRenderer);
 
 	// Save a level to a directory
 	void SaveLevel(LWindow &gWindow, SDL_Renderer *gRenderer, bool &mainLoop,
@@ -318,9 +327,9 @@ public:	// functions
 	std::string GetInput(LWindow &gWindow, SDL_Renderer *gRenderer, bool &mainLoop, std::string hint);
 
 	// User input
-	void OnKeyDown(SDL_Keycode sysm, Player &player);
-	void OnKeyUp(SDL_Keycode sysm, Player &player);
-	void mousePressed(Player &player);
+	void OnKeyDown(SDL_Keycode sysm);
+	void OnKeyUp(SDL_Keycode sysm);
+	void mousePressed();
 	void mouseReleased(LWindow &gWindow);
 
 	// Render

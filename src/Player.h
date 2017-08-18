@@ -108,6 +108,22 @@ public:	// Spell class
 	// Create vector to store Spells
 	std::vector<Spell> spell;
 
+
+public: // user statistics that the Player sees
+	int coins;					// Number of coins the Player has
+	int keys;					// Number of keys in Player inventory
+	int collectedKeys;			// Number of keys accumulated for that Stage Level
+	double health;
+	double maxHealth;
+	double healthDecay;			 // gives the effect of a decaying health bar
+	double mana;				// Current mana
+	double maxMana;				// Max mana capacity
+	double manaRegenRate;		// Mana regeneration rate
+	double manaTick;			// Current tick
+	bool useKey;				// Used to interact with World Objects and doors
+
+
+
 public:	// Animations
 	/*
 	 * 0: walk down
@@ -130,18 +146,6 @@ public:	// Attacks
 	int spellIndex;
 	bool moveDelay;
 	double moveDelayTimer;
-
-public:	// In-game variables
-	int coins;					// Number of coins the Player has
-	int keys;					// Number of keys in Player inventory
-	int collectedKeys;			// Number of keys accumulated for that Stage Level
-	double health;
-	double maxHealth;
-	double healthDecay;			 // gives the effect of a decaying health bar
-	double mana;				// Current mana
-	double maxMana;				// Max mana capacity
-	double manaRegenRate;		// Mana regeneration rate
-	double manaTick;			// Current tick
 
 public:	// variables
 	std::string tag;
@@ -179,10 +183,8 @@ public:	// Movement Variables
 
 public: // Variables
 
-
 	bool shift 			= false;
 	bool ctrl 			= false;
-	int timer2 			= 0;
 	double time 		= 0;
 	bool alive			= false;
 	Uint8 alpha			= 255;
@@ -205,9 +207,7 @@ public: // Variables
 	double particleW 	= 3;
 	double particleH 	= 3;
 
-	bool initialshot 	= false;
 	bool trigger 		= false;
-	bool renderFlash	= false; // shuts off right after 1 frame
 
 	// Shield
 	int shieldFrame;
@@ -231,13 +231,6 @@ public:	// Team Variables
 	int team;
 
 public: // Player abilities
-	/* Grenade */
-	int grenades;
-	int grenadesMax;
-	double grenadesCD;
-	double grenadesCDSpeed;
-	double grenadesCDMax;
-	bool grenadeTrigger;
 
 	/* Machine Gun Ammo */
 	float AttackSpeed 	= 1.5;

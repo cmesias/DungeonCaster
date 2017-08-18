@@ -205,6 +205,8 @@ void Game::ShowSplashScreen() {
 
 // Splash Screen
 void Game::ShowMenu() {
+	// Fade in Menu Music
+	Mix_FadeInMusic( sAmbientMusic, -1, 50);
 	// Create Main Menu
 	MainMenu mainMenu;
 	// Show Main Menu
@@ -290,6 +292,10 @@ void Game::ShowActSelectionScreen(LWindow &gWindow, SDL_Renderer *gRenderer) {
 
 /* Play Game */
 void Game::ShowPlayGame(int levelToLoad) {
+	// Stop menu music
+	Mix_HaltMusic();
+	// Fade in Menu Music
+	Mix_FadeInMusic( sStrangeMusic, -1, 50);
 	// Create Main Menu
 	PlayGame game1;
 	// Show Main Menu

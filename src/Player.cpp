@@ -57,7 +57,6 @@ void Player::Init() {
 	vX = 0.0;
 	vY = 0.0;
 	score = 0;
-	initialshot = false;
 	moveLeft = false;
 	moveRight = false;
 	moveUp = false;
@@ -95,11 +94,9 @@ void Player::Init() {
 
 	test = false;
 	trigger = false;
-	renderFlash = false;
 	tag = "player";
 
 	/* Ship */
-	angle = 0.0;
 	shootAngle = 0.0;
 	turnSpeed = 4;
 	speed = 0.0;
@@ -107,14 +104,6 @@ void Player::Init() {
 
 	/* Team */
 	team = 0;
-
-	/* Player abilities */
-	grenades = 3;
-	grenadesMax = 3;
-	grenadesCD = 0;
-	grenadesCDSpeed = 1;
-	grenadesCDMax = 60 * 5;
-	grenadeTrigger = false;
 
 	// Animations
 	facing = 2;
@@ -124,6 +113,7 @@ void Player::Init() {
 	moving = false;
 
 	// Used in-game
+	angle = 90.0;
 	keys = 0;
 	coins = 0;
 	health = 225;
@@ -133,12 +123,13 @@ void Player::Init() {
 	mana = maxMana;
 	manaRegenRate = 3.3;
 	manaTick = 0.0;
+	useKey = false;
 
 	// Create Spells
 	// Fireball Spell
 	spell.push_back( Spell("Fireball",
 							2, 3, 1.2,
-						    25, {255,144,25},
+						    75, {255,144,25},
 						    0, 0,
 						    0, 0,
 						    60, 0.68,
@@ -146,19 +137,19 @@ void Player::Init() {
 						    false, 0.0,
 						    true, 25, {244,144,25},
 						    4, 4,
-						    20, 60*3) );
+						    45, 60*3) );
 
 	spell.push_back( Spell("Lightning",
-							2, 2, 2.9,
-						    5, {255,144,244},
+							2, 2, 1.5,
+						    25, {255,144,244},
 						    0, 0,
 						    0, 0,
 						    60, 0.68,
 						    false, 0.0,
 						    false, 0.0,
 						    true, 25, {244,144,244},
-						    1, 3,
-						    10, 5) );
+						    1, 5,
+						    20, 5) );
 
 	// Attacks
 	spellIndex = 0;
@@ -171,7 +162,7 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 				   Mix_Chunk* sPistolReload){
 
 	// Determine controls
-	if (controls==0){
+	/*if (controls==0){
 		trigger = initialshot;
 	}else if(controls==1){
 		trigger = A;
@@ -188,7 +179,7 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 	}else if(controls==2){
 		trigger = initialshot;
 		initialshot = false;
-	}
+	}*/
 
 	// Get player angle based on mouse coordinates (used for shooting)
 	shootAngle = atan2(my - y-h/2,mx - x-w/2);
@@ -252,7 +243,8 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 	///////////////////////////////////////////////////////////////////////
 	//-------------------------------------------------------------------//
 	//---------------------- Handle Basic Shooting ----------------------//
-	/***** Set Turret Position *****/
+	/*
+	//Set Turret Position
 	float turret1w = 30;
 	float turret1h = 30;
 	float frigateAngle = angle;
@@ -266,17 +258,16 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 	float barrelY = y2 + barrelH;
 	//turret1x = barrelX - turret1w/2;
 	//turret1y = barrelY - turret1h/2;
-	/***** Set Turret Position *****/
 
 
-	/***** Get turrets nose angle (get the exact position even when the player rotates) *****/
+	// Get turrets nose angle (get the exact position even when the player rotates)
 	frigateAngle = shootAngle;
 	radians   = (3.1415926536/180)*(shootAngle);
 	barrelW  = (bulletW * cos(radians) ) - (bulletH * sin(radians) );	// add this to center of zombie (this will give us the guns barrel position)
 	barrelH  = (bulletW * sin(radians) ) + (bulletH * cos(radians) );
 	//barrelX = turret1x + turret1w/2 - particleW/2 + barrelW;
 	//barrelY = turret1y + turret1h/2 - particleH/2 + barrelH;
-	/***** Get turrets nose angle *****/
+	 */
 
 	// Handle casting Spells
 	for (unsigned int i = 0; i < spell.size(); i++) {
@@ -429,46 +420,6 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 	}
 
 	//---------------------- Handle Basic Shooting ----------------------//
-	//-------------------------------------------------------------------//
-	///////////////////////////////////////////////////////////////////////
-
-	///////////////////////////////////////////////////////////////////////
-	//-------------------------------------------------------------------//
-	//---------------------- Handle Grenade Throw -----------------------//
-	if (grenadeTrigger) {
-		grenadeTrigger = false;
-		if (grenades > 0) {
-			// play audio
-			Mix_PlayChannel(5, sGrenade, 0);
-			// spawn particle
-			p_dummy.spawnParticleAngle(particle, tag, 3,
-					barrelX,
-					barrelY,
-					2, 2,
-					angle, 11,
-				   0,
-				   {255, 255,255}, 1,
-				   1, 1,
-				   255, 0,
-				   60*2, 1,
-				   false, 0,
-				   true, 0.45);
-			// subtract remaining grenades
-			grenades--;
-		}
-	}
-	// Replenish grenades
-	if (grenades < 3) {
-		grenadesCD += grenadesCDSpeed;
-		if (grenadesCD > grenadesCDMax) {
-			grenadesCD = 0;
-			// play audio
-			Mix_PlayChannel(6, sGrenadePickup, 0);
-			// add grenade
-			grenades++;
-		}
-	}
-	//---------------------- Handle Grenade Throw -----------------------//
 	//-------------------------------------------------------------------//
 	///////////////////////////////////////////////////////////////////////
 
@@ -792,6 +743,9 @@ void Player::OnKeyDown( Player &player, SDL_Keycode sym )
 	case SDLK_d:					// turn right
 		player.moveRight = true;
 		break;
+	case SDLK_e:					// turn right
+		player.useKey = true;
+		break;
 	case SDLK_1:					// Fireball Spell
 		//if (!player.casting && player.mana > 20) {
 		//	player.casting = true;
@@ -833,6 +787,7 @@ void Player::OnKeyDown( Player &player, SDL_Keycode sym )
 		player.controls = 0;
 		if (!player.spell[player.spellIndex].activate) {
 			player.spell[player.spellIndex].activate = true;
+			//	player.moveDelay = true;
 		}
 		/*if (!player.casting) {
 			player.casting = true;
@@ -863,8 +818,11 @@ void Player::OnKeyUp( Player &player, SDL_Keycode sym )
 	case SDLK_a:					// turn left
 		player.moveLeft = false;
 		break;
-	case SDLK_d:				// turn right
+	case SDLK_d:					// turn right
 		player.moveRight = false;
+		break;
+	case SDLK_e:					// turn off useKey
+		player.useKey = false;
 		break;
 	case SDLK_SPACE:
 		//

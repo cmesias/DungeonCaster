@@ -453,6 +453,53 @@ void Particle::Update(Particle particle[], int mapX, int mapY, int mapW, int map
 				//particle[i].y = mapY-particle[i].h;
 			}
 
+			// particle circle collision check with other particles
+			/*for (int j = 0; j < max; j++) {
+				if (i !=j) {
+					if (particle[j].alive) {
+						if (particle[j].tag != particle[i].tag) {
+							if (particle[j].damage > 0 &&  particle[i].damage > 0) {
+								float bmx = particle[j].x+particle[j].w/2;
+								float bmy = particle[j].y+particle[j].h/2;
+								float bmx2 = particle[i].x+particle[i].w/2;
+								float bmy2 = particle[i].y+particle[i].h/2;
+								float angle = atan2(bmy - bmy2,bmx - bmx2);
+								angle = angle * (180 / 3.1416);
+								if (angle < 0) {
+									angle = 360 - (-angle);
+								}
+								float radians = (3.1415926536/180)*(angle);
+								float Cos = floor(cos(radians)*10+0.5)/10;
+								float Sin = floor(sin(radians)*10+0.5)/10;
+								float distance = sqrt((bmx - bmx2) * (bmx - bmx2)+
+													  (bmy - bmy2) * (bmy - bmy2));
+								if (distance <= 1) {
+									distance = 1;
+								}
+								if (distance < 2 + 2) {
+									//particle[i].vX -= 1 * Cos;
+									//particle[i].vY -= 1 * Sin;
+									Mix_PlayChannel(-1, sSpellExplode, 0);
+									float bmx, bmy, bmx2, bmy2;
+									bmx  = particle[j].x+particle[j].w/2;
+									bmy  = particle[j].y+particle[j].h/2;
+									bmx2 = particle[i].x+particle[i].w/2;
+									bmy2 = particle[i].y+particle[i].h/2;
+
+									// Get midpoint between player 1 and player 2
+									int midX = (bmx + bmx2) /2;
+									int midY = (bmy + bmy2) /2;
+									SpawnExplosion(particle, midX, midY, {255, 255,255} );
+									particle[j].alive = false;
+									count--;
+									particle[i].alive = false;
+									count--;
+								}
+							}
+						}
+					}
+				}
+			}*/
 		}
 	}
 }

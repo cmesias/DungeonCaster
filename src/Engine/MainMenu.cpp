@@ -19,9 +19,20 @@ void MainMenu::Init() {
 }
 
 void MainMenu::Load(SDL_Renderer *gRenderer) {
-	gFont13 = TTF_OpenFont("resource/fonts/FredokaOne-Regular.ttf", 18);
+	// Load Video settings from file
+	loadVideoCFG();
+	// Load Audio settings from file
+	loadAudioCFG();
+	// Load audio files
+	LoadAudioFiles();
+	// Apply audio configurations
+	applyOldAudioCFG();
+	// Textures
+	gMenu.loadFromFile(gRenderer, "resource/gfx/menu.png");
+	// Fonts
+	gFont 	= TTF_OpenFont("resource/fonts/FredokaOne-Regular.ttf", 18);
+	gFont13 = TTF_OpenFont("resource/fonts/FredokaOne-Regular.ttf", 13);
 	gFont26 = TTF_OpenFont("resource/fonts/FredokaOne-Regular.ttf", 26);
-
 	// Buttons
 	buttonName[0] = "New Game";
 	buttonName[1] = "How To Play";
@@ -31,9 +42,14 @@ void MainMenu::Load(SDL_Renderer *gRenderer) {
 }
 
 void MainMenu::Free() {
+	// Free audio files
+	FreeAudioFiles();
+	gMenu.free();
 	gText.free();
+	TTF_CloseFont(gFont);
 	TTF_CloseFont(gFont13);
 	TTF_CloseFont(gFont26);
+	gFont = NULL;
 	gFont13 = NULL;
 	gFont26 = NULL;
 }
@@ -46,7 +62,8 @@ void MainMenu::Show(LWindow &gWindow, SDL_Renderer *gRenderer, MainMenu::MenuRes
 	confirmKey = false;
 	shift = false;
 	key	= 0;
-	menuIndex = 0;
+	menuIndex = -1;
+	result = Nothing;
 
 	// Load resources
 	Load(gRenderer);
@@ -150,6 +167,7 @@ void MainMenu::Show(LWindow &gWindow, SDL_Renderer *gRenderer, MainMenu::MenuRes
 						//	result = HowToPlay;
 						} else if (menuIndex == 2) {
 						//	result = Options;
+							start(gWindow,gRenderer);
 						} else if (menuIndex == 3) {
 						//	result = Credits;
 						} else if (menuIndex == 4) {
@@ -163,7 +181,8 @@ void MainMenu::Show(LWindow &gWindow, SDL_Renderer *gRenderer, MainMenu::MenuRes
 						} else if (menuIndex == 1) {
 						//	result = HowToPlay;
 						} else if (menuIndex == 2) {
-						//	result = Options;
+							//	result = Options;
+							start(gWindow,gRenderer);
 						} else if (menuIndex == 3) {
 						//	result = Credits;
 						} else if (menuIndex == 4) {
@@ -184,7 +203,7 @@ void MainMenu::Show(LWindow &gWindow, SDL_Renderer *gRenderer, MainMenu::MenuRes
 					mousePressed(event);
 
 					// Mouse Released
-					result = mouseReleased(event);
+					result = mouseReleased(gWindow, gRenderer, event);
 				}
 
 				// Handle results
@@ -224,6 +243,8 @@ void MainMenu::Show(LWindow &gWindow, SDL_Renderer *gRenderer, MainMenu::MenuRes
 		// Clear render screen
 		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
 		SDL_RenderClear(gRenderer);
+
+			gMenu.render(gRenderer, 0, 0, 270, 152);
 
 			Render(gRenderer);
 
@@ -320,7 +341,7 @@ MainMenu::MenuResult MainMenu::mousePressed(SDL_Event event){
 }
 
 // Mouse Released
-MainMenu::MenuResult MainMenu::mouseReleased(SDL_Event event){
+MainMenu::MenuResult MainMenu::mouseReleased(LWindow gWindow, SDL_Renderer *gRenderer, SDL_Event event){
 	MainMenu::MenuResult result = Nothing;
 	if (event.type == SDL_MOUSEBUTTONUP) {
 		if (event.button.button == SDL_BUTTON_LEFT) {
@@ -335,6 +356,7 @@ MainMenu::MenuResult MainMenu::mouseReleased(SDL_Event event){
 					//	result = HowToPlay;
 					} else if (i == 2) {
 					//	result = Options;
+						start(gWindow,gRenderer);
 					} else if (i == 3) {
 					//	result = Credits;
 					} else if (i == 4) {

@@ -21,6 +21,8 @@ void Item::Init(Item item[]){
 	count = 0;
 	max = 100;
 	for (int i = 0; i < max; i++) {
+		item[i].hoverAmount 	= 9;
+		item[i].hoverDir 		= 1;
 		item[i].alive 			= false;
 	}
 }
@@ -195,8 +197,20 @@ void Item::Render(SDL_Renderer* gRenderer, Item item[], int camx, int camy) {
 	for (int i = 0; i < max; i++) {
 		if (item[i].alive) {
 			gItem.setAlpha(255);
-			gItem.setBlendMode(SDL_BLENDMODE_ADD);
-			gItem.render(gRenderer, item[i].x - camx, item[i].y - camy, item[i].w, item[i].h, &rClips[item[i].id]);
+			float newY = item[i].y;
+			if (item[i].id == 0) {
+				item[i].hoverAmount += 0.1 * item[i].hoverDir;
+				if (item[i].hoverAmount > 4) {
+					item[i].hoverDir = -1;
+				}
+				else if (item[i].hoverAmount < 1) {
+					item[i].hoverDir = 1;
+				}
+
+				newY = item[i].y - item[i].hoverAmount;
+			}
+
+			gItem.render(gRenderer, item[i].x - camx, newY - camy, item[i].w, item[i].h, &rClips[item[i].id]);
 			if (item[i].mouse) {
 				SDL_Rect tempr = {item[i].x+1 - camx, item[i].y+1 - camy, item[i].w-2, item[i].h-2};
 				SDL_SetRenderDrawColor(gRenderer, 255, 144, 25, 255);
