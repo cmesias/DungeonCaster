@@ -9,10 +9,11 @@
 #define GAME_ZOMBIE_H_
 
 #include "Engine/Helper.h"
+#include "Engine/Spell.h"
 #include "Player.h"
 
 class Monster : public Helper {
-public:	// Media
+public:	// Resources
 	LTexture gMonster;
 	LTexture gBlueDragon;
 	/*
@@ -23,16 +24,22 @@ public:	// Media
 	SDL_Rect clip[108];
 
 	/* Dragon clips
-	 * 0-2 facing right neutral
-	 * 3-5 facing right head-bounce
-	 * 6-8 facing right attack
+	 * 0: facing right neutral
+	 * 1: facing right head-bounce
+	 * 2: facing right attack
+	 * 3: facing left neutral
+	 * 4: facing left head-bounce
+	 * 5: facing left attack
 	 */
-	SDL_Rect dragonClips[9];
+	SDL_Rect dragonClips[6];
+
+public:	// Editor Variables
 	int count;
 	const int max = 100;
-	const int maxTypes = 12;	// max number of unique Monsters
+	const int maxTypes = 13;	// max number of unique Monsters
 	int multiW = 1;
 	int multiH = 1;
+
 public:
 	float x2, y2;
 	int radius;
@@ -59,11 +66,28 @@ public:
 	 * 12: Dragon Boss
 	 */
 	int type;
+	/* Type of monster we are spawning
+	 * 0: Skeleton: 						shoots 1 magic blast (10 damage)
+	 * 1: Goblin: 							shoots 3 magic blasts (5 damage each)
+	 * 2: Ghost Mage: 						shoots 9 magic blasts (2.5 damage each)
+	 * 3: Dinosaur Bear: 					slashes 3 times (7 damage each strike)
+	 * 4: Tiger: 							slashes 1 time (25 damage)
+	 * 5: Lizard
+	 * 6: Yellow goblin
+	 * 7: Ghoul
+	 * 8: Ghost/Reaper
+	 * 9: 1-eyed monster
+	 * 10: Snake
+	 * 11: Pumpkin Head
+	 *
+	 * 12: Dragon Boss
+	 */
+	double damage;
+	double atkSpe;			// Monster attack speed
 	int id;					// Monster clip from texture
 	double health;
 	double healthDecay;
 	double maxHealth;
-	double damage;
 	double timer;			// Used for shooting
 	float distance;
 	float targetDistanceX;
@@ -75,9 +99,26 @@ public:
 	bool mouse;				// mouse is on top of Monster
 	bool mouseBox;			// if tile placement size of on top of monster
 
+public:	// Spells
+
+	std::vector<Spell> spell;
+	unsigned int rJ;
+	// Number of times spell will occur during duration
+	// (Get maxDuration and divide it by occurrences to get number of times it will occur during the duration)
+	float currentDuration;
+	float maxDuration;			// Spell frame length
+	float cooldownTimer;
+	float baseCooldown;
+	bool cooldown;
+
 public:	// Patrol Variables
-	bool alert;				// Monster is alerted
 	float thinkTimer;
+	float sightRange;	// Sight range, Monster will move towards Target at this range (usually higher than range)
+	float atkRange;		// Attack range, Monster will attack at this range
+	float duration;		// Attack duration
+	bool attack;		// Monster is attacking
+	bool follow;		// Target in range, for moving
+	bool alert;			// Target in range, for Attacking
 
 public:	// Walking variables
 	/*
@@ -90,7 +131,6 @@ public:	// Walking variables
 	double frameTimer;
 	double frameSpeed;
 	int frame;
-	bool moving = false;
 
 public:	// variables used for calculating shooting barrel coordinates
 
@@ -132,9 +172,16 @@ public:	// Core functions
 
 	void EditorUpdate(Monster monster[], int newMx, int newMy, int mex, int mey, int camx, int camy);
 
-	void Update(Monster monster[], Particle particle[], Particle &p_dummy,
+	// Update monsters 0-11
+	void Update(Monster monster[], Particle &part, Particle particle[],
 				Player &player, Mix_Chunk* sLazer,
 				int camx, int camy);
+
+	// Update minions (index 0-11)
+	void UpdatMinions(Monster monster[], Particle &part, Particle particle[], float x, float y);
+
+	// Update Boss (index 12)
+	void UpdateBoss(Monster monster[], Particle &part, Particle particle[], float x, float y);
 
 	// Render Monster before rendering Target
 	void RenderBehind(SDL_Renderer* gRenderer, Monster monster[], int camx, int camy, float targetY, float targetH);
@@ -147,6 +194,9 @@ public:	// Core functions
 
 	// Render debug informtation
 	void RenderDebug(SDL_Renderer *gRenderer, Monster monster[], int camx, int camy);
+
+	// This function will determine a Monster's spells (usually called after loading Monsters)
+	void SetSpells(Monster monster[], int i);
 
 public: // Save functions
 

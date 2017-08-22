@@ -116,9 +116,9 @@ void Player::Init() {
 	angle = 90.0;
 	keys = 0;
 	coins = 0;
-	health = 225;
-	maxHealth = 225;
-	healthDecay = 225;
+	health = 100;
+	maxHealth = 100;
+	healthDecay = 100;
 	maxMana = 300;
 	mana = maxMana;
 	manaRegenRate = 3.3;
@@ -127,8 +127,10 @@ void Player::Init() {
 
 	// Create Spells
 	// Fireball Spell
-	spell.push_back( Spell("Fireball",
-							2, 3, 1.2,
+	/*spell.push_back( Spell("Fireball",
+							2, 1,
+							180, 1,
+							3, 1.2,
 						    75, {255,144,25},
 						    0, 0,
 						    0, 0,
@@ -140,7 +142,9 @@ void Player::Init() {
 						    45, 60*3) );
 
 	spell.push_back( Spell("Lightning",
-							2, 2, 1.5,
+							2, 1,
+							180, 1,
+							2, 1.5,
 						    25, {255,144,244},
 						    0, 0,
 						    0, 0,
@@ -149,7 +153,7 @@ void Player::Init() {
 						    false, 0.0,
 						    true, 25, {244,144,244},
 						    1, 5,
-						    20, 5) );
+						    20, 5) );*/
 
 	// Attacks
 	spellIndex = 0;
@@ -270,7 +274,7 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 	 */
 
 	// Handle casting Spells
-	for (unsigned int i = 0; i < spell.size(); i++) {
+	/*for (unsigned int i = 0; i < spell.size(); i++) {
 		if (spell[i].activate) {
 			// If Player has enough mana, cast spell, otherwise stop spell casting
 			if (mana > spell[i].manaCost) {
@@ -322,7 +326,7 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 				spell[i].cooldownTimer = spell[i].baseCooldown;
 			}
 		}
-	}
+	}*/
 
 	// Replenish mana
 	if (mana < maxMana) {

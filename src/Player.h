@@ -14,6 +14,7 @@
 #include "Engine/TileC.h"
 #include "Engine/Tiles.h"
 #include "Engine/Particle.h"
+#include "Engine/Spell.h"
 
 #include <SDL2/SDL_ttf.h>
 
@@ -37,74 +38,6 @@ public:	// resources
 	SDL_Rect rPlayer[8];
 
 public:	// Spell class
-	class Spell {
-	public:
-		std::string displayName;	// name of spell for GUI
-		int type;
-		float size;
-		float speed;
-		float damage;
-		SDL_Color color;
-		float dir;
-		float dirSpe;
-		float alpha;
-		float alphaSpe;
-		float deathTimer;
-		float deathTimerSpe;
-		bool sizeDeath;
-		float sizeDeathSpe;
-		bool decay;
-		float decaySpe;
-		bool trail;
-		float trailRate;
-		SDL_Color trailColor;
-		float trailMinSize;
-		float trailMaxSize;
-	    enum SpellTarget {casterCenter, mouseCenter, targetCenter};
-	    float manaCost;
-	    float baseCooldown;
-	    float cooldownTimer;
-	    bool activate;
-	    bool cooldown;
-	    Spell(std::string newDisplayName,
-	    		int newType, float newSize, float newSpeed,
-				float newDamage, SDL_Color newColor,
-				float newDir, float newDirSpeed,
-				float newAlpha, float newAlphaSpeed,
-				float newDeathTimer, float newDeathTimerSpeed,
-				bool newSizeDeath, float newSizeDeathSpeed,
-				bool newDecay, float newDecaySpeed,
-				bool newTrail, float newTrailRate, SDL_Color newTrailColor,
-				float newTrailMinSize, float newTrailMaxSize,
-				float newManaCost, float newBaseCooldown) {
-	    	displayName = newDisplayName;
-			type = newType;
-			size = newSize;
-			speed = newSpeed;
-			damage = newDamage;
-			color = newColor;
-			dir = newDir;
-			dirSpe = newDirSpeed;
-			alpha = newAlpha;
-			alphaSpe = newAlphaSpeed;
-			deathTimer = newDeathTimer;
-			deathTimerSpe = newDeathTimerSpeed;
-			sizeDeath = newSizeDeath;
-			sizeDeathSpe = newSizeDeathSpeed;
-			decay = newDecay;
-			decaySpe = newDecaySpeed;
-			trail = newTrail;
-			trailRate = newTrailRate;
-			trailColor = newTrailColor;
-			trailMinSize = newTrailMinSize;
-			trailMaxSize = newTrailMaxSize;
-			manaCost = newManaCost;
-			baseCooldown = newBaseCooldown;
-			cooldownTimer = newBaseCooldown;
-			activate = false;
-			cooldown = false;
-	    }
-	};
 	// Create vector to store Spells
 	std::vector<Spell> spell;
 

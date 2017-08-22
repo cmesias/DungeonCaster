@@ -35,7 +35,7 @@ void Game::Init() {
 	loadVideoCFG();
 
 	// Initialize Video
-	SDL_Init( SDL_INIT_VIDEO);
+	SDL_Init(SDL_INIT_VIDEO);
 
 	// Create window
 	gWindow.create("CEngine V2", RESOLUTION, ANTI_ALIAS, VSYNC, FULLSCREEN );//| SDL_WINDOW_RESIZABLE );
@@ -78,7 +78,7 @@ void Game::Load() {
 	LoadAudioFiles();
 
 	// Apply audio configurations
-	applyOldAudioCFG();
+	applyMasterAudioCFG();
 
 	// load fonts
 	gFont 	= TTF_OpenFont("fonts/Viga-Regular.ttf", 18);

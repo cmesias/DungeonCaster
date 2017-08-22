@@ -14,7 +14,6 @@
 class Spawner: public Helper {
 public:
 	int count = 0;
-	LTexture gSpawner;
 	LTexture gText;
 	TTF_Font *gFont = NULL;
 

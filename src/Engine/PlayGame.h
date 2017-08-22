@@ -36,9 +36,10 @@ public:	// Scene textures
 	SDL_Rect rDoor[3];
 	LTexture gBG;
 	LTexture gTargetTexture;
-	LTexture gCircle;
 	LTexture gLightBG;		// This isi rendered first before lights, this sets the default lighting
 	LTexture gLight;
+	LTexture gCircles;
+	SDL_Rect rCircles[2];	// 0: Blue, 1: Red
 
 	// Light dimming variables
 	float dimSize;
@@ -70,8 +71,8 @@ public:	// Scene textures
 				if (!text[i].alive) {
 					text[i].x = x;
 					text[i].y = y;
-					text[i].w = 139;
-					text[i].h = 96;
+					text[i].w = 16;
+					text[i].h = 16;
 					text[i].vX = vX;
 					text[i].vY = vY;
 					text[i].timer = timer;
@@ -90,7 +91,7 @@ public:	// Scene textures
 					text[i].x += text[i].vX;
 					text[i].y += text[i].vY;
 
-					text[i].alpha -= 16;
+					text[i].alpha -= 5;
 					if (text[i].alpha <= 0) {
 						text[i].alive = false;
 						count--;
@@ -110,7 +111,7 @@ public:	// Other classes
 	Monster monster[100];
 	// Particles
 	Particle part;
-	Particle particles[1024];
+	Particle particles[2094];
 	//  Spawners
 	Spawner spaw;
 	Spawner spawner[200];

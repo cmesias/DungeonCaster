@@ -25,13 +25,11 @@
 
 // Load
 void Spawner::load(SDL_Renderer* gRenderer){
-	gSpawner.loadFromFile(gRenderer, "resource/gfx//circle.png");
 	setClips(rSpawner[4], 0, 0, 128, 128);
 	setClips(rSpawner[3], 128, 0, 128, 128);
 	setClips(rSpawner[2], 256, 0, 128, 128);
 	setClips(rSpawner[1], 384, 0, 128, 128);
 	setClips(rSpawner[0], 512, 0, 128, 128);
-	gSpawner.setColor(255, 25, 25);
 	gFont = TTF_OpenFont("fonts/Viga-Regular.ttf", 18);
 
 	/*for (int i=0; i<5; i++){
@@ -43,7 +41,6 @@ void Spawner::load(SDL_Renderer* gRenderer){
 void Spawner::free(){
 	TTF_CloseFont(gFont);
 	gFont = NULL;
-	gSpawner.free();
 	gText.free();
 }
 
@@ -189,8 +186,8 @@ void Spawner::render(Spawner spawner[], int camx, int camy, SDL_Renderer* gRende
 	for (int i = 0; i < 200; i++) {
 		if (spawner[i].alive) {
 
-			gSpawner.render(gRenderer, spawner[i].x-camx, spawner[i].y-camy,
-					spawner[i].w, spawner[i].h, &rSpawner[0]);
+			/*gSpawner.render(gRenderer, spawner[i].x-camx, spawner[i].y-camy,
+					spawner[i].w, spawner[i].h, &rSpawner[0]);*/
 
 
 			/*std::stringstream tempsi;
@@ -199,9 +196,9 @@ void Spawner::render(Spawner spawner[], int camx, int camy, SDL_Renderer* gRende
 			gText.loadFromRenderedText(tempsi.str().c_str(), {244, 255, 255}, gFont, gRenderer);
 			gText.render(gRenderer, spawner[i].x-camx, spawner[i].y-camy, gText.getWidth(), gText.getHeight());*/
 
-			/*SDL_Rect spawnerRect = { spawner[i].x-camx, spawner[i].y-camy, spawner[i].w, spawner[i].h};
+			SDL_Rect spawnerRect = { spawner[i].x-camx, spawner[i].y-camy, spawner[i].w, spawner[i].h};
 			SDL_SetRenderDrawColor(gRenderer, 244, 144, 20, 255);
-			SDL_RenderDrawRect(gRenderer, &spawnerRect);*/
+			SDL_RenderDrawRect(gRenderer, &spawnerRect);
 		}
 	}
 }

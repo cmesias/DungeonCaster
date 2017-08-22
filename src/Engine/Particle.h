@@ -20,7 +20,7 @@ public:	// other variables
 	int ptimer = 0;
 	int count;
 	//const int max = 1024;
-	const int max = 1024;
+	const int max = 2094;
 	LTexture gParticles;					// Particle Textures
 	SDL_Rect cParticles[ 2 ];				// [0: Blue], [1: Green], [2: Orange], [3: Red], [4: White], [5: Yellow] Particle
 

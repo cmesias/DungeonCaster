@@ -324,12 +324,16 @@ void Particle::Update(Particle particle[], int mapX, int mapY, int mapW, int map
 	for (int i = 0; i < max; i++) {
 		if (particle[i].alive)
 		{
-			// get particle radius
-			particle[i].radius = particle[i].w;
-
 			// Particle movement
 			particle[i].x += particle[i].vX * particle[i].speed;
 			particle[i].y += particle[i].vY * particle[i].speed;
+
+			// particle center
+			particle[i].x2 = particle[i].x + particle[i].w/2;
+			particle[i].y2 = particle[i].y + particle[i].h/2;
+
+			// get particle radius
+			particle[i].radius = particle[i].w;
 
 			// Particle trail
 			if (particle[i].trail) {
@@ -366,11 +370,6 @@ void Particle::Update(Particle particle[], int mapX, int mapY, int mapW, int map
 										   true, randDouble(0.005, 0.6));
 					}
 				}
-			}
-
-			// Speed decay of grenade
-			if (particle[i].decay) {
-				particle[i].speed = particle[i].speed - particle[i].speed * particle[i].decaySpeed;
 			}
 
 			///////////////////////////////////////////////////////////////////////////////
@@ -415,11 +414,44 @@ void Particle::Update(Particle particle[], int mapX, int mapY, int mapW, int map
 			particle[i].D.x = barrelX;
 			particle[i].D.y = barrelY;
 
+			// Speed decay of grenade
+			if (particle[i].decay) {
+				particle[i].speed = particle[i].speed - particle[i].speed * particle[i].decaySpeed;
+			}
+
+			// Particle spin
+			particle[i].angle += particle[i].angleSpe * particle[i].angleDir;
+
+			// Particle death, Time
+			particle[i].time += particle[i].deathTimerSpeed;
+			if (particle[i].time > particle[i].deathTimer) {
+				particle[i].alive = false;
+				count--;
+			}
+
+			// Particle death, transparency
+			particle[i].alpha -= particle[i].alphaspeed;
+			if (particle[i].alpha < 0) {
+				particle[i].alive = false;
+				count--;
+			}
+
+			// Particle death, upon size
+			if (particle[i].sizeDeath) {
+				particle[i].w -= particle[i].deathSpe;
+				particle[i].h -= particle[i].deathSpe;
+
+				if (particle[i].w <= 0 || particle[i].h <= 0){
+					particle[i].alive = false;
+					count--;
+				}
+			}
+
 			// Particle map collision
 			if (particle[i].x+particle[i].w < mapX) {
 				if (particle[i].damage > 0) {
-					Mix_PlayChannel(-1, sSpellExplode, 0);
-					SpawnExplosion(particle, particle[i].x2, particle[i].y2, particle[i].color);
+					//Mix_PlayChannel(-1, sSpellExplode, 0);
+					//SpawnExplosion(particle, particle[i].x2, particle[i].y2, particle[i].color);
 				}
 				particle[i].alive = false;
 				count--;
@@ -427,8 +459,8 @@ void Particle::Update(Particle particle[], int mapX, int mapY, int mapW, int map
 			}
 			if (particle[i].x > mapX+mapW) {
 				if (particle[i].damage > 0) {
-					Mix_PlayChannel(-1, sSpellExplode, 0);
-					SpawnExplosion(particle, particle[i].x2, particle[i].y2, particle[i].color);
+					//Mix_PlayChannel(-1, sSpellExplode, 0);
+					//SpawnExplosion(particle, particle[i].x2, particle[i].y2, particle[i].color);
 				}
 				particle[i].alive = false;
 				count--;
@@ -436,8 +468,8 @@ void Particle::Update(Particle particle[], int mapX, int mapY, int mapW, int map
 			}
 			if (particle[i].y+particle[i].h < mapY) {
 				if (particle[i].damage > 0) {
-					Mix_PlayChannel(-1, sSpellExplode, 0);
-					SpawnExplosion(particle, particle[i].x2, particle[i].y2, particle[i].color);
+					//Mix_PlayChannel(-1, sSpellExplode, 0);
+					//SpawnExplosion(particle, particle[i].x2, particle[i].y2, particle[i].color);
 				}
 				particle[i].alive = false;
 				count--;
@@ -445,8 +477,8 @@ void Particle::Update(Particle particle[], int mapX, int mapY, int mapW, int map
 			}
 			if (particle[i].y > mapY+mapH) {
 				if (particle[i].damage > 0) {
-					Mix_PlayChannel(-1, sSpellExplode, 0);
-					SpawnExplosion(particle, particle[i].x2, particle[i].y2, particle[i].color);
+					//Mix_PlayChannel(-1, sSpellExplode, 0);
+					//SpawnExplosion(particle, particle[i].x2, particle[i].y2, particle[i].color);
 				}
 				particle[i].alive = false;
 				count--;
@@ -508,83 +540,20 @@ void Particle::updateBulletParticles(Particle particle[], int mapX, int mapY, in
 	for (int i = 0; i < max; i++) {
 		if (particle[i].alive)
 		{
-			// particle center
-			particle[i].x2 = particle[i].x + particle[i].w/2;
-			particle[i].y2 = particle[i].y + particle[i].h/2;
 
 			// Player particle
-			if (particle[i].type == 0)
-			{
-				// get particle radius
-				particle[i].radius = particle[i].w;
-
-				// Particle spin
-				particle[i].angle += particle[i].angleSpe * particle[i].angleDir;
-
-				// Particle death
-				particle[i].time += particle[i].deathTimerSpeed;
-
+			if (particle[i].type == 0) {
 				// Update particles angle based on its X and Y velocities
 				particle[i].angle = atan2 ( particle[i].vY, particle[i].vX) * 180 / 3.14159265;
-
-				// Particle death
-				if (particle[i].time > particle[i].deathTimer) {
-					particle[i].alive = false;
-					count--;
-				}
 			}
 
 			// Enemy particle
-			if (particle[i].type == 1)
-			{
-				// get particle radius
-				particle[i].radius = particle[i].w;
-
-				// Particle spin
-				particle[i].angle += particle[i].angleSpe * particle[i].angleDir;
-
-				// Particle death
-				particle[i].time += particle[i].deathTimerSpeed;
-
-				// Particle death
-				if (particle[i].time > particle[i].deathTimer) {
-					particle[i].alive = false;
-					count--;
-				}
+			if (particle[i].type == 1) {
 			}
 
 			// Enemy particle II
-			if (particle[i].type == 4)
-			{
-				// Particle spin
-				particle[i].angle += particle[i].angleSpe * particle[i].angleDir;
+			if (particle[i].type == 4) {
 
-				// Particle death timer, Time
-				particle[i].time += particle[i].deathTimerSpeed;
-
-				// Particle death, Time
-				if (particle[i].time > particle[i].deathTimer) {
-					particle[i].alive = false;
-					count--;
-				}
-
-				// Particle death timer, transparency
-				particle[i].alpha -= particle[i].alphaspeed;
-				if (particle[i].alpha < 0) {
-					particle[i].alive = false;
-					count--;
-				}
-
-				// Particle death upon size
-				if (particle[i].sizeDeath) {
-					particle[i].w -= particle[i].deathSpe;
-					particle[i].h -= particle[i].deathSpe;
-
-					if (particle[i].w <= 0 || particle[i].h <= 0){
-						particle[i].alive = false;
-						count--;
-					}
-				}
 			}
 
 			// Grenade particle
@@ -677,35 +646,7 @@ void Particle::updateStarParticles(Particle particle[], int mapX, int mapY, int 
 			// Star particles
 			if (particle[i].type == 2)
 			{
-				// Particle spin
-				particle[i].angle += particle[i].angleSpe * particle[i].angleDir;
 
-				// Particle death timer, Time
-				particle[i].time += particle[i].deathTimerSpeed;
-
-				// Particle death, Time
-				if (particle[i].time > particle[i].deathTimer) {
-					particle[i].alive = false;
-					count--;
-				}
-
-				// Particle death timer, transparency
-				particle[i].alpha -= particle[i].alphaspeed;
-				if (particle[i].alpha < 0) {
-					particle[i].alive = false;
-					count--;
-				}
-
-				// Particle death upon size
-				if (particle[i].sizeDeath) {
-					particle[i].w -= particle[i].deathSpe;
-					particle[i].h -= particle[i].deathSpe;
-
-					if (particle[i].w <= 0 || particle[i].h <= 0){
-						particle[i].alive = false;
-						count--;
-					}
-				}
 			}
 		}
 	}

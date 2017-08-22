@@ -45,6 +45,8 @@
 /* Player.h */
 // TODO [ ] - Create a sort of "Gun Barrel", to cast spells so all we need to do is input the details of the bullet (spell)
 
+// BIG TODO - make a StatusEffects class (buffs and debuffs)
+
 void PlayGame::Init() {
 	// Game mode VS Editor mode Variables
     camlock 			= false;
@@ -171,12 +173,14 @@ void PlayGame::Load(LWindow &gWindow, SDL_Renderer *gRenderer) {
 	LoadAudioFiles();
 
 	// Apply audio configurations
-	applyOldAudioCFG();
+	applyMasterAudioCFG();
 
  	// load textures
 	gDoor.loadFromFile(gRenderer, 	"resource/gfx/door.png");
 	gBG.loadFromFile(gRenderer, 		"resource/gfx/test.png");
-	gCircle.loadFromFile(gRenderer, 	"resource/gfx/circle.png");
+	gCircles.loadFromFile(gRenderer, 	"resource/gfx/ranges.png");
+	rCircles[0] = {0,0,16,16};
+	rCircles[1] = {16,0,16,16};
 
 	// load fonts
 	gFont 	= TTF_OpenFont("resource/fonts/FredokaOne-Regular.ttf", 18);
@@ -212,7 +216,7 @@ void PlayGame::Free() {
 	gParticles.free();
 	gText.free();
 	gBG.free();
-	gCircle.free();
+	gCircles.free();
 
 	// free fonts
 	TTF_CloseFont(gFont);
@@ -678,7 +682,7 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 	if (player.alive && !editor) {
 
 		// update Monsters
-		mon.Update(monster, particles, part, player, sLazer, camx, camy);
+		mon.Update(monster, part, particles, player, sLazer, camx, camy);
 	}
 
 	// Collision, particle & monster
@@ -961,11 +965,7 @@ void PlayGame::RenderDebug(SDL_Renderer *gRenderer)
 
 	// If debugging, show debug info
 	if (debug) {
-		/* Render Player debug */
-		// Render circle
-		gCircle.setColor(255,255,255);
-		gCircle.setAlpha(180);
-		gCircle.render(gRenderer, player.x-camx,player.y-camy, player.w, player.h);
+		// Render Player debug
 
 		// Original box, untouched
 		SDL_Rect tempRect = {player.x-camx, player.y-camy, player.w, player.h};
@@ -991,6 +991,12 @@ void PlayGame::RenderDebug(SDL_Renderer *gRenderer)
 					SDL_Rect tempRect = {particles[i].x-camx, particles[i].y-camy, particles[i].w, particles[i].h};
 					SDL_SetRenderDrawColor(gRenderer, 0, 0, 255, 255);
 					SDL_RenderDrawRect(gRenderer, &tempRect);
+
+					/*	std::stringstream tempss;
+						tempss << particles[i].w << " " <<  particles[i].h;
+						gText.setAlpha(255);
+						gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont);
+						gText.render(gRenderer,particles[i].x-camx, particles[i].y-camy, gText.getWidth()/5, gText.getHeight()/5);*/
 				}
 
 
@@ -1006,10 +1012,18 @@ void PlayGame::RenderDebug(SDL_Renderer *gRenderer)
 		mon.RenderDebug(gRenderer, monster, camx, camy);
 		for (int i = 0; i < mon.max; i++) {
 			if (monster[i].alive){
-				gCircle.setColor(255,255,255);
-				gCircle.setAlpha(180);
-				gCircle.render(gRenderer, monster[i].x+8-7/2-camx,
-						monster[i].y+12-7/2-camy, 7, 7);
+				SDL_Rect rRect = {0,0,16,16};
+				gCircles.setAlpha(255);
+				gCircles.render(gRenderer, monster[i].x2-monster[i].sightRange-camx,
+								monster[i].y2-monster[i].sightRange-camy,
+								monster[i].sightRange*2,
+								monster[i].sightRange*2, &rRect);
+				rRect = {16,0,16,16};
+				gCircles.setAlpha(255);
+				gCircles.render(gRenderer, monster[i].x2-monster[i].atkRange-camx,
+								monster[i].y2-monster[i].atkRange-camy,
+								monster[i].atkRange*2,
+								monster[i].atkRange*2, &rRect);
 			}
 		}
 
@@ -1105,35 +1119,55 @@ void PlayGame::RenderText(SDL_Renderer *gRenderer, LWindow &gWindow) {
 
 	/* Render Particle debug */
 
-	/*for (int i = 0; i < part.max; i++) {
-		if (particles[i].alive) {
-			if (particles[i].damage > 0) {
-				// Render angle Text
-				std::stringstream tempss;
-				tempss << particles[i].tag << " " << particles[i].damage;
-				gText.setAlpha(255);
-				gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont);
-				gText.render(gRenderer, particles[i].x - camx/particles[i].layer, particles[i].y-gText.getHeight()/4 - camy/particles[i].layer, gText.getWidth()/4, gText.getHeight()/4);
+	for (int i = 0; i < mon.max; i++) {
+		if (monster[i].alive) {
 
+			/*std::stringstream tempss;
+			tempss <<monster[i].attack << " " <<monster[i].distance;
+			gText.setAlpha(255);
+			gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont);
+			gText.render(gRenderer, monster[i].x - camx,
+					monster[i].y-gText.getHeight()/2 - camy,
+					gText.getWidth()/4, gText.getHeight()/4);
+
+			tempss.str(std::string());
+			tempss << "currentDuration: " << monster[i].currentDuration
+					<< " maxDuration: " 	  << monster[i].maxDuration
+					<< " attack: " << monster[i].attack
+					<< " cooldown: " << monster[i].cooldown
+					<< " cooldownTimer: " << monster[i].cooldownTimer;
+			gText.setAlpha(255);
+			gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont, 195);
+			gText.render(gRenderer, monster[i].x - camx,
+					monster[i].y - camy,
+					gText.getWidth()/4, gText.getHeight()/4);*/
+
+			for (double j=0; j<monster[i].spell.size(); j += 1) {
+
+
+
+				// Spawn Spell as a particle
+			/*	p_dummy.spawnParticleAngle(particle, monster[i].tag, monster[i].spell[j].type,
+						monster[i].x2 - monster[i].spell[j].size/2,
+						monster[i].y2 - monster[i].spell[j].size/2,
+						monster[i].spell[j].size, monster[i].spell[j].size,
+						monster[i].angle + k * (monster[i].spell[j].scope/monster[i].spell[j].projectiles), monster[i].spell[j].speed,
+						monster[i].spell[j].damage,
+						monster[i].spell[j].color, 1,
+						monster[i].spell[j].dir, monster[i].spell[j].dirSpe,
+						monster[i].spell[j].alpha, monster[i].spell[j].alphaSpe,
+						monster[i].spell[j].deathTimer, monster[i].spell[j].deathTimerSpe,
+						monster[i].spell[j].sizeDeath, monster[i].spell[j].sizeDeathSpe,
+						monster[i].spell[j].decay, monster[i].spell[j].decaySpe,
+						monster[i].spell[j].trail, monster[i].spell[j].trailRate, monster[i].spell[j].trailColor,
+						monster[i].spell[j].trailMinSize, monster[i].spell[j].trailMaxSize);*/
 			}
-		}
-	}*/
 
 
-	// Render any text spawned
-	for (int i = 0; i < 100; i++) {
-		if (text[i].alive) {
-			std::stringstream tempss;
-			tempss << text[i].textfield.c_str();
-			gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255, 255, 255, 255}, gFont);
-			gText.setAlpha(text[i].alpha);
-			gText.setColor(text[i].color.r, text[i].color.g, text[i].color.b);
-			gText.render(gRenderer, text[i].x, text[i].y, gText.getWidth()/4, gText.getHeight()/4);
 
-			/*SDL_Rect tempRect = {text[i].x - camx,text[i].y - camy,
-							   text[i].w,  text[i].h};
-			SDL_SetRenderDrawColor(gRenderer, 255,255,255,255);
-			SDL_RenderFillRect(gRenderer, &tempRect);*/
+
+
+
 		}
 	}
 
@@ -1307,9 +1341,9 @@ void PlayGame::RenderUI(SDL_Renderer *gRenderer) {
 
 void PlayGame::RenderGUI(SDL_Renderer *gRenderer) {
 
-	for (unsigned int i=0; i<player.spell.size(); i++) {
+	/*for (unsigned int i=0; i<player.spell.size(); i++) {
 		// Render Mana background
-		SDL_Rect tempRect = {75, 5 + i * 6, (40*player.spell[i].baseCooldown)/player.spell[i].baseCooldown, 4};
+		SDL_Rect tempRect = {75, 5 + i * 6, (40*player.spell[i].maxDuration)/player.spell[i].maxDuration, 4};
 		SDL_SetRenderDrawColor(gRenderer, 35, 35, 35, 255);
 		SDL_RenderFillRect(gRenderer, &tempRect);
 
@@ -1322,11 +1356,11 @@ void PlayGame::RenderGUI(SDL_Renderer *gRenderer) {
 		int newHeight = gText.getHeight()/4;
 		gText.render(gRenderer, tempRect.x + tempRect.w + 4, tempRect.y, newWidth, newHeight);
 
-		tempRect = {75, 5 + i * 6, (40*player.spell[i].cooldownTimer)/player.spell[i].baseCooldown, 4};
+		tempRect = {75, 5 + i * 6, (40*player.spell[i].currentDuration)/player.spell[i].maxDuration, 4};
 		SDL_SetRenderDrawColor(gRenderer, player.spell[i].color.r, player.spell[i].color.g, player.spell[i].color.b, 255);
 		SDL_RenderFillRect(gRenderer, &tempRect);
 
-	}
+	}*/
 
 	if (player.healthDecay > player.health)
 			player.healthDecay -= 0.5;
@@ -1396,6 +1430,24 @@ void PlayGame::RenderGUI(SDL_Renderer *gRenderer) {
 
 
 	mon.RenderGUI(gRenderer, monster, camx,camy);
+
+
+	// Render any text spawned
+	for (int i = 0; i < 100; i++) {
+		if (text[i].alive) {
+			std::stringstream tempss;
+			tempss << text[i].textfield.c_str();
+			gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255, 255, 255, 255}, gFont);
+			gText.setAlpha(text[i].alpha);
+			gText.setColor(text[i].color.r, text[i].color.g, text[i].color.b);
+			gText.render(gRenderer, text[i].x-camx, text[i].y-camy, gText.getWidth()/4, gText.getHeight()/4);
+
+			/*SDL_Rect tempRect = {text[i].x - camx,text[i].y - camy,
+							   text[i].w,  text[i].h};
+			SDL_SetRenderDrawColor(gRenderer, 255,255,255,255);
+			SDL_RenderFillRect(gRenderer, &tempRect);*/
+		}
+	}
 
 }
 
@@ -1623,7 +1675,7 @@ void PlayGame::checkCollisionParticlePlayer() {
 						if (distance < playerW/2 + particles[i].w/2) {
 							// spawn blood particle effect
 							// spawn blood particle effect
-							for (double h=0.0; h< 360.0; h+=rand() % 10 + 10){
+							for (double h=0.0; h< 360.0; h+=rand() % 30 + 30){
 								int rands = rand() % 4 + 2;
 								float newX = playerX+playerW/2;
 								float newY = playerY+playerH/2;
@@ -1643,10 +1695,16 @@ void PlayGame::checkCollisionParticlePlayer() {
 							// play sound effect
 							Mix_PlayChannel(-1, sPlayerHurt, 0);
 							// reduce player health
-							player.health -= particles[i].damage;
+							//player.health -= particles[i].damage;
 							// remove particle
 							particles[i].alive = false;
 							part.count--;
+							// Spawn damage effect on Player
+							std::stringstream tempss;
+							tempss << particles[i].damage;
+							int randw = rand() % int(playerW);
+							tex.spawn(text, playerX+randw-1, playerY+playerH/2,
+									  0.0, -randDouble(0.1, 0.3), 255, tempss.str().c_str(), {255,255,0});
 						}
 
 						// particle collision with player using a BOX
@@ -1742,7 +1800,7 @@ void PlayGame::checkCollisionGrenadePlayer() {
 						}
 
 						// play sound effect
-						Mix_PlayChannel(-1, sSpellExplode, 0);
+						//Mix_PlayChannel(-1, sSpellExplode, 0);
 
 						// spawn explosion particle effect
 						for (double h=0.0; h< 360.0; h+=rand() % 10 + 2){
@@ -2064,8 +2122,8 @@ void PlayGame::checkCollisionParticleTile() {
 						part.count--;
 					}*/
 					if (checkCollision(particles[i].x, particles[i].y, particles[i].w, particles[i].h, tile[j].x, tile[j].y, 16, 16) ) {
-						Mix_PlayChannel(3, sSpellExplode, 0);
-						part.SpawnExplosion(particles, particles[i].x2, particles[i].y2, particles[i].color);
+						//Mix_PlayChannel(3, sSpellExplode, 0);
+						////part.SpawnExplosion(particles, particles[i].x2, particles[i].y2, particles[i].color);
 						particles[i].alive = false;
 						part.count--;
 					}
@@ -2278,7 +2336,7 @@ void PlayGame::UpdateMonsterPlayer(SDL_Renderer *gRenderer) {
 					monster[i].vY = 0.05 * (bmy - bmy2) / targetDistanceY;
 
 					// Move Monster x-axis{
-					if (monster[i].distance < 100) {
+					if (monster[i].distance > 16 && monster[i].distance < 100) {
 						monster[i].x += monster[i].vX;
 					}
 					// if colliding, move Monster back in x-axis
@@ -2308,7 +2366,7 @@ void PlayGame::UpdateMonsterPlayer(SDL_Renderer *gRenderer) {
 						monster[i].x -= monster[i].vX;
 					}
 					// Move Monster x-axis
-					if (monster[i].distance < 100) {
+					if (monster[i].distance > 16 && monster[i].distance < 100) {
 						monster[i].y += monster[i].vY;
 					}
 					// if colliding, move Monster back in x-axis

@@ -26,7 +26,7 @@ void MainMenu::Load(SDL_Renderer *gRenderer) {
 	// Load audio files
 	LoadAudioFiles();
 	// Apply audio configurations
-	applyOldAudioCFG();
+	applyMasterAudioCFG();
 	// Textures
 	gMenu.loadFromFile(gRenderer, "resource/gfx/menu.png");
 	// Fonts
