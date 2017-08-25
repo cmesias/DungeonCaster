@@ -104,9 +104,6 @@ public:	// Spells
 	std::vector<Spell> spell;
 	unsigned int rJ;
 	// Number of times spell will occur during duration
-	// (Get maxDuration and divide it by occurrences to get number of times it will occur during the duration)
-	float currentDuration;
-	float maxDuration;			// Spell frame length
 	float cooldownTimer;
 	float baseCooldown;
 	bool cooldown;

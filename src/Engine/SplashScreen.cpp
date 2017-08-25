@@ -7,7 +7,6 @@
 
 #include "LTexture.h"
 #include "LWindow.h"
-
 #include <SDL2/SDL.h>
 
 #include "SplashScreen.h"

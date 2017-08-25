@@ -38,7 +38,6 @@ public:	// Variables
 	enum SpellTarget {casterCenter, mouseCenter, targetCenter};
 	int projectiles;			// Number of projectiles being shot per frame
 	float scope;				// The width of the attack (e.g. "360" would be an all around attack)
-	//float maxDuration;			// Spell frame length
 	// Number of times spell will occur during duration
 	// (Get maxDuration and divide it by occurrences to get number of times it will occur during the duration)
 	float occurances;
@@ -48,8 +47,18 @@ public:	// Variables
 	//float cooldownTimer;
 	bool activate;
 	//bool cooldown;
-	int randIndex;			// before activation, choose 1 spell to attack with from list of spells
-
+	int randIndex;				// before activation, choose 1 spell to attack with from list of spells
+	float increAngle;			// Increases as spell duration goes on
+	float increAngleMax;		// Increases as spell duration goes on
+	// (Get maxDuration and divide it by occurrences to get number of times it will occur during the duration)
+	float currentDuration;
+	float maxDuration;			// Spell frame length
+	float timerBeforeMoving;	// Timer before moving spell
+	bool goTowardsTarget;		// After timerBeforeMoving is finished, spell will go towards target's last location
+	float rate;					// spell rate (i.e. 2.5 equals 2.5 spell casts a second)
+	bool spawnsAwayFromCaster;	// If true, the spell will spawn away from the caster by increments (like in the game Gungeon)
+	float distanceW;			// Each occurrence, the spell(s) will move X distance(s) away from caster
+	float distanceH;
 	Spell(std::string newDisplayName, int newType,
 			int newProjectiles, float newScope,
 			float newOccurances,
@@ -63,14 +72,16 @@ public:	// Variables
 			bool newDecay, float newDecaySpeed,
 			bool newTrail, float newTrailRate, SDL_Color newTrailColor,
 			float newTrailMinSize, float newTrailMaxSize,
-			float newManaCost) {
+			float newManaCost,
+			float newincreAngle, float newincreAngleMax,
+			float newRate, float newMaxDuration,
+			float newTimerBeforeMoving, bool newGoTowardsTarget,
+			bool newSpawnsAwayFromCaster, float newDistanceW, float newDistanceH) {
 		displayName = newDisplayName;
 		type = newType;
 		projectiles = newProjectiles;
 		scope = newScope;
-		//maxDuration = newMaxDuration;
 		occurances = newOccurances;
-		//currentDuration = newMaxDuration;
 		minSize = newMinSize;
 		maxSize = newMaxSize;
 		minSpe = newMinSpe;
@@ -98,6 +109,16 @@ public:	// Variables
 		activate = false;
 		//cooldown = false;
 		randIndex = 0;
+		increAngle = newincreAngle;
+		increAngleMax = newincreAngleMax;
+		rate = newRate;
+		maxDuration = newMaxDuration;
+		currentDuration = newMaxDuration;
+		timerBeforeMoving = newTimerBeforeMoving;
+		goTowardsTarget = newGoTowardsTarget;
+		spawnsAwayFromCaster = newSpawnsAwayFromCaster;
+		distanceW = newDistanceW;
+		distanceH = newDistanceH;
 	}
 
 	/*Spell(std::string newDisplayName, int newType,

@@ -70,11 +70,13 @@ public:	// Render dialogue text, and render status bars such as health bars
 	// Render dialog
 	void renderDialogText(SDL_Renderer *gRenderer, std::string speakerName,
 						  std::string speakerText,
-						  float x, float y, float w, float h,
+						  float dialogueX, float dialogueY, float dialogueW, float dialogueH,
+						  float speakerX, float speakerY, float speakerW, float speakerH,
 						  SDL_Color speakerNameColor, SDL_Color speakerTextColor,
 						  SDL_Color colorBG, SDL_Color colorBorder,
 						  SDL_Color colorBGSpeaker, SDL_Color colorBorderSpeaker,
-						  TTF_Font *gFontName, TTF_Font *gFontDialog, LTexture &gText);
+						  TTF_Font *gFontName, TTF_Font *gFontDialog, LTexture &gText,
+						  Uint32 wrapLength);
 
 	// Render status bar
 	void renderStatusBar(SDL_Renderer *gRenderer, float x, float y, float w, float h,

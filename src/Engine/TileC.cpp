@@ -12,7 +12,7 @@
 #include <sstream>
 
 #include "TileC.h"
-
+/*
 
 
 void TileC::init(TileC tilec[]) {
@@ -321,3 +321,4 @@ std::string TileC::saveTiles(TileC tilec[]){
 	}
 	return tempData.str().c_str();
 }
+*/

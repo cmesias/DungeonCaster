@@ -148,41 +148,47 @@ bool Helper::doIntersect(Point p1, Point q1, Point p2, Point q2)
 
 void Helper::renderDialogText(SDL_Renderer *gRenderer, std::string speakerName,
 					  std::string speakerText,
-					  float x, float y, float w, float h,
+					  float speakerX, float speakerY, float speakerW, float speakerH,
+					  float dialogueX, float dialogueY, float dialogueW, float dialogueH,
 					  SDL_Color speakerNameColor, SDL_Color speakerTextColor,
 					  SDL_Color colorBG, SDL_Color colorBorder,
 					  SDL_Color colorBGSpeaker, SDL_Color colorBorderSpeaker,
-					  TTF_Font *gFontName, TTF_Font *gFontDialog, LTexture &gText){
+					  TTF_Font *gFontName, TTF_Font *gFontDialog, LTexture &gText,
+					  Uint32 wrapLength){
 
-	SDL_Rect tempr = {x, y, w, h};
-	SDL_SetRenderDrawColor(gRenderer, colorBG.r, colorBG.g, colorBG.b, 255);
-	SDL_RenderFillRect(gRenderer, &tempr);
-	SDL_SetRenderDrawColor(gRenderer, colorBorder.r, colorBorder.g, colorBorder.b, 255);
-	SDL_RenderDrawRect(gRenderer, &tempr);
-
+	// Speaker Name
 	std::stringstream tempss;
-		// Speaker Name
-		tempss.str(std::string());
-		tempss << speakerName;
-		gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), speakerNameColor, gFontName);
+	tempss.str(std::string());
+	tempss << speakerName;
+	gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), speakerNameColor, gFontName);
+	int newWidth = gText.getWidth()/4;
+	int newHeight = gText.getHeight()/4;
+		speakerW = newWidth + 8;
+		speakerH = newHeight + 4;
+		speakerX = dialogueX;
+		speakerY = dialogueY - newHeight - 6;
+		SDL_Rect tempRect = {speakerX, speakerY, speakerW, speakerH};
+		SDL_SetRenderDrawColor(gRenderer, colorBGSpeaker.r, colorBGSpeaker.g, colorBGSpeaker.b, 255);
+		SDL_RenderFillRect(gRenderer, &tempRect);
 
-			//
-			SDL_Rect tempRect = {x, y-gText.getHeight()-10, gText.getWidth()+15, gText.getHeight()+8};
-			SDL_SetRenderDrawColor(gRenderer, colorBGSpeaker.r, colorBGSpeaker.g, colorBGSpeaker.b, 255);
-			SDL_RenderFillRect(gRenderer, &tempRect);
+		SDL_SetRenderDrawColor(gRenderer, colorBorderSpeaker.r, colorBorderSpeaker.g, colorBorderSpeaker.b, 255);
+		SDL_RenderDrawRect(gRenderer, &tempRect);
+	gText.render(gRenderer, speakerX + speakerW/2-newWidth/2,
+							speakerY + speakerH/2-newHeight/2,
+							newWidth, newHeight);
 
-			SDL_SetRenderDrawColor(gRenderer, colorBorderSpeaker.r, colorBorderSpeaker.g, colorBorderSpeaker.b, 255);
-			SDL_RenderDrawRect(gRenderer, &tempRect);
-
-		gText.render(gRenderer, x+5, y-gText.getHeight() - 5, gText.getWidth(), gText.getHeight());
-
-
-		// Speaker Text
-		tempss.str(std::string());
-		tempss << speakerText;
-		gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), speakerTextColor, gFontDialog);
-
-		gText.render(gRenderer, x+10, y+10, gText.getWidth(), gText.getHeight());
+	// Dialogue Text
+	tempss.str(std::string());
+	tempss << speakerText;
+	gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), speakerTextColor, gFontDialog, wrapLength);
+	newWidth = gText.getWidth()/4;
+	newHeight = gText.getHeight()/4;
+		SDL_Rect tempr = {dialogueX, dialogueY, dialogueW, dialogueH};
+		SDL_SetRenderDrawColor(gRenderer, colorBG.r, colorBG.g, colorBG.b, 255);
+		SDL_RenderFillRect(gRenderer, &tempr);
+		SDL_SetRenderDrawColor(gRenderer, colorBorder.r, colorBorder.g, colorBorder.b, 255);
+		SDL_RenderDrawRect(gRenderer, &tempr);
+	gText.render(gRenderer, dialogueX+3, dialogueY+3, newWidth, newHeight);
 }
 
 void Helper::renderStatusBar(SDL_Renderer *gRenderer, float x, float y, float w, float h,

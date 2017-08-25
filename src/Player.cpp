@@ -127,6 +127,49 @@ void Player::Init() {
 
 	// Create Spells
 	// Fireball Spell
+
+
+	spell.push_back( Spell("Fireball", 3,
+							1, 65.0,
+							1,
+							4, 4,
+							1.2, 1.2,
+							75, {244,144,25},
+							0, 0,
+							255, 0,
+							60, 0.33,
+							false, 0.0,
+							false, 0.0,
+							false, 25, {244,144,25},
+							4, 4,
+							0,
+							0, 1.0,
+							1, 1,
+							0, false,
+							false, 0, 0) );
+
+	spell.push_back( Spell("Lightning", 3,
+							1, 65.0,
+							1,
+							4, 4,
+							2.5, 2.5,
+							25, {255,144,244},
+							0, 0,
+							255, 0,
+							60, 0.1,
+							false, 0.0,
+							false, 0.0,
+							false, 25, {244,144,244},
+							1, 5,
+							0,
+							0, 1.0,
+							1, 1,
+							0, false,
+							false, 0, 0) );
+
+
+
+
 	/*spell.push_back( Spell("Fireball",
 							2, 1,
 							180, 1,
@@ -274,33 +317,39 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 	 */
 
 	// Handle casting Spells
-	/*for (unsigned int i = 0; i < spell.size(); i++) {
+	for (unsigned int i = 0; i < spell.size(); i++) {
 		if (spell[i].activate) {
 			// If Player has enough mana, cast spell, otherwise stop spell casting
 			if (mana > spell[i].manaCost) {
+				// Stop casting certain spell
+				spell[i].activate = false;
+				// Subtract mana from Player
+				mana -= spell[i].manaCost;
+				// Spawn Spell as a particle
+				float spe = randDouble(spell[ spellIndex ].minSpe, spell[ spellIndex ].maxSpe);
+				float size = randDouble(spell[ spellIndex ].minSize, spell[ spellIndex ].maxSize);
+				p_dummy.spawnParticleAngle(particle, tag, spell[i].type,
+						x2 - size/2,
+						y2 - size/2,
+						size, size,
+						angle, spe,
+						spell[i].damage,
+						spell[i].color, 1,
+						spell[i].dir, spell[i].dirSpe,
+						spell[i].alpha, spell[i].alphaSpe,
+						spell[i].deathTimer, spell[i].deathTimerSpe,
+						spell[i].sizeDeath, spell[i].sizeDeathSpe,
+						spell[i].decay, spell[i].decaySpe,
+						spell[i].trail, spell[i].trailRate, spell[i].trailColor,
+						spell[i].trailMinSize, spell[i].trailMaxSize);
+				// play audio
+				Mix_PlayChannel(-1, sLazer, 0);
 				// If spell not on cooldown, cast spell
-				if (!spell[i].cooldown) {
+				/*if (!spell[i].cooldown) {
 					// Start cooldown
 					spell[i].cooldown = true;
 					// Reset cooldown timer
 					spell[i].cooldownTimer = 0;
-					// Spawn Spell as a particle
-					p_dummy.spawnParticleAngle(particle, tag, spell[i].type,
-							x2 - spell[i].size/2,
-							y2 - spell[i].size/2,
-							spell[i].size, spell[i].size,
-							angle, spell[i].speed,
-							spell[i].damage,
-							spell[i].color, 1,
-							spell[i].dir, spell[i].dirSpe,
-							spell[i].alpha, spell[i].alphaSpe,
-							spell[i].deathTimer, spell[i].deathTimerSpe,
-							spell[i].sizeDeath, spell[i].sizeDeathSpe,
-							spell[i].decay, spell[i].decaySpe,
-							spell[i].trail, spell[i].trailRate, spell[i].trailColor,
-							spell[i].trailMinSize, spell[i].trailMaxSize);
-					// Subtract mana from Player
-					mana -= spell[i].manaCost;
 					// play audio
 					Mix_PlayChannel(-1, sLazer, 0);
 				}
@@ -317,16 +366,16 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 						// Stop casting certain spell
 						spell[i].activate = false;
 					}
-				}
+				}*/
 			// Not enough mana to cast spell, stop activation
 			} else {
 				// Stop spell actication
 				spell[i].activate = false;
 				// Reset cooldown timer
-				spell[i].cooldownTimer = spell[i].baseCooldown;
+				//spell[i].cooldownTimer = spell[i].baseCooldown;
 			}
 		}
-	}*/
+	}
 
 	// Replenish mana
 	if (mana < maxMana) {
@@ -437,7 +486,6 @@ void Player::fire(Particle particle[], Particle &p_dummy, int mx, int my,
 }
 
 void Player::move(Particle particle[], Particle &p_dummy,
-				   TileC &tc, TileC tilec[],
 				   Tile &tl, Tile tile[],
 				   int mx, int my){
 
@@ -476,7 +524,6 @@ void Player::move(Particle particle[], Particle &p_dummy,
 }
 
 void Player::Update(Particle particle[], Particle &p_dummy,
-					 TileC &tc, TileC tilec[],
 					 Tile &tl, Tile tile[],
 					 int mx, int my, int camx, int camy,
 					 LWindow gWindow, SDL_Renderer* gRenderer,
@@ -487,7 +534,7 @@ void Player::Update(Particle particle[], Particle &p_dummy,
 	if (alive)
 	{
 		// Movinig
-		move(particle, p_dummy, tc, tilec, tl, tile, mx+camx, my+camy);
+		move(particle, p_dummy, tl, tile, mx+camx, my+camy);
 
 		// Shooting
 		fire(particle, p_dummy, mx+camx, my+camy, sLazer, sGrenade, sGrenadePickup, sPistolReload);

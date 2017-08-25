@@ -6,6 +6,8 @@
  */
 
 #include "Engine/LTexture.h"
+#include "Engine/Particle.h"
+
 #include <math.h>
 #include <iostream>
 #include <fstream>
@@ -17,9 +19,9 @@
 #include <SDL2/SDL_image.h>
 
 #include "Monster.h"
-#include "Engine/Particle.h"
 
 // TODO - make Boss spell
+// TODO - mess around with incremental angle, maybe add it in the Spell class instead of the Monster class
 
 void Monster::Init(Monster monster[]){
 	// Load monster clips
@@ -330,7 +332,7 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 			// random index spell to cast
 			if (!monster[i].attack && !monster[i].cooldown) {
 				if (monster[i].distance <= monster[i].atkRange) {
-					monster[i].rJ = 2;
+					monster[i].rJ = rand () % monster[i].spell.size();
 					// Reset cooldown timer at 0
 					monster[i].cooldownTimer = 0;
 					// Start spell attack
@@ -365,21 +367,46 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 			// Do attacks
 			if (monster[i].attack) {
 				// Do spell duration count down
-				if (monster[i].currentDuration > 0) {
-					monster[i].currentDuration -= 1;
-
-
-
-
-
-
-
+				if (monster[i].spell[ monster[i].rJ ].currentDuration > 0) {
+					monster[i].spell[ monster[i].rJ ].currentDuration -= monster[i].spell[ monster[i].rJ ].rate;
 
 					// Do attacks per frame
-					for (int l = 0; l < monster[i].maxDuration; l += monster[i].maxDuration/monster[i].spell[ monster[i].rJ ].occurances) {
-						if (monster[i].currentDuration == l) {
-							int randProj = rand() % monster[i].spell[monster[i].rJ].projectiles + 5;
-							for (double h = 0.0; h < monster[i].spell[ monster[i].rJ ].scope; h += monster[i].spell[ monster[i].rJ ].scope/randProj) {
+					for (int l = 0; l < monster[i].spell[ monster[i].rJ ].maxDuration; l += monster[i].spell[ monster[i].rJ ].maxDuration/monster[i].spell[ monster[i].rJ ].occurances) {
+
+
+						if (monster[i].spell[ monster[i].rJ ].currentDuration == l) {
+
+							/*
+							 * At a certain duration (or every occurrence), we will get the single digit form of it.
+							 *
+							 * How to solve: "currentDuration / (maxDuration / occurrences)"
+							 *
+							 * Example 1:
+							 *     problem set: currentDuration = 0, maxDuration = 60, occurrences = 5
+							 *     proof: 0 / (60 / 5)
+							 *     proof: 24 / 12
+							 *     proof: 0					// the value we end up with is 0
+							 *
+							 * Example 2:
+							 *     problem set: currentDuration = 12, maxDuration = 60, occurrences = 5
+							 *     proof: 12 / (60 / 5)
+							 *     proof: 12 / 12
+							 *     proof: 1				  	// the value we end up with is 1
+							 *
+							 * Example 3:
+							 *     problem set: currentDuration = 24, maxDuration = 60, occurrences = 5
+							 *     proof: 24 / (60 / 5)
+							 *     proof: 24 / 12
+							 *     proof: 2					// the value we end up with is 2
+							 */
+							int flipDuration = monster[i].spell[ monster[i].rJ ].maxDuration - monster[i].spell[ monster[i].rJ ].currentDuration;
+							int increment = flipDuration / (monster[i].spell[ monster[i].rJ ].maxDuration/monster[i].spell[ monster[i].rJ ].occurances);
+							std::cout << "currentDuration: " << monster[i].spell[ monster[i].rJ ].maxDuration - monster[i].spell[ monster[i].rJ ].currentDuration
+									   << ", maxDuration: " << monster[i].spell[ monster[i].rJ ].maxDuration
+									   << ", occurrences: " << monster[i].spell[ monster[i].rJ ].occurances
+									   << ", increment: " << increment-1 << "\n";
+							// Minions
+							for (double h = 0.0; h < monster[i].spell[ monster[i].rJ ].scope; h += monster[i].spell[ monster[i].rJ ].scope/monster[i].spell[monster[i].rJ].projectiles) {
 								if (monster[i].type < 12) {
 									int rands = 4;
 									float spe = randDouble(monster[i].spell[ monster[i].rJ ].minSpe, monster[i].spell[ monster[i].rJ ].maxSpe);
@@ -400,14 +427,19 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 											monster[i].spell[ monster[i].rJ ].sizeDeath, monster[i].spell[ monster[i].rJ ].sizeDeathSpe,
 											monster[i].spell[ monster[i].rJ ].decay, monster[i].spell[ monster[i].rJ ].decaySpe,
 											monster[i].spell[ monster[i].rJ ].trail, monster[i].spell[ monster[i].rJ ].trailRate, monster[i].spell[ monster[i].rJ ].trailColor,
-											monster[i].spell[ monster[i].rJ ].trailMinSize, monster[i].spell[ monster[i].rJ ].trailMaxSize);
+											monster[i].spell[ monster[i].rJ ].trailMinSize, monster[i].spell[ monster[i].rJ ].trailMaxSize,
+											monster[i].spell[ monster[i].rJ ].timerBeforeMoving);
 								}
+							}
+							// Boss
+							//int randProj = rand() % monster[i].spell[monster[i].rJ].projectiles;
+							for (double h = 0.0; h < monster[i].spell[ monster[i].rJ ].scope; h += monster[i].spell[ monster[i].rJ ].scope/monster[i].spell[monster[i].rJ].projectiles) {
 								if (monster[i].type == 12) {
 									int rands = 4;
-									float newX;
-									float newY = monster[i].y + monster[i].h / 2;
 									float spe = randDouble(monster[i].spell[ monster[i].rJ ].minSpe, monster[i].spell[ monster[i].rJ ].maxSpe);
 									float size = randDouble(monster[i].spell[ monster[i].rJ ].minSize, monster[i].spell[ monster[i].rJ ].maxSize);
+									float newX;
+									float newY = (monster[i].y + monster[i].h / 2) + size;
 									float shootAngle = 0.0;
 									if (monster[i].angle > 270 || monster[i].angle < 90) {
 										shootAngle = 0;
@@ -416,10 +448,31 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 										shootAngle = 180;
 										newX = monster[i].x - 2 - size/2;
 									}
-									float finalAngle = (shootAngle) + h - (monster[i].spell[ monster[i].rJ ].scope/2);
+									//float finalAngle = (shootAngle) + h - (monster[i].spell[ monster[i].rJ ].scope/2);
+
+									// If we're not incrementing
+									float finalAngle;
+									float radians;
+									float distanceW = increment * monster[i].spell[ monster[i].rJ ].distanceW;
+									float distanceH = increment * monster[i].spell[ monster[i].rJ ].distanceH;
+									double barrelW = 0;
+									double barrelH = 0;
+									if (monster[i].spell[ monster[i].rJ ].increAngleMax == 0) {
+										finalAngle = (shootAngle) + h - monster[i].spell[ monster[i].rJ ].scope/2;
+									}
+									// If we are incrementing
+									else{
+										finalAngle = (shootAngle) + h;
+										finalAngle += monster[i].spell[ monster[i].rJ ].increAngle;
+										finalAngle -= monster[i].spell[ monster[i].rJ ].increAngleMax/2;
+										radians = ( M_PI/180) * (finalAngle);
+										barrelW  = (distanceW * cos(radians) ) - (distanceH * sin(radians) );
+										barrelH  = (distanceW * sin(radians) ) + (distanceH * cos(radians) );
+									}
+									//finalAngle += 13;
 									// Spawn Spell as a particle
 									part.spawnParticleAngle(particle, monster[i].tag, monster[i].spell[ monster[i].rJ ].type,
-											newX, newY,
+											newX + barrelW, newY + barrelH,
 											size, size,
 											finalAngle, spe,
 											monster[i].spell[ monster[i].rJ ].damage,
@@ -430,24 +483,32 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 											monster[i].spell[ monster[i].rJ ].sizeDeath, monster[i].spell[ monster[i].rJ ].sizeDeathSpe,
 											monster[i].spell[ monster[i].rJ ].decay, monster[i].spell[ monster[i].rJ ].decaySpe,
 											monster[i].spell[ monster[i].rJ ].trail, monster[i].spell[ monster[i].rJ ].trailRate, monster[i].spell[ monster[i].rJ ].trailColor,
-											monster[i].spell[ monster[i].rJ ].trailMinSize, monster[i].spell[ monster[i].rJ ].trailMaxSize);
+											monster[i].spell[ monster[i].rJ ].trailMinSize, monster[i].spell[ monster[i].rJ ].trailMaxSize,
+											monster[i].spell[ monster[i].rJ ].timerBeforeMoving,
+											monster[i].spell[ monster[i].rJ ].goTowardsTarget, bmx, bmy);
 								}
 
 							}
 							// play audio
-							Mix_PlayChannel(2, sLazer, 0);
+							Mix_PlayChannel(-1, sLazer, 0);
 							//Mix_FadeInChannelTimed(-1, sLazer, 1, 1, 1);
+							/// Increment shoot angle after shots
+							// Get number of times it will tick until duration is over
+							float ticks = monster[i].spell[ monster[i].rJ ].maxDuration/monster[i].spell[ monster[i].rJ ].occurances;
+							// Then get real ticks by dividing max duration with above ^^^
+							ticks = monster[i].spell[ monster[i].rJ ].maxDuration/ticks;
+							// With the number above, set the number og ticks to match increasing the increment angle
+							float increValue = monster[i].spell[ monster[i].rJ ].increAngleMax / ticks;
+							// Increment angle to shoot all around but incrementally going up
+							if (monster[i].spell[ monster[i].rJ ].increAngle < monster[i].spell[ monster[i].rJ ].increAngleMax) {
+								monster[i].spell[ monster[i].rJ ].increAngle += increValue;
+							}
 						} // end check for specific duration
-					}		// end for k check
 
 
 
 
-
-
-
-
-
+					}		// end forlk check
 				}
 				// Duration time is up, stop doing spell
 				else {
@@ -499,7 +560,7 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 			}
 			// Not attacking, do spell cooldowns
 			else{
-				// If spell is on cooldown
+				// If Boss is on attack cooldown
 				if (monster[i].cooldown) {
 					// If spell cooldown timer is not the same as baseCooldown, keep ticking
 					if (monster[i].cooldownTimer < monster[i].baseCooldown) {
@@ -511,7 +572,9 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 						// Set Spell to no longer be on cooldown
 						monster[i].cooldown = false;
 						// Reset duration
-						monster[i].currentDuration = monster[i].maxDuration;
+						monster[i].spell[ monster[i].rJ ].currentDuration = monster[i].spell[ monster[i].rJ ].maxDuration;
+						// Reset incrementing angle
+						monster[i].spell[ monster[i].rJ ].increAngle = 0.0;
 					}
 				}
 				/*// If spell is on cooldown
@@ -620,10 +683,10 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 
 			// This is not Monster movement, this is velocity
 			// if the Monster gets knocked backed from another force
-			/*monster[i].x += monster[i].velX;
+			monster[i].x += monster[i].velX;
 			monster[i].y += monster[i].velY;
 			monster[i].velX = monster[i].velX - monster[i].velX * 0.08;
-			monster[i].velY = monster[i].velY - monster[i].velY * 0.08;*/
+			monster[i].velY = monster[i].velY - monster[i].velY * 0.08;
 
 			// monster death
 			if (monster[i].health <= 0)
@@ -634,7 +697,7 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 			}
 
 			// monster circle collision check with other zombies
-			for (int j = 0; j < max; j++) {
+			/*for (int j = 0; j < max; j++) {
 				if (i !=j) {
 					if (monster[j].alive) {
 						float bmx = monster[j].x2;
@@ -654,13 +717,13 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 						if (distance <= 1) {
 							distance = 1;
 						}
-						if (distance < monster[i].w/2 + monster[j].w/2) {
+						if (distance < monster[i].h/2 + monster[j].h/2) {
 							monster[i].vX -= 1 * Cos;
 							monster[i].vY -= 1 * Sin;
 						}
 					}
 				}
-			}
+			}*/
 		}	// end check alive
 	}
 }
@@ -712,7 +775,7 @@ void Monster::RenderBehind(SDL_Renderer* gRenderer, Monster monster[], int camx,
 			}
 			// Render Monster death sprite
 			else{
-				if (monster[i].y+monster[i].h <= playerY+playerH) {
+				if (monster[i].y+monster[i].h <= playerY+playerH && monster[i].onScreen) {
 					int numberOfFramesPerRow = 8;
 					int incrementToNextRowAmount = 9;
 					int monsterId = (monster[i].type * incrementToNextRowAmount) + numberOfFramesPerRow;
@@ -776,7 +839,7 @@ void Monster::RenderInFront(SDL_Renderer* gRenderer, Monster monster[], int camx
 	for (int i = 0; i < max; i++) {
 		// Only render 16x16 monsters
 		if (monster[i].type >= 0 && monster[i].type < 12) {
-			if (monster[i].alive) {
+			if (monster[i].alive && monster[i].onScreen) {
 				if (monster[i].y+monster[i].h > playerY+playerH) {
 					// Render all Monsters
 					gMonster.setAlpha(255);
@@ -801,7 +864,7 @@ void Monster::RenderInFront(SDL_Renderer* gRenderer, Monster monster[], int camx
 			}
 			// Render Monster death sprite
 			else{
-				if (monster[i].y+monster[i].h > playerY+playerH) {
+				if (monster[i].y+monster[i].h > playerY+playerH && monster[i].onScreen) {
 					int numberOfFramesPerRow = 8;
 					int incrementToNextRowAmount = 9;
 					int monsterId = (monster[i].type * incrementToNextRowAmount) + numberOfFramesPerRow;
@@ -813,7 +876,7 @@ void Monster::RenderInFront(SDL_Renderer* gRenderer, Monster monster[], int camx
 		}
 		// Render Blue Dragon Boss
 		else if (monster[i].type == 12) {
-			if (monster[i].alive) {
+			if (monster[i].alive && monster[i].onScreen) {
 				if (monster[i].y+monster[i].h > playerY+playerH) {
 					// Render all Monsters
 					gMonster.setAlpha(255);
@@ -857,13 +920,21 @@ void Monster::RenderInFront(SDL_Renderer* gRenderer, Monster monster[], int camx
 
 void Monster::RenderGUI(SDL_Renderer *gRenderer, Monster monster[], int camx, int camy) {
 	for (int i = 0; i < max; i++) {
-		if (monster[i].alive){
+		if (monster[i].alive && monster[i].onScreen){
 
-			renderStatusBar(gRenderer, monster[i].x+monster[i].w/2-camx, monster[i].y-camy, 8, 3,
-							1,
-							monster[i].health, monster[i].healthDecay, monster[i].maxHealth,
-							{80,0,0}, {255,20,255},
-							{200,20,20}, {255,255,255}, true);
+			if (monster[i].type == 12) {
+				renderStatusBar(gRenderer, monster[i].x+monster[i].w/2-camx, monster[i].y-camy, 20, 3,
+								1,
+								monster[i].health, monster[i].healthDecay, monster[i].maxHealth,
+								{80,0,0}, {255,20,255},
+								{200,20,20}, {255,255,255}, true);
+			}else{
+				renderStatusBar(gRenderer, monster[i].x+monster[i].w/2-camx, monster[i].y-camy, 8, 3,
+								1,
+								monster[i].health, monster[i].healthDecay, monster[i].maxHealth,
+								{80,0,0}, {255,20,255},
+								{200,20,20}, {255,255,255}, true);
+			}
 		}
 	}
 }
@@ -871,7 +942,7 @@ void Monster::RenderGUI(SDL_Renderer *gRenderer, Monster monster[], int camx, in
 void Monster::RenderDebug(SDL_Renderer *gRenderer, Monster monster[], int camx, int camy) {
 	// Render Debug information
 	for (int i = 0; i < max; i++) {
-		if (monster[i].alive){
+		if (monster[i].alive && monster[i].onScreen){
 			// Render monster box
 			SDL_Rect tempRect = {monster[i].x-camx, monster[i].y-camy, monster[i].w, monster[i].h};
 			SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
@@ -921,12 +992,10 @@ void Monster::RenderDebug(SDL_Renderer *gRenderer, Monster monster[], int camx, 
 void Monster::SetSpells(Monster monster[], int i) {
 	// SPeciifics
 	if (monster[i].type == 0) {
-		monster[i].currentDuration = 1;
-		monster[i].maxDuration = 1;
 		monster[i].cooldownTimer = 0;
 		monster[i].baseCooldown = 60*2;
 		monster[i].cooldown = false;
-		monster[i].spell.push_back( Spell("Skely Blast", 4,
+		monster[i].spell.push_back( Spell("Skely Blast", 3,
 								1, 1.0,
 								1,
 								4, 4,
@@ -939,15 +1008,17 @@ void Monster::SetSpells(Monster monster[], int i) {
 								false, 0.0,
 								false, 7, {180,20,180},
 								1, 6,
-								0) );
+								0,
+								0, 0.0,
+								1, 1,
+								0, false,
+								false, 0, 0) );
 	}
 	if (monster[i].type == 1) {
-		monster[i].currentDuration = 1;
-		monster[i].maxDuration = 1;
 		monster[i].cooldownTimer = 0;
 		monster[i].baseCooldown = 60*2;
 		monster[i].cooldown = false;
-		monster[i].spell.push_back( Spell("Goblin Blast", 4,
+		monster[i].spell.push_back( Spell("Goblin Blast", 3,
 							    3, 45.0,
 								1,
 								4, 4,
@@ -960,15 +1031,17 @@ void Monster::SetSpells(Monster monster[], int i) {
 								false, 0.0,
 								false, 7, {20,180,20},
 								1, 6,
-								0) );
+								0,
+								0, 0.0,
+								1, 1,
+								0, false,
+								false, 0, 0) );
 	}
 	if (monster[i].type == 2) {
-		monster[i].currentDuration = 60;
-		monster[i].maxDuration = 60;
 		monster[i].cooldownTimer = 0;
 		monster[i].baseCooldown = 60*3;
 		monster[i].cooldown = false;
-		monster[i].spell.push_back( Spell("Ghost Mage Cull", 4,
+		monster[i].spell.push_back( Spell("Ghost Mage Cull", 3,
 								9, 360.0,
 								3,
 								4, 4,
@@ -981,14 +1054,18 @@ void Monster::SetSpells(Monster monster[], int i) {
 								false, 0.0,
 								false, 7, {180,20,20},
 								1, 6,
-								0) );
+								0,
+								0, 0.0,
+								1, 60*2,
+								0, false,
+								false, 0, 0) );
 	}
 	// Set most Monsters ranges
 	if (monster[i].type < 12) {
 		monster[i].w = 16;
 		monster[i].h = 16;
 		monster[i].atkRange = 48;
-		monster[i].sightRange = 100;
+		monster[i].sightRange = 64;
 		monster[i].health = 100;
 		monster[i].healthDecay = 100;
 		monster[i].maxHealth = 100;
@@ -1003,54 +1080,130 @@ void Monster::SetSpells(Monster monster[], int i) {
 		monster[i].health = 2500;
 		monster[i].healthDecay = 2500;
 		monster[i].maxHealth = 2500;
-		monster[i].currentDuration = 60*3;
-		monster[i].maxDuration = 60*3;
 		monster[i].cooldownTimer = 0;
 		monster[i].baseCooldown = 60*3;
 		monster[i].cooldown = false;
-
-		monster[i].spell.push_back( Spell("Heat Waves", 4,
-								180, 180.0,
-								6,
-								4, 6,
-								1.4, 1.4,
-								2.5, {180,20,20},
+		/*monster[i].spell.push_back( Spell("Skely Blast", 3,
+								1, 1.0,
+								9,
+								4, 4,
+								0.6, 0.6,
+								10, {180,20,180},
 								0, 0,
-								255, 5,
-								60, 0,
+								255, 0,
+								60, 0.33,
 								false, 0.0,
 								false, 0.0,
-								false, 5, {180,20,20},
+								false, 25, {180,20,180},
+								1, 6,
+								0,
+								0, 180,
+								1, 60*3,
+								0, false) );
+		monster[i].spell.push_back( Spell("Skely Blast II", 3,
+								5, 180.0,
+								3,
 								4, 4,
-								0) );
-		monster[i].spell.push_back( Spell("Ice Blast", 4,
-								10, 135.0,
-								100,
-								2, 4,
-								0.3, 2.3,
-								2.5, {20,20,180},
-								1, 1,
-								255, 5,
-								60, 0,
+								0.6, 0.6,
+								10, {180,20,180},
+								0, 0,
+								255, 0,
+								60, 0.33,
 								false, 0.0,
 								false, 0.0,
-								false, 5, {20,20,180},
+								false, 25, {180,20,180},
+								1, 6,
+								0,
+								0, 0.0,
+								1, 60*3,
+								0, false) );
+		monster[i].spell.push_back( Spell("6 Star Banana Blast", 3,
+								6, 360.0,
+								12,
 								4, 4,
-								0) );
-		monster[i].spell.push_back( Spell("Acid Blast", 4,
-								10, 135.0,
-								30,
-								2, 4,
-								0.1, 9.6,
-								2.5, {20,180,20},
-								1, 1,
-								255, 2,
-								60, 0,
+								1.8, 1.8,
+								10, {244,200,20},
+								0, 0,
+								255, 0,
+								60, 0.0,
+								true, 0.05,
 								true, 0.02,
-								true, 0.25,
-								false, 5, {20,180,20},
+								false, 15, {244,144,20},
+								1, 6,
+								0,
+								0, 0.0,
+								1, 60*3,
+								20, false) );
+		monster[i].spell.push_back( Spell("Fire Blast II", 3,
+								2, 360.0,
+								15,
 								4, 4,
-								0) );
+								1.2, 1.2,
+								10, {200,30,20},
+								0, 0,
+								255, 0,
+								60, 0.5,
+								false, 0.05,
+								false, 0.03,
+								false, 25, {200,30,20},
+								1, 6,
+								0,
+								0, 90,
+								1, 60*3,
+								0, false) );
+		monster[i].spell.push_back( Spell("Fire Blast III", 3,
+								3, 360.0,
+								15,
+								4, 4,
+								1.6, 1.6,
+								10, {200,30,20},
+								0, 0,
+								255, 0,
+								60, 0.5,
+								false, 0.05,
+								false, 0.03,
+								false, 25, {200,30,20},
+								1, 6,
+								0,
+								0, 360,
+								1, 60*3,
+								0, false) );*/
+		monster[i].spell.push_back( Spell("Fire Blast III", 3,
+								3, 360.0,
+								10,
+								4, 4,
+								1.2, 1.2,
+								10, {200,30,20},
+								0, 0,
+								255, 0,
+								60, 0.5,
+								false, 0.05,
+								false, 0.03,
+								false, 25, {200,30,20},
+								1, 6,
+								0,
+								0, 90.0,
+								1, 60*3,
+								0, false,
+								false, 0, 0) );
+		/*monster[i].spell.push_back( Spell("Fire Blast V", 3,
+								5, 360.0,
+								5,
+								4, 4,
+								1.2, 1.2,
+								10, {200,30,20},
+								0, 0,
+								255, 0,
+								60, 0.5,
+								false, 0.05,
+								false, 0.03,
+								false, 25, {200,30,20},
+								1, 6,
+								0,
+								0, 45,
+								1, 60,
+								60, true,
+								true, 5, 0) );*/
 	}
 }
 

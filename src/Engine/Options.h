@@ -43,8 +43,6 @@ public:	// Bar variables
 public:	// Settings that can be changed by user
 	// Textures
 	LTexture gText;
-	LTexture gParticles;
-	SDL_Rect cParticles = {32, 0, 8, 8};
 	// Fonts
 	TTF_Font *gFont 			= NULL;
 	TTF_Font *gFont13 			= NULL;
@@ -62,6 +60,7 @@ public:	// Settings that can be changed by user
 	Mix_Chunk *sKeyPickup 		= NULL;
 	Mix_Chunk *sPlayerHurt 		= NULL;
 	Mix_Chunk *sSkeletonHurt	= NULL;
+	Mix_Chunk *sPotion			= NULL;
 	// Audio, Video Settings
 	int MASTER_VOL;
 	int MUSIC_VOL;
@@ -319,7 +318,6 @@ public:	// functions
 	void SaveLevel(LWindow &gWindow, SDL_Renderer *gRenderer, bool &mainLoop,
 				   std::string SpawnCoordinatesData,
 				   std::string TileSaveData,
-				   std::string CollisionTileSaveData,
 				   std::string ItemSaveData,
 				   std::string MonsterSaveData);
 

@@ -14,6 +14,7 @@ class SplashScreen : public Helper {
 public:
 	enum SplashResult { Nothing, Exit, Play };
 	void Show(LWindow &gWindow, SDL_Renderer *gRenderer, SplashScreen::SplashResult &result);
+
 private:
 	void free();
 	LTexture gSplash;

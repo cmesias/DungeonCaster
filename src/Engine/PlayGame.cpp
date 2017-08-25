@@ -47,7 +47,9 @@
 
 // BIG TODO - make a StatusEffects class (buffs and debuffs)
 
-void PlayGame::Init() {
+// TODO - if  Levels are not loading properly its because they dont have the destructible trait saved to them (level 6 and level8 work)
+
+void PlayGame::Init(Particle &part, Particle particles[]) {
 	// Game mode VS Editor mode Variables
     camlock 			= false;
     debug 				= true;
@@ -104,7 +106,7 @@ void PlayGame::Init() {
 	// Tiles
 	tl.Init(tile);
 	// Collision Tiles
-	tc.init(tilec);
+	//tc.init(tilec);
 	// Tilebar
 	tb.Init(tilebar);
 	tb.SpawnMultiple(tilebar);
@@ -161,7 +163,7 @@ void PlayGame::loadCFG(std::string fileName){
 }*/
 
 // Load
-void PlayGame::Load(LWindow &gWindow, SDL_Renderer *gRenderer) {
+void PlayGame::Load(LWindow &gWindow, SDL_Renderer *gRenderer, Particle &part, Particle particles[]) {
 
 	// Load Video settings from file
 	loadVideoCFG();
@@ -188,10 +190,6 @@ void PlayGame::Load(LWindow &gWindow, SDL_Renderer *gRenderer) {
 	gFont26 = TTF_OpenFont("resource/fonts/FredokaOne-Regular.ttf", 26);
 
 	// load particle textures
-	gParticles.loadFromFile(gRenderer, "resource/gfx/particles.png");
-	gParticles.setBlendMode(SDL_BLENDMODE_ADD);
-
-	// load particle textures
 	gLightBG.loadFromFile(gRenderer, "resource/gfx/light_bg.png");
 	gLight.loadFromFile(gRenderer, "resource/gfx/light.png");
 
@@ -211,9 +209,8 @@ void PlayGame::Load(LWindow &gWindow, SDL_Renderer *gRenderer) {
 	//applyVideoCFG(gWindow);
 }
 
-void PlayGame::Free() {
+void PlayGame::Free(Particle &part) {
 	// free textures
-	gParticles.free();
 	gText.free();
 	gBG.free();
 	gCircles.free();
@@ -239,15 +236,21 @@ void PlayGame::Free() {
 }
 
 void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result &result, int levelToLoad) {
+
+
+
+	// Particles
+	static Particle part;
+	static Particle particles[8000];
+
 	// Initialize
-	Init();
+	Init(part,particles);
 
 	//fri.Spawn(frigate, 0, 2, map.x+tl.levelWidth - 620 - 180, map.y + tl.levelHeight/2 - 280/2, 180.0, 0.0, "Team1");
 
 	// Load resources
-	Load(gWindow, gRenderer);
-
-	LoadLevel(levelToLoad);
+	Load(gWindow, gRenderer, part,particles);
+	LoadLevel(levelToLoad, part, particles);
 	playerStateLevel = levelToLoad;
 
     // Play Music, looped
@@ -272,7 +275,7 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 			if (event.type == SDL_QUIT) {
 				result = Exit;
 				quit = true;
-				Free();
+				Free(part);
 				return;
 			}else{
 				// Key Pressed
@@ -282,7 +285,7 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 					switch (event.key.keysym.sym) {
 					case SDLK_q:
 						if (!editor) {
-							ResetLevel();
+							ResetLevel(part, particles);
 						}
 						break;
 					case SDLK_LSHIFT:
@@ -332,8 +335,8 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 							TileSaveData << tl.SaveData(tile);
 
 							// Save Data for Collision Tiles
-							std::stringstream CollisionTileSaveData;
-							CollisionTileSaveData << tc.saveTiles(tilec);
+							//std::stringstream CollisionTileSaveData;
+							//CollisionTileSaveData << tc.saveTiles(tilec);
 
 							// Save Data for Items
 							std::stringstream ItemSaveData;
@@ -347,7 +350,6 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 							SaveLevel(gWindow, gRenderer, quit,
 									  SpawnCoordinatesData.str().c_str(),
 									  TileSaveData.str().c_str(),
-									  CollisionTileSaveData.str().c_str(),
 									  ItemSaveData.str().c_str(),
 									  MonsterSaveData.str().c_str());
 							// Editor visual message
@@ -368,7 +370,7 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 						{
 							//
 						}
-						editorOnKeyDown(event.key.keysym.sym);
+						editorOnKeyDown(event.key.keysym.sym, part, particles);
 					}
 					/* Player Controls */
 					else{
@@ -459,7 +461,7 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 		}
 
 		// update everything
-		Update(gWindow, gRenderer);
+		Update(gWindow, gRenderer, part, particles);
 
 		////////////////////////////////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////////////////////////////////
@@ -474,7 +476,7 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 			RenderFG(gRenderer, gWindow);
 
 			// Render items
-			Render(gRenderer, gWindow);
+			Render(gRenderer, gWindow, part, particles);
 
 		//Reset render target
 		SDL_SetRenderTarget( gRenderer, NULL );
@@ -487,7 +489,7 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 		SDL_RenderClear(gRenderer);
 
 			// Render lights
-			RenderLights(gRenderer);
+			RenderLights(gRenderer, part, particles);
 
 			/// Render Scene
 			// If in editor mode, turn off lights (which is actually just setting our Scene Texture from "ADD to "BLEND" blend mode)
@@ -499,15 +501,13 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 			gTargetTexture.render( gRenderer, 0, 0, screenWidth, screenHeight, NULL, 0.0);
 
 			/// Render Debug
-			RenderDebug(gRenderer);
+			RenderDebug(gRenderer, part, particles);
 
 			/// Render Text
-			RenderText(gRenderer, gWindow);
+			RenderText(gRenderer, gWindow, part, particles);
 
 			/// Render Editor GUI
 			RenderUI(gRenderer);
-
-			UpdateMonsterPlayer(gRenderer);
 
 			/// Render Player GUI
 			RenderGUI(gRenderer);
@@ -521,11 +521,11 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 			SDL_Delay((1000 / FRAMES_PER_SECOND ) - fps.get_ticks());
 	}
 	// Free everything
-	Free();
+	Free(part);
 }
 
 // Update everything
-void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
+void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer, Particle &part, Particle particles[]) {
 	// Variable limits
 	if (tl.layer < 0) {
 		tl.layer = 0;
@@ -539,7 +539,7 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 	if (tl.id > tb.uniqueTiles) {
 		tl.id = 0;
 	}
-	if (tc.type < 0) {
+	/*if (tc.type < 0) {
 		tc.type = 0;
 	}
 	if (tc.type > 2) {
@@ -547,7 +547,7 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 	}
 	if (tc.layer > 2) {
 		tc.layer = 0;
-	}
+	}*/
 	if (obj.id > 56) {
 		obj.id = 0;
 	}
@@ -592,12 +592,12 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 
 	// Editor mouse coordinates
 	if (shift) {
-		mouseX = mx;
-		mouseY = my;
+		//mouseX = mx;
+		//mouseY = my;
 	}else{
-		mouseX = newMx;
-		mouseY = newMy;
 	}
+	mouseX = newMx;
+	mouseY = newMy;
 
 	// Update Items
 	obj.Update(item, mouseX+camx, mouseY+camy, mx+camx, my+camy, camx, camy);
@@ -606,7 +606,7 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 	tl.Update(tile, gWindow, mouseX+camx, mouseY+camy, mx+camx, my+camy, camx, camy, &rTiles[0]);
 
 	// Update collision tiles
-	tc.update(tilec, mouseX+camx, mouseY+camy, mx+camx, my+camy, camx, camy, screenWidth, screenHeight);
+	//tc.update(tilec, mouseX+camx, mouseY+camy, mx+camx, my+camy, camx, camy, screenWidth, screenHeight);
 
 	// Update Tile bar
 	tb.Update(tilebar, gWindow, mx, my, camx, camy);
@@ -620,7 +620,7 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 					if (place_type == 0) {
 						tl.SpawnMultiple(tile, mouseX, mouseY, camx, camy, &rTiles[0]);
 					}else if (place_type == 1) {
-						tc.spawn(tilec, mouseX, mouseY, camx, camy);
+					//	tc.spawn(tilec, mouseX, mouseY, camx, camy);
 					}else if (place_type == 2) {
 						obj.Spawn(item, mouseX+camx, mouseY+camy, 16, 16);
 					}else if (place_type == 3) {
@@ -638,7 +638,7 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 					if (place_type == 0) {
 						tl.Remove(tile, 1);
 					}else if (place_type == 1) {
-						tc.remove(tilec, 1);
+					//	tc.remove(tilec, 1);
 					}else if (place_type == 2) {
 						obj.Remove(item, 1);
 					}else if (place_type == 3) {
@@ -652,7 +652,9 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 	}
 
 	// Update Particles
-	part.Update(particles, 0, 0, tl.levelWidth, tl.levelHeight, sSpellExplode);
+	part.Update(particles, 0, 0, tl.levelWidth, tl.levelHeight, camx, camy,
+				player.x2, player.y2,
+				sSpellExplode);
 	part.updateStarParticles(particles, 0, 0, tl.levelWidth, tl.levelHeight);
 	part.updateBulletParticles(particles, 0, 0, tl.levelWidth, tl.levelHeight);
 
@@ -667,7 +669,6 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 
 	// Update Player
 	player.Update(particles, part,
-			  	  tc, tilec,
 			  	  tl, tile,
 				  mx, my, camx, camy,
 				  gWindow, gRenderer,
@@ -683,34 +684,40 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer) {
 
 		// update Monsters
 		mon.Update(monster, part, particles, player, sLazer, camx, camy);
+
+		// Monster and Player collision
+		checkCollisionMonsterPlayer();
+
+		// Monster will find nearest Tile that will get to the Player
+		UpdateMonsterPlayer(gRenderer);
 	}
 
 	// Collision, particle & monster
-	checkCollisionParticleMonster();
+	checkCollisionParticleMonster(part, particles);
 
 	// Collision, tile & monster
 	checkCollisionTileMonster();
 
 	// Update Enemy Particle & Player collision check
-	checkCollisionParticlePlayer();
+	checkCollisionParticlePlayer(part, particles);
 
 	// Collision: Grenade Particle & Monster
-	checkCollisionGrenadePlayer();
+	checkCollisionGrenadePlayer(part, particles);
 
 	// Check collision between Items & Player
 	checkCollisionItemPlayer();
 
 	// Collision: Particle & Collision Tiles
-	checkCollisionParticleTile();
+	checkCollisionParticleTile(part, particles);
 
 	// Update Asteroids: Wave re-spawn
 	spawnAsteroidsNow2();
 
 	// Update Player manually
-	UpdatePlayer();
+	UpdatePlayer(part, particles);
 
 	// Handle collision of items and Level Size
-	ClampObjectsToLevelSize();
+	ClampObjectsToLevelSize(part, particles);
 
 	// Damage text: for monster
 	tex.update(text);
@@ -773,7 +780,7 @@ void PlayGame::RenderFG(SDL_Renderer *gRenderer, LWindow &gWindow) {
 	//gBG.render(gRenderer, map.x-camx, map.y-camy, tl.levelWidth, tl.levelHeight);
 }
 
-void PlayGame::Render(SDL_Renderer *gRenderer, LWindow &gWindow) {
+void PlayGame::Render(SDL_Renderer *gRenderer, LWindow &gWindow, Particle &part, Particle particles[]) {
 
 	// Render particles
 	part.renderStarParticle(particles, camx, camy, 1, gRenderer);
@@ -827,7 +834,30 @@ void PlayGame::Render(SDL_Renderer *gRenderer, LWindow &gWindow) {
 	tl.Render(gRenderer, tile, 6, camx, camy);
 }
 
-void PlayGame::RenderLights(SDL_Renderer *gRenderer) {
+void PlayGame::RenderBreak(SDL_Renderer *gRenderer, int layer) {
+	/*for (int i = 0; i < tl.max; i++) {
+		if (tile[i].alive && tile[i].screen){
+			// Render all tiles
+			if (!tl.hideOtherLayers) {
+				if (layer == tile[i].layer) {
+					// Center Door Tile
+					if (tile[i].id > 63 && tile[i].id < 80) {
+
+					}
+					// Render every other tile normally
+					else{
+						// If destructible, render destructible Texture on Tiles
+						if (tile[i].destructible) {
+							tl.gTileBreak.render(gRenderer, tile[i].x - camx, tile[i].y - camy, tile[i].w, tile[i].h, &rTileBreak[tile[i].hits]);
+						}
+					}
+				}
+			}
+		}
+	}*/
+}
+
+void PlayGame::RenderLights(SDL_Renderer *gRenderer, Particle &part, Particle particles[]) {
 
 	// Handle dim effect
 	if (dimSize > 20) {
@@ -887,16 +917,19 @@ void PlayGame::RenderLights(SDL_Renderer *gRenderer) {
 	for (int i = 0; i < part.max; i++) {
 		if (particles[i].alive) {
 			if (particles[i].damage > 0) {
-				gLight.setAlpha(180);
-				gLight.setColor(particles[i].color.r, particles[i].color.g, particles[i].color.b);
-				gLight.setBlendMode(SDL_BLENDMODE_ADD);
-				gLight.render( gRenderer, particles[i].x2-108/2-camx, particles[i].y2-108/2-camy, 108, 108);
+				for (int j = 0; j < 10; j++) {
+					gLight.setAlpha(200);
+					gLight.setColor(particles[i].color.r, particles[i].color.g, particles[i].color.b);
+					gLight.setBlendMode(SDL_BLENDMODE_ADD);
+					gLight.render( gRenderer, particles[i].x2-64/2-camx, particles[i].y2-64/2-camy, 64, 64);
+					//gLight.setBlendMode(SDL_BLENDMODE_ADD);
+					//gLight.render( gRenderer, particles[i].x2-80/2-camx, particles[i].y2-80/2-camy, 80, 80);
+				}
 			}else{
 				gLight.setAlpha(particles[i].alpha);
 				gLight.setColor(particles[i].color.r, particles[i].color.g, particles[i].color.b);
 				gLight.setBlendMode(SDL_BLENDMODE_ADD);
-				SDL_Rect rParticles = {0,0,8,8};
-				gLight.render( gRenderer, particles[i].x2-(particles[i].w/2)*7-camx, particles[i].y2-(particles[i].h/2)*7-camy, particles[i].w*7, particles[i].h*7, NULL, particles[i].angle);
+				gLight.render( gRenderer, particles[i].x2-(4/2)*7-camx, particles[i].y2-(4/2)*7-camy, 4*7, 4*7, NULL, particles[i].angle);
 
 			}
 		}
@@ -957,7 +990,7 @@ void PlayGame::RenderLights(SDL_Renderer *gRenderer) {
 	}
 }
 
-void PlayGame::RenderDebug(SDL_Renderer *gRenderer)
+void PlayGame::RenderDebug(SDL_Renderer *gRenderer, Particle &part, Particle particles[])
 {
 	/*tempRect = {mx-602/2, my-280/2, 620, 280};
 	SDL_SetRenderDrawColor(gRenderer, 0, 210, 0, 255);
@@ -993,10 +1026,11 @@ void PlayGame::RenderDebug(SDL_Renderer *gRenderer)
 					SDL_RenderDrawRect(gRenderer, &tempRect);
 
 					/*	std::stringstream tempss;
-						tempss << particles[i].w << " " <<  particles[i].h;
+						tempss << particles[i].fireBallFrame;
 						gText.setAlpha(255);
 						gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont);
-						gText.render(gRenderer,particles[i].x-camx, particles[i].y-camy, gText.getWidth()/5, gText.getHeight()/5);*/
+						gText.render(gRenderer,particles[i].x-camx, particles[i].y-camy,
+								gText.getWidth()/5, gText.getHeight()/5);*/
 				}
 
 
@@ -1013,13 +1047,13 @@ void PlayGame::RenderDebug(SDL_Renderer *gRenderer)
 		for (int i = 0; i < mon.max; i++) {
 			if (monster[i].alive){
 				SDL_Rect rRect = {0,0,16,16};
-				gCircles.setAlpha(255);
+				gCircles.setAlpha(100);
 				gCircles.render(gRenderer, monster[i].x2-monster[i].sightRange-camx,
 								monster[i].y2-monster[i].sightRange-camy,
 								monster[i].sightRange*2,
 								monster[i].sightRange*2, &rRect);
 				rRect = {16,0,16,16};
-				gCircles.setAlpha(255);
+				gCircles.setAlpha(100);
 				gCircles.render(gRenderer, monster[i].x2-monster[i].atkRange-camx,
 								monster[i].y2-monster[i].atkRange-camy,
 								monster[i].atkRange*2,
@@ -1028,7 +1062,7 @@ void PlayGame::RenderDebug(SDL_Renderer *gRenderer)
 		}
 
 		// Render collision Tiles
-		tc.render(gRenderer, tilec, camx, camy);
+		//tc.render(gRenderer, tilec, camx, camy);
 
 		// Render Map Box
 		tempRect = {0-camx, 0-camy, tl.levelWidth, tl.levelHeight};
@@ -1044,7 +1078,7 @@ void PlayGame::RenderHand(SDL_Renderer *gRenderer) {
 			// Render Tile debug
 			tl.RenderDebug(gRenderer, tile, mouseX, mouseY, mx, my, camx, camy, &rTiles[0], tb.tilesWidth);
 		}else if (place_type == 1) {
-
+/*
 			// Render tile in hand
 			SDL_Color color;
 			int tcWidth;
@@ -1069,7 +1103,7 @@ void PlayGame::RenderHand(SDL_Renderer *gRenderer) {
 					SDL_SetRenderDrawColor(gRenderer, color.r, color.g, color.b, 255);
 					SDL_RenderDrawRect(gRenderer, &tempr);
 				}
-			}
+			}*/
 		}else if (place_type == 2) {
 			// Render Item in Hand
 			// Render mouse coordinates snapped to grid
@@ -1083,7 +1117,7 @@ void PlayGame::RenderHand(SDL_Renderer *gRenderer) {
 }
 
 // Render text
-void PlayGame::RenderText(SDL_Renderer *gRenderer, LWindow &gWindow) {
+void PlayGame::RenderText(SDL_Renderer *gRenderer, LWindow &gWindow, Particle &part, Particle particles[]) {
 
 	/* Render Player Ammo */
 	std::stringstream tempss;
@@ -1117,20 +1151,32 @@ void PlayGame::RenderText(SDL_Renderer *gRenderer, LWindow &gWindow) {
 	// Render map
 	//map.render(gRenderer, camx, camy);
 
-	/* Render Particle debug */
+	// Tile debug text info
+	/*for (int i = 0; i < tl.max; i++) {
+		if (tile[i].alive && tile[i].destructible) {
+			std::stringstream tempss;
+						tempss << tile[i].hits;
+						gText.setAlpha(255);
+						gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont);
+						gText.render(gRenderer, tile[i].x - camx, tile[i].y - camy,gText.getWidth()/4, gText.getHeight()/4);
+		}
+	}*/
 
+	// Particle debug text info
 	for (int i = 0; i < mon.max; i++) {
 		if (monster[i].alive) {
 
-			/*std::stringstream tempss;
-			tempss <<monster[i].attack << " " <<monster[i].distance;
+			/*
+			std::stringstream tempss;
+			tempss <<monster[i].increAngle;
 			gText.setAlpha(255);
 			gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont);
 			gText.render(gRenderer, monster[i].x - camx,
 					monster[i].y-gText.getHeight()/2 - camy,
 					gText.getWidth()/4, gText.getHeight()/4);
+					*/
 
-			tempss.str(std::string());
+			/*tempss.str(std::string());
 			tempss << "currentDuration: " << monster[i].currentDuration
 					<< " maxDuration: " 	  << monster[i].maxDuration
 					<< " attack: " << monster[i].attack
@@ -1144,7 +1190,13 @@ void PlayGame::RenderText(SDL_Renderer *gRenderer, LWindow &gWindow) {
 
 			for (double j=0; j<monster[i].spell.size(); j += 1) {
 
-
+				/*std::stringstream tempss;
+				tempss <<monster[i].spell[j].increAngle << " " <<monster[i].spell[j].increAngleMax;
+				gText.setAlpha(255);
+				gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont);
+				gText.render(gRenderer, monster[i].x - camx,
+						monster[i].y-gText.getHeight()/2 - camy,
+						gText.getWidth()/4, gText.getHeight()/4);*/
 
 				// Spawn Spell as a particle
 			/*	p_dummy.spawnParticleAngle(particle, monster[i].tag, monster[i].spell[j].type,
@@ -1172,10 +1224,10 @@ void PlayGame::RenderText(SDL_Renderer *gRenderer, LWindow &gWindow) {
 	}
 
 	// Editor debug menu
-	if (editor) {
+	if (debug) {
 
 		// Render collision tile debug
-		for (int i = 0; i < tc.max; i++) {
+		/*for (int i = 0; i < tc.max; i++) {
 			if (tilec[i].alive){
 				if (tilec[i].mouse) {
 					SDL_Rect tempr = {tilec[i].x+tilec[i].w/2-4-camx, tilec[i].y+tilec[i].h/2-4-camy, 8, 8};
@@ -1193,18 +1245,16 @@ void PlayGame::RenderText(SDL_Renderer *gRenderer, LWindow &gWindow) {
 					SDL_RenderDrawRect(gRenderer, &tempr);
 				}
 			}
-		}
+		}*/
 
 		// Render hand debug info
 		std::stringstream tempss;
 		tempss << "place_type: "  << place_type   << ", id: " 		 << tl.id
-				   << ", layer: "     << tl.layer     << ", layerC: " 	 << tc.layer
-				   << ", editor: " 	 << editor
+			   << ", layer: "     << tl.layer << ", editor: " 	 << editor
 			   << ", tl.multiW: " << tl.multiW    << ", tl.multiH: " << tl.multiH
-			   << ", tc.multiW: " << tc.multiW    << ", tc.multiH: " << tl.multiH
+			   << ", tc.multiH: " << tl.multiH
 			   << ", tl.tilew: "  << tl.tilew     << ", tl.tileh: "  << tl.tileh
-			   << ", tc.tilew: "  << tc.tilew     << ", tc.tileh: "  << tc.tileh
-			   << ", tl.Count: "  << tl.tileCount << ", tc.count: "  << tc.count
+			   << ", tl.Count: "  << tl.tileCount
 			   << ", obj.count: " << obj.count << ", part.count: " << part.count;
 		gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont, 200);
 		gText.setAlpha(255);
@@ -1220,7 +1270,7 @@ void PlayGame::RenderText(SDL_Renderer *gRenderer, LWindow &gWindow) {
 			}else if (place_type == 1) {
 
 				// Render tile in hand
-				SDL_Color color;
+				/*SDL_Color color;
 				int tcWidth;
 				int tcHeight;
 				if (tc.type == 0) {
@@ -1243,7 +1293,7 @@ void PlayGame::RenderText(SDL_Renderer *gRenderer, LWindow &gWindow) {
 						SDL_SetRenderDrawColor(gRenderer, color.r, color.g, color.b, 255);
 						SDL_RenderDrawRect(gRenderer, &tempr);
 					}
-				}
+				}*/
 			}else if (place_type == 2) {
 				// Render Item in Hand
 				// Render mouse coordinates snapped to grid
@@ -1455,43 +1505,25 @@ void PlayGame::RenderGUI(SDL_Renderer *gRenderer) {
 ///////////////////////////////////////////////////////// Global Functions ////////////////////////////////////////////////////////
 //-------------------------------------------------------------------------------------------------------------------------------//
 
-void PlayGame::checkCollisionParticleMonster() {
-	for (int i = 0; i < mon.max; i++) {
-		if (monster[i].alive) {
-
-			// monster circle collision check with other zombies
-			for (int j = 0; j < part.max; j++) {
-				if (particles[j].alive) {
-					if (particles[j].damage > 0){
-						if (particles[j].tag != monster[i].tag){
-							float bmx = particles[j].x+particles[j].w/2;
-							float bmy = particles[j].y+particles[j].h/2;
-							float bmx2 = monster[i].x+monster[i].w/2;
-							float bmy2 = monster[i].y+monster[i].h/2;
-							float angle = atan2(bmy - bmy2,bmx - bmx2);
-							angle = angle * (180 / 3.1416);
-							if (angle < 0) {
-								angle = 360 - (-angle);
-							}
-							float radians = (3.1415926536/180)*(angle);
-							float Cos = floor(cos(radians)*10+0.5)/10;
-							float Sin = floor(sin(radians)*10+0.5)/10;
-							float distance = sqrt((bmx - bmx2) * (bmx - bmx2)+
-												  (bmy - bmy2) * (bmy - bmy2));
-
-							if (distance < monster[i].w/2 + 2) {
+void PlayGame::checkCollisionParticleMonster(Particle &part, Particle particles[]) {
+	for (int i = 0; i < part.max; i++) {
+			if (particles[i].alive && particles[i].damage > 0 && particles[i].onScreen) {
+				for (int j = 0; j < mon.max; j++) {
+					if (monster[j].alive && monster[j].onScreen) {
+						if (particles[i].tag != monster[j].tag){
+							if (checkCollision(particles[i].x, particles[i].y, particles[i].w, particles[i].h, monster[j].x, monster[j].y, monster[j].w, monster[j].h) ) {
+								Mix_PlayChannel(3, sSpellExplode, 0);
 								// reduce monster health
-								monster[i].health -= particles[j].damage;
+								monster[j].health -= particles[i].damage;
 								// apply knockback effect
-								knockbackEffect(particles[j].x, particles[j].y, particles[j].w, particles[j].h,
-												monster[i].x, monster[i].y, monster[i].w, monster[i].h,
-												monster[i].velX, monster[i].velY, randDouble(0.8, 1.2));
-
+								knockbackEffect(particles[i].x, particles[i].y, particles[i].w, particles[i].h,
+												monster[j].x, monster[j].y, monster[j].w, monster[j].h,
+												monster[j].velX, monster[j].velY, randDouble(0.8, 1.2));
 								// spawn blood particle effect
 								for (double h=0.0; h< 360.0; h+=rand() % 10 + 10){
 									int rands = rand() % 4 + 2;
-									float newX = monster[i].x+monster[i].w/2;
-									float newY = monster[i].y+monster[i].h/2;
+									float newX = monster[j].x+monster[j].w/2;
+									float newY = monster[j].y+monster[j].h/2;
 									part.spawnParticleAngle(particles, "none", 4,
 														newX-rands/2,
 														newY-rands/2,
@@ -1505,47 +1537,35 @@ void PlayGame::checkCollisionParticleMonster() {
 													   true, 0.11,
 													   true, 0.11);
 								}
-								// play sound effect
-								if (monster[i].type == 0){
-									Mix_PlayChannel(4, sSkeletonHurt, 0);
-								}
-								// remove particle
-								particles[j].alive = false;
-								part.count--;
-							}
 
-							/*float bmx = particles[j].x+particles[j].w/2;
-							float bmy = particles[j].y+particles[j].h/2;
-							float bmx2 = monster[i].x+monster[i].w/2;
-							float bmy2 = monster[i].y+monster[i].h/2;
-							float angle = atan2(bmy - bmy2,bmx - bmx2);
-							angle = angle * (180 / 3.1416);
-							if (angle < 0) {
-								angle = 360 - (-angle);
+								// remove particle
+								part.Remove(particles, i);
 							}
-							float radians = (3.1415926536/180)*(angle);
-							float Cos = floor(cos(radians)*10+0.5)/10;
-							float Sin = floor(sin(radians)*10+0.5)/10;
-							float distance = sqrt((bmx - bmx2) * (bmx - bmx2)+
-												  (bmy - bmy2) * (bmy - bmy2));
-							if (distance <= 0.1) {
-								distance = 0.1;
-							}
-							if (distance < monster[i].w/2 + 4) {
-								monster[i].x -= 1 * Cos;
-								monster[i].y -= 1 * Sin;
-							}*/
 						}
+					// particle collision with monster using a CIRCLE
+					/*float bmx = monster[j].x + monster[j].w/2;
+					float bmy = monster[j].y + monster[j].h/2;
+					float bmx2 = particles[i].x + particles[i].w/2;
+					float bmy2 = particles[i].y + particles[i].h/2;
+					float distance = sqrt((bmx - bmx2) * (bmx - bmx2)+
+										  (bmy - bmy2) * (bmy - bmy2));
+					if (distance < monster[j].w/2 + particles[i].w/2) {
+						Mix_PlayChannel(4, sSkeletonHurt, 0);
+						//part.SpawnExplosion(particles, particles[i].x2, particles[i].y2, particles[i].color);
+						// remove particle
+						part.Remove(particles, i);
+					}*/
+				}
+
+				if (monster[j].alive) {
+					// Adjust Monster health
+					if (monster[j].health <=0) {
+						monster[j].health = 0;
+					}
+					if (monster[j].healthDecay >= monster[j].health) {
+						monster[j].healthDecay -= 0.25;
 					}
 				}
-			}	// end particle for check
-
-			// Adjust Monster health
-			if (monster[i].health <=0) {
-				monster[i].health = 0;
-			}
-			if (monster[i].healthDecay >= monster[i].health) {
-				monster[i].healthDecay -= 0.25;
 			}
 		}
 	}
@@ -1581,10 +1601,17 @@ void PlayGame::checkCollisionTileMonster() {
 				monster[i].x += monster[i].vX;
 			}
 			SDL_Rect rectA;
-			rectA.x = monster[i].x+4;
-			rectA.y = monster[i].y+10;
-			rectA.w = 9;
-			rectA.h = 5;
+			if (monster[i].type == 12) {
+				rectA.x = monster[i].x;
+				rectA.y = monster[i].y;
+				rectA.w = 48;
+				rectA.h = 16;
+			}else if (monster[i].type < 12) {
+				rectA.x = monster[i].x+4;
+				rectA.y = monster[i].y+10;
+				rectA.w = 9;
+				rectA.h = 5;
+			}
 			bool moveBack;
 			moveBack = false;
 			for (int j = 0; j < tl.max; j++) {
@@ -1604,6 +1631,7 @@ void PlayGame::checkCollisionTileMonster() {
 			}
 			if (moveBack){
 				monster[i].x -= monster[i].vX;
+				monster[i].x -= monster[i].velX;
 				MonsterIsColliding = true;
 			}
 
@@ -1611,10 +1639,17 @@ void PlayGame::checkCollisionTileMonster() {
 			if (monster[i].targetDistanceX < monster[i].targetDistanceY) {
 				monster[i].y += monster[i].vY;
 			}
-			rectA.x = monster[i].x+4;
-			rectA.y = monster[i].y+10;
-			rectA.w = 9;
-			rectA.h = 5;
+			if (monster[i].type == 12) {
+				rectA.x = monster[i].x;
+				rectA.y = monster[i].y;
+				rectA.w = 48;
+				rectA.h = 16;
+			}else if (monster[i].type < 12) {
+				rectA.x = monster[i].x+4;
+				rectA.y = monster[i].y+10;
+				rectA.w = 9;
+				rectA.h = 5;
+			}
 			moveBack = false;
 			bool moveItX;
 			for (int j = 0; j < tl.max; j++) {
@@ -1634,6 +1669,7 @@ void PlayGame::checkCollisionTileMonster() {
 			}
 			if (moveBack){
 				monster[i].y -= monster[i].vY;
+				monster[i].y -= monster[i].velY;
 				MonsterIsColliding = true;
 			}
 
@@ -1645,7 +1681,7 @@ void PlayGame::checkCollisionTileMonster() {
 	}
 }
 
-void PlayGame::checkCollisionParticlePlayer() {
+void PlayGame::checkCollisionParticlePlayer(Particle &part, Particle particles[]) {
 	int playerX = player.x - 3;
 	int playerY = player.y - 9;
 	int playerW = 16;
@@ -1672,10 +1708,10 @@ void PlayGame::checkCollisionParticlePlayer() {
 						float distance = sqrt((bmx - bmx2) * (bmx - bmx2)+
 											  (bmy - bmy2) * (bmy - bmy2));
 						// collision occurred
-						if (distance < playerW/2 + particles[i].w/2) {
+						if (distance < playerW/4 + particles[i].w/2) {
+
 							// spawn blood particle effect
-							// spawn blood particle effect
-							for (double h=0.0; h< 360.0; h+=rand() % 30 + 30){
+							for (double h=0.0; h< 360.0; h+=rand() % 10 + 10){
 								int rands = rand() % 4 + 2;
 								float newX = playerX+playerW/2;
 								float newY = playerY+playerH/2;
@@ -1695,16 +1731,16 @@ void PlayGame::checkCollisionParticlePlayer() {
 							// play sound effect
 							Mix_PlayChannel(-1, sPlayerHurt, 0);
 							// reduce player health
-							//player.health -= particles[i].damage;
+							player.health -= particles[i].damage;
 							// remove particle
-							particles[i].alive = false;
-							part.count--;
+							part.Remove(particles, i);
 							// Spawn damage effect on Player
 							std::stringstream tempss;
 							tempss << particles[i].damage;
 							int randw = rand() % int(playerW);
 							tex.spawn(text, playerX+randw-1, playerY+playerH/2,
 									  0.0, -randDouble(0.1, 0.3), 255, tempss.str().c_str(), {255,255,0});
+
 						}
 
 						// particle collision with player using a BOX
@@ -1712,8 +1748,8 @@ void PlayGame::checkCollisionParticlePlayer() {
 								&& particles[i].y + particles[i].h > player.y
 								&& particles[i].y < player.y + player.h) {
 							particles[i].time = 0;
-							particles[i].alive = false;
-							part.count--;
+							// remove particle
+							part.Remove(particles,i);
 
 							player.health -= particles[i].damage;
 						}*/
@@ -1725,8 +1761,8 @@ void PlayGame::checkCollisionParticlePlayer() {
 	}	// end Player
 }
 
-void PlayGame::checkCollisionGrenadePlayer() {
-		for (int i = 0; i < part.max; i++) {
+void PlayGame::checkCollisionGrenadePlayer(Particle &part, Particle particles[]) {
+		/*for (int i = 0; i < part.max; i++) {
 			if (particles[i].alive) {
 				// Grenade particle
 				if (particles[i].type == 3) {
@@ -1739,17 +1775,17 @@ void PlayGame::checkCollisionGrenadePlayer() {
 
 					// Grenade has a smoke Particle effect coming out of it
 					particles[i].timeri++;
-					/* Making this '30' frames will enable the Player to
-					 * watch 3 visual 'ticks' (particle sparks coming from the grenade
-					 * that will explode momentarily after the 3 tick)
-					 */
+					// Making this '30' frames will enable the Player to
+					// watch 3 visual 'ticks' (particle sparks coming from the grenade
+					 // that will explode momentarily after the 3 tick)
+					//
 					if (particles[i].timeri > 30) {
 						particles[i].timeri = 0;
 						for (double h=0.0; h< 360.0; h+=30){
 							int rands = rand() % 9 + 2;
 							float newX = particles[i].x+particles[i].w/2;
 							float newY = particles[i].y+particles[i].h/2;
-							part.spawnParticleAngle(particles, "none", 2,
+							part.spawnParticleAngle(particles, "none", 4,
 												newX-rands/2,
 												newY-rands/2,
 											   rands, rands,
@@ -1807,10 +1843,6 @@ void PlayGame::checkCollisionGrenadePlayer() {
 							int rands = rand() % 9 + 2;
 							float newX = particles[i].x+particles[i].w/2;
 							float newY = particles[i].y+particles[i].h/2;
-							/*int r = rand() % 255;
-							int g = rand() % 255;
-							int b = rand() % 255;
-							SDL_Color color = {r, g, b};*/
 							part.spawnParticleAngle(particles, "none", 4,
 												newX-rands/2,
 												newY-rands/2,
@@ -1842,12 +1874,11 @@ void PlayGame::checkCollisionGrenadePlayer() {
 											   true, randDouble(0.0001, 0.001));
 						}
 						// remove particle
-						particles[i].alive = false;
-						part.count--;
+						part.Remove(particles, i);
 					}
 				}
 			}
-		}
+		}*/
 }
 
 void PlayGame::checkCollisionItemPlayer() {
@@ -1913,7 +1944,7 @@ void PlayGame::checkCollisionItemPlayer() {
 					// increase player coins
 					player.mana += 100;
 					// ply sound effect
-					Mix_PlayChannel(-1, sKeyPickup, 0);
+					Mix_PlayChannel(-1, sPotion, 0);
 					// remove item
 					item[i].alive = false;
 					obj.count--;
@@ -1935,7 +1966,7 @@ void PlayGame::checkCollisionTilePlayer() {
 			// If Player holds control, they will not move
 			if (!player.ctrl) {
 				if (player.vY > -0.8) {
-					player.vY -= 0.20;
+					player.vY -= 0.10;
 				}
 				player.moving = true;
 			}
@@ -1947,18 +1978,18 @@ void PlayGame::checkCollisionTilePlayer() {
 		else if (player.moveDown) {
 			if (!player.ctrl) {
 				if (player.vY < 0.8) {
-					player.vY += 0.20;
+					player.vY += 0.10;
 				}
 				player.moving = true;
 			}
 		}else {
-			player.vY = player.vY - player.vY * 0.28;
+			player.vY = player.vY - player.vY * 0.16;
 		}
 		// X axis
 		if (player.moveLeft) {
 			if (!player.ctrl) {
 				if (player.vX > -0.8) {
-					player.vX -= 0.20;
+					player.vX -= 0.10;
 				}
 				player.moving = true;
 			}
@@ -1966,12 +1997,12 @@ void PlayGame::checkCollisionTilePlayer() {
 		else if (player.moveRight) {
 			if (!player.ctrl) {
 				if (player.vX < 0.8) {
-					player.vX += 0.20;
+					player.vX += 0.10;
 				}
 				player.moving = true;
 			}
 		}else{
-			player.vX = player.vX - player.vX * 0.28;
+			player.vX = player.vX - player.vX * 0.16;
 		}
 
 		if (player.moveUp) {
@@ -2103,30 +2134,68 @@ void PlayGame::checkCollisionTilePlayer() {
 }
 
 void PlayGame::checkCollisionTilecPlayer() {
+
+}
+void PlayGame::checkCollisionMonsterPlayer() {
+	for (int i = 0; i < mon.max; i++) {
+		if (monster[i].alive) {
+
+			// Monster colliding with Player
+				float bmx = player.x2;
+				float bmy = player.y2;
+				float bmx2 = monster[i].x2;
+				float bmy2 = monster[i].y2;
+				float angle = atan2(bmy - bmy2,bmx - bmx2);
+				angle = angle * (180 / 3.1416);
+				if (angle < 0) {
+					angle = 360 - (-angle);
+				}
+				float radians = (3.1415926536/180)*(angle);
+				float Cos = floor(cos(radians)*10+0.5)/10;
+				float Sin = floor(sin(radians)*10+0.5)/10;
+				float distance = sqrt((bmx - bmx2) * (bmx - bmx2)+
+									  (bmy - bmy2) * (bmy - bmy2));
+				if (distance <= 1) {
+					distance = 1;
+				}
+				if (distance < monster[i].h/2 + 16/2) {
+					//monster[i].vX -= 1 * Cos;
+					//monster[i].vY -= 1 * Sin;
+					player.vX += 1 * Cos;
+					player.vY += 1 * Sin;
+				}
+		}
+	}
 }
 
-void PlayGame::checkCollisionParticleTile() {
-	for (int i = 0; i < part.max; i++) {
-		if (particles[i].alive && particles[i].damage > 0) {
-			for (int j = 0; j < tl.max; j++) {
-				if (tile[j].alive && tile[j].collide) {
+void PlayGame::checkCollisionParticleTile(Particle &part, Particle particles[]) {
+	for (int j = 0; j < tl.max; j++) {
+		if (tile[j].alive && tile[j].collide && tile[j].screen) {
+			for (int i = 0; i < part.max; i++) {
+					if (particles[i].alive && particles[i].damage > 0 && particles[i].onScreen) {
 					// particle collision with monster using a CIRCLE
-					/*float bmx = tile[j].x + tile[j].w/2;
+					float bmx = tile[j].x + tile[j].w/2;
 					float bmy = tile[j].y + tile[j].h/2;
 					float bmx2 = particles[i].x + particles[i].w/2;
 					float bmy2 = particles[i].y + particles[i].h/2;
 					float distance = sqrt((bmx - bmx2) * (bmx - bmx2)+
 										  (bmy - bmy2) * (bmy - bmy2));
-					if (distance < 32) {
-						particles[i].alive = false;
-						part.count--;
-					}*/
-					if (checkCollision(particles[i].x, particles[i].y, particles[i].w, particles[i].h, tile[j].x, tile[j].y, 16, 16) ) {
-						//Mix_PlayChannel(3, sSpellExplode, 0);
-						////part.SpawnExplosion(particles, particles[i].x2, particles[i].y2, particles[i].color);
-						particles[i].alive = false;
-						part.count--;
+					if (distance < tile[j].w/2 + particles[i].w/2) {
+						Mix_PlayChannel(3, sSpellExplode, 0);
+						part.SpawnExplosion(particles, particles[i].x2, particles[i].y2, particles[i].color);
+						// remove particle
+						part.Remove(particles, i);
+						if (tile[j].destructible) {
+							// Tile break by 1
+							tile[j].hits++;
+						}
 					}
+					/*if (checkCollision(particles[i].x, particles[i].y, particles[i].w, particles[i].h, tile[j].x, tile[j].y, 16, 16) ) {
+						Mix_PlayChannel(3, sSpellExplode, 0);
+						////part.SpawnExplosion(particles, particles[i].x2, particles[i].y2, particles[i].color);
+						// remove particle
+						part.Remove(particles, i);
+					}*/
 				}
 			}
 		}
@@ -2227,10 +2296,10 @@ void PlayGame::spawnAsteroidsNow2()
 
 }
 
-void PlayGame::UpdatePlayer() {
+void PlayGame::UpdatePlayer(Particle &part, Particle particles[]) {
 	// Player died, reset and reload Level
 	if (player.health <= 0) {
-		ResetLevel();
+		ResetLevel(part, particles);
 	}
 }
 
@@ -2364,6 +2433,7 @@ void PlayGame::UpdateMonsterPlayer(SDL_Renderer *gRenderer) {
 					}
 					if (moveBack){
 						monster[i].x -= monster[i].vX;
+						monster[i].x += monster[i].velX;
 					}
 					// Move Monster x-axis
 					if (monster[i].distance > 16 && monster[i].distance < 100) {
@@ -2392,6 +2462,7 @@ void PlayGame::UpdateMonsterPlayer(SDL_Renderer *gRenderer) {
 					}
 					if (moveBack){
 						monster[i].y -= monster[i].vY;
+						monster[i].y += monster[i].velY;
 					}
 
 
@@ -2413,7 +2484,7 @@ void PlayGame::UpdateMonsterPlayer(SDL_Renderer *gRenderer) {
 	}
 }
 
-void PlayGame::ClampObjectsToLevelSize() {
+void PlayGame::ClampObjectsToLevelSize(Particle &part, Particle particles[]) {
 
 	// Collision with door
 	if (player.collectedKeys == tl.requiredKeys && player.useKey) {
@@ -2421,7 +2492,7 @@ void PlayGame::ClampObjectsToLevelSize() {
 			// Increase Stage level
 			playerStateLevel++;
 			// Change to next Stage Level
-			LoadLevel(playerStateLevel);
+			LoadLevel(playerStateLevel, part, particles);
 		}
 	}
 	// Player
@@ -2543,15 +2614,15 @@ void PlayGame::loadSpawnPoint(int level){
 	fileSpawn.close();
 }
 
-void PlayGame::ClearLevel() {
-	tl.RemoveAll(tile);
-	tc.RemoveAll(tilec);
-	obj.RemoveAll(item);
-	part.RemoveAll(particles);
+void PlayGame::ClearLevel(Particle &part, Particle particles[]) {
+	//tl.RemoveAll(tile);
+	//tc.RemoveAll(tilec);
+	//obj.RemoveAll(item);
+	//part.RemoveAll(particles);
 	mon.RemoveAll(monster);
 }
 
-void PlayGame::LoadLevel(int level) {
+void PlayGame::LoadLevel(int level, Particle &part, Particle particles[]) {
 	// Reset Player movements and direction
 	player.facing = 0;
 	player.keys = 0;
@@ -2569,7 +2640,7 @@ void PlayGame::LoadLevel(int level) {
 	// Load Tiles
 	tl.LoadData(tile, level);
 	// Load Collision Tiles
-	tc.loadTiles(tilec, level);
+	//tc.loadTiles(tilec, level);
 	// Load Items (Items) Tiles
 	obj.LoadData(item, level);
 	// Load Monsters
@@ -2578,7 +2649,7 @@ void PlayGame::LoadLevel(int level) {
 	loadSpawnPoint(level);
 }
 
-void PlayGame::ResetLevel() {
+void PlayGame::ResetLevel(Particle &part, Particle particles[]) {
 	player.facing = 0;
 	player.keys = 0;
 	player.collectedKeys = 0;
@@ -2589,7 +2660,7 @@ void PlayGame::ResetLevel() {
 	player.moveRight = false;
 	player.moveUp = false;
 	player.moveDown = false;
-	LoadLevel(playerStateLevel);
+	LoadLevel(playerStateLevel, part, particles);
 }
 //------------------------------------------------------ Save Functions ------------------------------------------------------//
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2636,7 +2707,7 @@ PlayGame::Result PlayGame::mouseReleased(SDL_Event event){
 
 
 // Editor controls
-void PlayGame::editorOnKeyDown( SDL_Keycode sym )
+void PlayGame::editorOnKeyDown( SDL_Keycode sym, Particle &part, Particle particles[] )
 {
 	switch (sym) {
 	case SDLK_UP:				// camera up
@@ -2659,6 +2730,13 @@ void PlayGame::editorOnKeyDown( SDL_Keycode sym )
 			tl.ChangeCollision(tile, 0);
 		}else{
 			tl.ChangeCollision(tile, 1);
+		}
+		break;
+	case SDLK_v:				// Change Tile destructible properties
+		if (shift) {
+			tl.ChangeDestructable(tile, 0);
+		}else{
+			tl.ChangeDestructable(tile, 1);
 		}
 		break;
 	case SDLK_x:				// Save spawn point
@@ -2709,13 +2787,13 @@ void PlayGame::editorOnKeyDown( SDL_Keycode sym )
 			if (place_type==0) {
 				tl.layer--;
 			}else if (place_type==1) {
-				tc.layer--;
+				//tc.layer--;
 			}
 		}else{
 			if (place_type==0) {
 				tl.layer++;
 			}else if (place_type==1) {
-				tc.layer++;
+				//tc.layer++;
 			}
 		}
 		break;
@@ -2724,7 +2802,7 @@ void PlayGame::editorOnKeyDown( SDL_Keycode sym )
 			if (place_type==0) {
 				tl.id--;
 			}else if (place_type==1) {
-				tc.type--;
+				//tc.type--;
 			}else if (place_type==2) {
 				obj.id--;
 			}else if (place_type==3) {
@@ -2734,7 +2812,7 @@ void PlayGame::editorOnKeyDown( SDL_Keycode sym )
 			if (place_type==0) {
 				tl.id++;
 			}else if (place_type==1) {
-				tc.type++;
+			//	tc.type++;
 			}else if (place_type==2) {
 				obj.id++;
 			}else if (place_type==3) {
@@ -2753,13 +2831,13 @@ void PlayGame::editorOnKeyDown( SDL_Keycode sym )
 			if (place_type == 0 ) {
 				tl.Copy(tile);
 			}else if (place_type == 1) {
-				tc.copy(tilec);
+			//	tc.copy(tilec);
 			}
 		}
 		break;
 	case SDLK_SPACE:							// Tile, remove all Tiles (and Collision Tiles)
 		if (shift && editor) {
-			ClearLevel();
+			ClearLevel(part, particles);
 
 			/*if (place_type == 0 ) {
 			//	tl.removeAllTiles(tile);
@@ -2784,14 +2862,14 @@ void PlayGame::editorOnKeyDown( SDL_Keycode sym )
 			}
 		}else if (place_type == 1) {
 			if (shift) {
-				if (tc.tilew > 1) {
-					tc.tilew -= 1;
-				}
+				//if (tc.tilew > 1) {
+				//	tc.tilew -= 1;
+				//}
 			}
 			else{
-				if (tc.multiW > 1) {
-					tc.multiW -= 1;
-				}
+				//if (tc.multiW > 1) {
+				//	tc.multiW -= 1;
+				//}
 			}
 		}else if (place_type == 3) {
 			if (mon.multiW > 1) {
@@ -2809,10 +2887,10 @@ void PlayGame::editorOnKeyDown( SDL_Keycode sym )
 			}
 		}else if (place_type == 1) {
 			if (shift) {
-				tc.tilew += 1;
+				//tc.tilew += 1;
 			}
 			else{
-				tc.multiW += 1;
+				//tc.multiW += 1;
 			}
 		}else if (place_type == 3) {
 			mon.multiW += 1;
@@ -2832,14 +2910,14 @@ void PlayGame::editorOnKeyDown( SDL_Keycode sym )
 			}
 		}else if (place_type == 1) {
 			if (shift) {
-				if (tc.tileh > 1) {
-					tc.tileh -= 1;
-				}
+				//if (tc.tileh > 1) {
+				//	tc.tileh -= 1;
+				//}
 			}
 			else{
-				if (tc.multiH > 1) {
-					tc.multiH -= 1;
-				}
+				//if (tc.multiH > 1) {
+				//	tc.multiH -= 1;
+				//}
 			}
 		}else if (place_type == 3) {
 			if (mon.multiH > 1) {
@@ -2857,10 +2935,10 @@ void PlayGame::editorOnKeyDown( SDL_Keycode sym )
 			}
 		}else if (place_type == 1) {
 			if (shift) {
-				tc.tileh += 1;
+				//tc.tileh += 1;
 			}
 			else{
-				tc.multiH += 1;
+				//tc.multiH += 1;
 			}
 		}else if (place_type == 3) {
 			mon.multiH += 1;

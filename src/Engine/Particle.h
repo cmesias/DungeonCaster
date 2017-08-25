@@ -20,12 +20,15 @@ public:	// other variables
 	int ptimer = 0;
 	int count;
 	//const int max = 1024;
-	const int max = 2094;
+	const int max = 8000;
 	LTexture gParticles;					// Particle Textures
 	SDL_Rect cParticles[ 2 ];				// [0: Blue], [1: Green], [2: Orange], [3: Red], [4: White], [5: Yellow] Particle
 
-	Mix_Chunk *sGrenadeExplode 	= NULL;
-
+	// Fireball VFX variables
+	LTexture gFireBall[38];
+	float fireBallTimer = 0;
+	float fireBallRate = 30.0;
+	int fireBallFrame = 0;
 
 public:	// variables
 	float x2, y2;							// particle center
@@ -68,6 +71,8 @@ public:	// variables
 	SDL_Color trailColor;
 	float trailMinSize;
 	float trailMaxSize;
+	float timerBeforeMoving;		// when it hits 0, it will move
+	bool goTowardsTarget;			// If true, after timerBeforeMoving is over, the Particles will move towards the target
 
 public:	// SAT theorem for collision during rotation's
 
@@ -86,6 +91,7 @@ public:
 
 public:	// basic functions
 	void init(Particle particle[]);
+	void Remove(Particle particle[], int i);
 	void RemoveAll(Particle particle[]);
 	void load(SDL_Renderer* gRenderer);
 	void free();
@@ -103,7 +109,9 @@ public:	// functions
 			bool sizeDeath = false, float deathSpe = 0.0,
 			bool decay = false, float decaySpeed = 0.0,
 			bool trail = false, float trailRate = 0.0, SDL_Color trailColor = {0, 255, 0},
-			float trailMinSize = 0.0, float trailMaxSize = 0.0);
+			float trailMinSize = 0.0, float trailMaxSize = 0.0,
+			float timerBeforeMoving = 0.0,
+			bool goTowardsTarget = false, float targetXe = 0.0, float targetYe = 0.0);
 	/*void fireParticle(Particle particle[], int type, int damage,
 										   int spawnx, int spawny, int w, int h,
 										   double speed, float vX, float vY,
@@ -117,7 +125,10 @@ public:	// functions
 											SDL_Color color, int layer);*/
 
 	// Update every particle
-	void Update(Particle particle[], int mapX, int mapY, int mapW, int mapH, Mix_Chunk* sSpellExplode);
+	void Update(Particle particle[], int mapX, int mapY, int mapW, int mapH,
+				float camx, float camy,
+				float targetX, float targetY,
+			    Mix_Chunk* sSpellExplode = NULL);
 
 	// Update Bullet Particles
 	void updateBulletParticles(Particle particle[], int mapX, int mapY, int mapW, int mapH);

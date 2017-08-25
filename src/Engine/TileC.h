@@ -7,7 +7,7 @@
 
 #ifndef TILEC_H_
 #define TILEC_H_
-
+/*
 class TileC {
 public:	// editor variables
 	int multiW = 1;
@@ -22,11 +22,9 @@ public:	// instance variables
 	float y;
 	int w;
 	int h;
-	/*
-	 * 0: Player collision
-	 * 1: Particle collision
-	 * 2: Others' collision
-	 */
+	 // 0: Player collision
+	 // 1: Particle collision
+	 // 2: Others' collision
 	int type;
 	int layer;
 	bool mouse;			// Mouse point
@@ -41,7 +39,7 @@ public:	// Initial functions
 	// Place one collision tile
 	void place(TileC tilec[], float x, float y, int w, int h);
 
-	/* Place multiple collision tile's */
+	// Place multiple collision tile's
 	void spawn(TileC tilec[], int newMx, int newMy, int camx, int camy);
 
 	void copy(TileC tilec[]);
@@ -65,7 +63,7 @@ public: // Core functions
 	std::string saveTiles(TileC tilec[]);
 
 	void loadTiles(TileC tilec[], int level);
-};
+};*/
 
 
 #endif /* TILEC_H_ */

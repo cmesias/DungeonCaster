@@ -55,8 +55,13 @@ private:
 	// Actual game play
 	void ShowPlayGame(int levelToLoad);
 
-	enum GameState {Uninitialized, ShowingSplash, ShowingMenu, ShowingCustomizeCharacter, ShowingActSelection, ShowingPlayGame,
-					NewGameScene, LoadGameScene, OptionScene, CreditScene, Exiting };
+	// Show text room
+	void ShowTestRoom(LWindow &gWindow, SDL_Renderer *gRenderer);
+
+	enum GameState {Uninitialized, ShowingSplash, ShowingMenu,
+					ShowingCustomizeCharacter, ShowingActSelection,
+					ShowingPlayGame, ShowingTestRoom,
+					OptionScene, CreditScene, Exiting };
 	static GameState _gameState;
 };
 

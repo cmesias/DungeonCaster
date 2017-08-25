@@ -32,6 +32,7 @@ void Options::LoadAudioFiles() {
 	sKeyPickup = Mix_LoadWAV("sounds/snd_key_pickup.wav");
 	sPlayerHurt = Mix_LoadWAV("sounds/snd_player_hurt.wav");
 	sSkeletonHurt = Mix_LoadWAV("sounds/snd_skeleton_hurt.wav");
+	sPotion = Mix_LoadWAV("sounds/snd_bottle.wav");
 }
 
 void Options::FreeAudioFiles() {
@@ -47,6 +48,7 @@ void Options::FreeAudioFiles() {
 	Mix_FreeChunk(sKeyPickup);
 	Mix_FreeChunk(sPlayerHurt);
 	Mix_FreeChunk(sSkeletonHurt);
+	Mix_FreeChunk(sPotion);
 	sRockBreak 		= NULL;
 	sAtariBoom 		= NULL;
 	sLazer 			= NULL;
@@ -59,6 +61,7 @@ void Options::FreeAudioFiles() {
 	sKeyPickup = NULL;
 	sPlayerHurt = NULL;
 	sSkeletonHurt = NULL;
+	sPotion = NULL;
 }
 
 // Load video configurations
@@ -172,6 +175,7 @@ void Options::applyCustomAudioCFG(int MUSIC_VOL, int SFX_VOL) {
 	Mix_VolumeChunk(sKeyPickup, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sPlayerHurt, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sSkeletonHurt, SFX_VOL*(MASTER_VOL*0.01));
+	Mix_VolumeChunk(sPotion, SFX_VOL*(MASTER_VOL*0.01));
 }
 
 void Options::applyOldAudioCFG() {
@@ -186,6 +190,7 @@ void Options::applyOldAudioCFG() {
 	Mix_VolumeChunk(sKeyPickup, SFX_VOL);
 	Mix_VolumeChunk(sPlayerHurt, SFX_VOL);
 	Mix_VolumeChunk(sSkeletonHurt, SFX_VOL);
+	Mix_VolumeChunk(sPotion, SFX_VOL);
 }
 
 void Options::applyMasterAudioCFG() {
@@ -200,6 +205,7 @@ void Options::applyMasterAudioCFG() {
 	Mix_VolumeChunk(sKeyPickup, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sPlayerHurt, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sSkeletonHurt, SFX_VOL*(MASTER_VOL*0.01));
+	Mix_VolumeChunk(sPotion, SFX_VOL*(MASTER_VOL*0.01));
 }
 
 //Get's input from user and returns it
@@ -396,7 +402,6 @@ void Options::start(LWindow &gWindow, SDL_Renderer *gRenderer)
 void Options::SaveLevel(LWindow &gWindow, SDL_Renderer *gRenderer, bool &mainLoop,
 						std::string SpawnCoordinatesData,
 						std::string TileSaveData,
-						std::string CollisionTileSaveData,
 						std::string ItemSaveData,
 						std::string MonsterSaveData){
 
@@ -515,7 +520,7 @@ void Options::SaveLevel(LWindow &gWindow, SDL_Renderer *gRenderer, bool &mainLoo
 					///////////////////////////////////////////////////////////////////////////////
 					///////////////////////////////////////////////////////////////////////////////
 					//-------------------------- Save Collision Tile Data -----------------------//
-					//Save # of Blocks
+					/*//Save # of Blocks
 					std::ofstream newTileCFile;
 					PathDir.str(std::string());
 					// Set directory to save
@@ -527,7 +532,7 @@ void Options::SaveLevel(LWindow &gWindow, SDL_Renderer *gRenderer, bool &mainLoo
 					// Store data given from Editor to store in File
 					newTileCFile << CollisionTileSaveData;
 					// Close
-					newTileCFile.close();
+					newTileCFile.close();*/
 					//-------------------------- Save Collision Tile Data -----------------------//
 					///////////////////////////////////////////////////////////////////////////////
 					///////////////////////////////////////////////////////////////////////////////

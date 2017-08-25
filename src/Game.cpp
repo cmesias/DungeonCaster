@@ -15,6 +15,7 @@
 #include "Engine/CustomizeCharacter.h"
 #include "Engine/ActSelection.h"
 #include "Engine/PlayGame.h"
+#include "Engine/TestRoom.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -84,10 +85,6 @@ void Game::Load() {
 	gFont 	= TTF_OpenFont("fonts/Viga-Regular.ttf", 18);
 	gFont13 = TTF_OpenFont("fonts/Viga-Regular.ttf", 13);
 	gFont26 = TTF_OpenFont("fonts/Viga-Regular.ttf", 26);
-
-	// load particle textures
-	setClips(cParticles, 32, 0, 8, 8);
-	gParticles.loadFromFile(gRenderer, "resource/gfx/particles.png");
 }
 
 // Free
@@ -97,7 +94,6 @@ void Game::Free() {
 
 	// free textures
 	gText.free();
-	gParticles.free();
 
 	// free fonts
 	TTF_CloseFont(gFont);
@@ -172,9 +168,29 @@ void Game::GameLoop()
 				ShowPlayGame(levelToLoad);
 				break;
 			}
+		case Game::ShowingTestRoom:							// Test Room
+			{
+				ShowTestRoom(gWindow, gRenderer);
+				break;
+			}
 		case Game::Exiting:									// Quit
 			{
 				IsExiting();
+				break;
+			}
+		case Game::OptionScene:								// Test
+			{
+				//
+				break;
+			}
+		case Game::CreditScene:								// Test
+			{
+				//
+				break;
+			}
+		case Game::Uninitialized:							// Test
+			{
+				//
 				break;
 			}
 	}
@@ -206,7 +222,7 @@ void Game::ShowSplashScreen() {
 // Splash Screen
 void Game::ShowMenu() {
 	// Fade in Menu Music
-	Mix_FadeInMusic( sAmbientMusic, -1, 50);
+	//Mix_FadeInMusic( sAmbientMusic, -1, 50);
 	// Create Main Menu
 	MainMenu mainMenu;
 	// Show Main Menu
@@ -223,6 +239,7 @@ void Game::ShowMenu() {
 		break;
 	case MainMenu::HowToPlay:				// Menu returned 'Load', LoadGame()
 		//_gameState = Game::LoadGameScene;
+		_gameState = Game::ShowingTestRoom;
 		break;
 	case MainMenu::Options:					// Menu returned 'Options', Options()
 	//	_gameState = Game::OptionScene;
@@ -293,9 +310,9 @@ void Game::ShowActSelectionScreen(LWindow &gWindow, SDL_Renderer *gRenderer) {
 /* Play Game */
 void Game::ShowPlayGame(int levelToLoad) {
 	// Stop menu music
-	Mix_HaltMusic();
+	//Mix_HaltMusic();
 	// Fade in Menu Music
-	Mix_FadeInMusic( sStrangeMusic, -1, 50);
+	//Mix_FadeInMusic( sStrangeMusic, -1, 50);
 	// Create Main Menu
 	PlayGame game1;
 	// Show Main Menu
@@ -318,6 +335,28 @@ void Game::ShowPlayGame(int levelToLoad) {
 		break;
 	case PlayGame::Exit:				// Exit Game
 		_gameState = Game::Exiting;
+		break;
+	}
+}
+
+/* Test Room */
+void Game::ShowTestRoom(LWindow &gWindow, SDL_Renderer *gRenderer) {
+	// Create Main Menu
+	TestRoom customizeCharacter;
+	// Show Main Menu
+	TestRoom::TestResult result;
+	customizeCharacter.Show(gWindow, gRenderer, result);
+	// Do something on Main Menu return
+	switch(result)
+	{
+	case TestRoom::Nothing:				// Nothing
+		//
+		break;
+	case TestRoom::Exit:				// Exit Game
+		_gameState = Game::Exiting;
+		break;
+	case TestRoom::Back:				// Back
+		_gameState = Game::ShowingMenu;
 		break;
 	}
 }

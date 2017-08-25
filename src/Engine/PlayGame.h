@@ -16,7 +16,7 @@
 #include "Options.h"
 #include "TileBar.h"
 #include "Tiles.h"
-#include "TileC.h"
+//#include "TileC.h"
 
 class PlayGame : public Helper, public Options {
 
@@ -109,9 +109,6 @@ public:	// Other classes
 	// Monsters
 	Monster mon;
 	Monster monster[100];
-	// Particles
-	Particle part;
-	Particle particles[2094];
 	//  Spawners
 	Spawner spaw;
 	Spawner spawner[200];
@@ -119,11 +116,11 @@ public:	// Other classes
 	Player player;
 	// Tiles
 	Tile tl;
-	Tile tile[5000];
+	Tile tile[3000];
 
 	// Collision Tiles
-	TileC tc;
-	TileC tilec[2096];
+	//TileC tc;
+	//TileC tilec[2096];
 	SDL_Rect rClips[64]; 		// doorWidth * doorHeight = 64
 
 	// Tilebar
@@ -136,34 +133,34 @@ public:	// Other classes
 	Item item[100];
 public:
     // camera
-    int camx;
-    int camy;
+    float camx;
+    float camy;
     bool camlock;
 
 public:	// Core functions
 
 	// Initialize
-	void Init();
+	void Init(Particle &part, Particle particles[]);
 
 	// Load resources
-	void Load(LWindow &gWindow, SDL_Renderer *gRenderer);
+	void Load(LWindow &gWindow, SDL_Renderer *gRenderer, Particle &part, Particle particles[]);
 
 	// Free resources
-	void Free();
+	void Free(Particle &part);
 
 	// Update everything
-	void Update(LWindow &gWindow, SDL_Renderer *gRenderer);
+	void Update(LWindow &gWindow, SDL_Renderer *gRenderer, Particle &part, Particle particles[]);
 
 public:	// Render Editor UI
 
 	// Render debug information
-	void RenderDebug(SDL_Renderer *gRenderer);
+	void RenderDebug(SDL_Renderer *gRenderer, Particle &part, Particle particles[]);
 
 	// Render tile in hand
 	void RenderHand(SDL_Renderer *gRenderer);
 
 	// Render text
-	void RenderText(SDL_Renderer *gRenderer, LWindow &gWindow);
+	void RenderText(SDL_Renderer *gRenderer, LWindow &gWindow, Particle &part, Particle particles[]);
 
 	// Render Editor GUI
 	void RenderUI(SDL_Renderer *gRenderer);
@@ -174,10 +171,13 @@ public:	// Render Player GUI (or what the Player sees including Tiles)
 	void RenderFG(SDL_Renderer *gRenderer, LWindow &gWindow);
 
 	// Render objects
-	void Render(SDL_Renderer *gRenderer, LWindow &gWindow);
+	void Render(SDL_Renderer *gRenderer, LWindow &gWindow, Particle &part, Particle particles[]);
+
+	// Render breakable textures onto Tiles
+	void RenderBreak(SDL_Renderer *gRenderer, int layer);
 
 	// Render lights
-	void RenderLights(SDL_Renderer *gRenderer);
+	void RenderLights(SDL_Renderer *gRenderer, Particle &part, Particle particles[]);
 
 	// Render Player GUI
 	void RenderGUI(SDL_Renderer *gRenderer);
@@ -186,16 +186,16 @@ public:	// Render Player GUI (or what the Player sees including Tiles)
 public:	// Functions mixed with other classes
 
 	// Check collision between Particle & Monster
-	void checkCollisionParticleMonster();
+	void checkCollisionParticleMonster(Particle &part, Particle particles[]);
 
 	// Check collision between Tile & Monster
 	void checkCollisionTileMonster();
 
 	// Check collision between Particle & Player
-	void checkCollisionParticlePlayer();
+	void checkCollisionParticlePlayer(Particle &part, Particle particles[]);
 
 	// Check collision between Grenade Particle & Enemies
-	void checkCollisionGrenadePlayer();
+	void checkCollisionGrenadePlayer(Particle &part, Particle particles[]);
 
 	// Check collision between Items & Player
 	void checkCollisionItemPlayer();
@@ -206,8 +206,11 @@ public:	// Functions mixed with other classes
 	// Check collision between certain Collision Tiles & Player
 	void checkCollisionTilecPlayer();
 
+	// Check collision between Monster & Player
+	void checkCollisionMonsterPlayer();
+
 	// Check collision between Particles that do damage & Tiles
-	void checkCollisionParticleTile();
+	void checkCollisionParticleTile(Particle &part, Particle particles[]);
 
 	// Spawn Asteroids upon destroying all Asteroids
 	void spawnAsteroidsNow2();
@@ -215,10 +218,10 @@ public:	// Functions mixed with other classes
 public:	// Manual Updates
 
 	// Handle collision of objects and Level Size
-	void ClampObjectsToLevelSize();
+	void ClampObjectsToLevelSize(Particle &part, Particle particles[]);
 
 	// Update Player
-	void UpdatePlayer();
+	void UpdatePlayer(Particle &part, Particle particles[]);
 
 	// Have Monster find the shortest path towards the Player
 	void UpdateMonsterPlayer(SDL_Renderer *gRenderer);
@@ -260,21 +263,21 @@ public:	// Editor Variables & functions
 	// Load player spawn point
 	void loadSpawnPoint(int level);
 
-	void editorOnKeyDown(SDL_Keycode sym);
+	void editorOnKeyDown(SDL_Keycode sym, Particle &part, Particle particles[]);
 
 	void editorOnKeyUp(SDL_Keycode sym);
 
 	// Clear current working level
-	void ClearLevel();
+	void ClearLevel(Particle &part, Particle particles[]);
 
 	// Load a level
-	void LoadLevel(int level);
+	void LoadLevel(int level, Particle &part, Particle particles[]);
 
 	// Set Level Size and Keys required
 	void SetLevelSizeAndKeys();
 
 	// Reset Level
-	void ResetLevel();
+	void ResetLevel(Particle &part, Particle particles[]);
 
 private:	// used for some debugging
 	bool debug;

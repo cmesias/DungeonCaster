@@ -6,11 +6,8 @@
  */
 
 #include <SDL2/SDL.h>
-#include <SDL2/SDL_net.h>
 #include <SDL2/SDL_image.h>
-#include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_ttf.h>
-#include <SDL2/SDL_mouse.h>
 
 #include <iostream>
 #include <math.h>
@@ -25,12 +22,22 @@
 
 void Tile::Load(SDL_Renderer *gRenderer) {
 	gTiles.loadFromFile(gRenderer, "resource/gfx/tile00.png");
+	gTileBreak.loadFromFile(gRenderer, "resource/gfx/tile-break.png");
+	int j = 0;
+	for (int w = 0; w < 10; w++) {
+		rTileBreak[j].x = 0 + w * 16;
+		rTileBreak[j].y = 0;
+		rTileBreak[j].w = 16;
+		rTileBreak[j].h = 16;
+		j++;
+	}
 	gFont12 = TTF_OpenFont("resource/fonts/Viga-Regular.ttf", 12);
 }
 
 void Tile::Free() {
-	gTiles.free();
 	gText.free();
+	gTiles.free();
+	gTileBreak.free();
 	TTF_CloseFont(gFont12);
 	gFont12 = NULL;
 }
@@ -46,7 +53,8 @@ void Tile::Init(Tile tile[]) {
 	multiH 		= 1;
 	hideOtherLayers 	= false;
 	for (int i = 0; i < max; i++) {
-		tile[i].id = -1;
+		tile[i].hits = -1;
+		tile[i].id = 1;
 		tile[i].alpha = 255;
 		tile[i].layer = -1;
 		tile[i].animTimer = 0;
@@ -57,6 +65,7 @@ void Tile::Init(Tile tile[]) {
 		tile[i].player = false;
 		tile[i].side = "right";
 		tile[i].collide = false;
+		tile[i].destructible = false;
 		tile[i].alive = false;
 	}
 }
@@ -64,6 +73,7 @@ void Tile::Init(Tile tile[]) {
 void Tile::Spawn(Tile tile[], float x, float y, int w, int h, int id, int layer, SDL_Rect clip) {
 	for (int i = 0; i < max; i++) {
 		if (!tile[i].alive){
+			tile[i].hits 	= -1;
 			tile[i].x 		= x;
 			tile[i].y 		= y;
 			tile[i].w 		= w;
@@ -80,6 +90,7 @@ void Tile::Spawn(Tile tile[], float x, float y, int w, int h, int id, int layer,
 			tile[i].player = false;
 			tile[i].side = "right";
 			tile[i].collide = false;
+			tile[i].destructible = false;
 			tile[i].alive 	= true;
 			tileCount++;
 			break;
@@ -113,6 +124,28 @@ void Tile::ChangeCollision(Tile tile[], int click) {
 				if (tile[i].mouse){
 					if (tile[i].layer == layer) {
 						tile[i].collide = (!tile[i].collide);
+					}
+				}
+			}
+		}
+	}
+}
+
+void Tile::ChangeDestructable(Tile tile[], int click) {
+	for (int i = 0; i < max; i++) {
+		if (tile[i].alive){
+			// If Tile placement size is above Tile change collision
+			if (click == 0) {
+				if (tile[i].mouseBox){
+					if (tile[i].layer == layer) {
+						tile[i].destructible = (!tile[i].destructible);
+					}
+				}
+			// Mouse change collision
+			}else{
+				if (tile[i].mouse){
+					if (tile[i].layer == layer) {
+						tile[i].destructible = (!tile[i].destructible);
 					}
 				}
 			}
@@ -184,8 +217,8 @@ void Tile::Update(Tile tile[], LWindow &gWindow, int newMx, int newMy, int mex, 
 	for (int i = 0; i < max; i++) {
 		if (tile[i].alive){
 			//If the tile is in the screen
-			if (tile[i].x + tile[i].w > camx-64 && tile[i].x < camx + gWindow.getWidth()+64
-			 && tile[i].y + tile[i].h > camy-64 && tile[i].y < camy + gWindow.getHeight()+64) {
+			if (tile[i].x + tile[i].w > camx && tile[i].x < camx + screenWidth
+			 && tile[i].y + tile[i].h > camy && tile[i].y < camy + screenHeight) {
 				tile[i].screen = true;
 			} else {
 				tile[i].screen = false;
@@ -208,6 +241,14 @@ void Tile::Update(Tile tile[], LWindow &gWindow, int newMx, int newMy, int mex, 
 			if (tile[i].layer > 6) {
 				tile[i].layer = 0;
 			}
+			// Death by breaking
+			if (tile[i].destructible) {
+				if (tile[i].hits > 9) {
+					tile[i].alive = false;
+					tileCount--;
+				}
+			}
+
 			// Animations
 			/*if (tile[i].id == 143) {
 				tile[i].animTimer++;
@@ -402,14 +443,14 @@ void Tile::checkCollision(Tile tile[], float x, float y, int w, int h, float &co
 
 void Tile::Render(SDL_Renderer *gRenderer, Tile tile[], int layer_dummy, int camx, int camy) {
 	for (int i = 0; i < max; i++) {
-		if (tile[i].alive){
+		if (tile[i].alive && tile[i].screen){
 			// Tile trasparency on Player collision
 			if (tile[i].layer != 0 && tile[i].player) {
 				//tile[i].alpha = 90;
 			}else{
 				//tile[i].alpha = 255;
 			}
-			// Render layer in hand
+			// Render layer that Editor has selected
 			if (hideOtherLayers) {
 				if (layer == tile[i].layer) {
 					gTiles.setAlpha(tile[i].alpha);
@@ -427,6 +468,10 @@ void Tile::Render(SDL_Renderer *gRenderer, Tile tile[], int layer_dummy, int cam
 					else{
 						gTiles.setAlpha(tile[i].alpha);
 						gTiles.render(gRenderer, tile[i].x - camx, tile[i].y - camy, tile[i].w, tile[i].h, &tile[i].clip);
+						// If destructible, render destructible Texture on Tiles
+						if (tile[i].destructible && tile[i].hits >= 0) {
+							gTileBreak.render(gRenderer, tile[i].x - camx, tile[i].y - camy, tile[i].w, tile[i].h, &rTileBreak[tile[i].hits]);
+						}
 					}
 					/*SDL_Rect tempr = {tile[i].x - camx, tile[i].y - camy, tile[i].w, tile[i].h};
 					SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 255);
@@ -449,51 +494,122 @@ void Tile::Render(SDL_Renderer *gRenderer, Tile tile[], int layer_dummy, int cam
 void Tile::RenderDebug(SDL_Renderer *gRenderer, Tile tile[], int newMx, int newMy, int mex, int mey, int camx, int camy, SDL_Rect rTiles[], int tileSize){
 	// Render Tile info
 	for (int i = 0; i < max; i++) {
-		if (tile[i].alive){
-			// Identify a Collision Tile
-			if (tile[i].collide) {
-				SDL_Rect tempr = {tile[i].x - camx, tile[i].y - camy, 2, 2};
-				SDL_SetRenderDrawColor(gRenderer, 0, 0, 255, 255);
-				SDL_RenderFillRect(gRenderer, &tempr);
-			}else{
-				SDL_Rect tempr = {tile[i].x - camx, tile[i].y - camy, 2, 2};
-				SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, 255);
-				SDL_RenderFillRect(gRenderer, &tempr);
-			}
-			// Identify if mouse is on top of a Tile
-			if (tile[i].mouse && tile[i].layer == layer) {
-				SDL_Rect tempr = {tile[i].x+2 - camx, tile[i].y - camy, 2, 2};
-				SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 255);
-				SDL_RenderDrawRect(gRenderer, &tempr);
-				std::stringstream tempss;
-				tempss << tile[i].id;
-				gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont12);
-				gText.setAlpha(255);
-				gText.render(gRenderer, tile[i].x - camx, tile[i].y - camy, gText.getWidth(), gText.getHeight());
-			}
-			// Identify if the size of the Tiles we are placing are over mouse
-			if (tile[i].mouseBox) {
-				SDL_Rect tempr = {tile[i].x+4 - camx, tile[i].y - camy, 2, 2};
-				SDL_SetRenderDrawColor(gRenderer, 255, 255, 0, 255);
-				SDL_RenderDrawRect(gRenderer, &tempr);
-			}
-			// Render Tile Size
-			/*SDL_Rect tempr = {tile[i].x - camx, tile[i].y - camy, tile[i].w, tile[i].h};
-			SDL_SetRenderDrawColor(gRenderer, 255, 255, 0, 255);
-			SDL_RenderDrawRect(gRenderer, &tempr);*/
+		if (tile[i].alive && tile[i].screen){
+			if (hideOtherLayers) {
+				if (layer == tile[i].layer) {
+					// Identify a Collision Tile
+					if (tile[i].collide) {
+						SDL_Rect tempr = {tile[i].x - camx, tile[i].y - camy, 2, 2};
+						SDL_SetRenderDrawColor(gRenderer, 0, 0, 255, 255);
+						SDL_RenderFillRect(gRenderer, &tempr);
+					}else{
+						SDL_Rect tempr = {tile[i].x - camx, tile[i].y - camy, 2, 2};
+						SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, 255);
+						SDL_RenderFillRect(gRenderer, &tempr);
+					}
+					// If Tile is destructible
+					if (tile[i].destructible) {
+						SDL_Rect tempr = {tile[i].x - camx, tile[i].y+2 - camy, 2, 2};
+						SDL_SetRenderDrawColor(gRenderer, 255, 0, 255, 255);
+						SDL_RenderDrawRect(gRenderer, &tempr);
+					}else{
+						SDL_Rect tempr = {tile[i].x - camx, tile[i].y+2 - camy, 2, 2};
+						SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, 255);
+						SDL_RenderDrawRect(gRenderer, &tempr);
+					}
+					// Identify if mouse is on top of a Tile
+					if (tile[i].mouse && tile[i].layer == layer) {
+						SDL_Rect tempr = {tile[i].x+2 - camx, tile[i].y - camy, 2, 2};
+						SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 255);
+						SDL_RenderDrawRect(gRenderer, &tempr);
+						std::stringstream tempss;
+						tempss << tile[i].id;
+						gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont12);
+						gText.setAlpha(255);
+						gText.render(gRenderer, tile[i].x - camx, tile[i].y - camy, gText.getWidth(), gText.getHeight());
+					}
+					// Identify if the size of the Tiles we are placing are over mouse
+					if (tile[i].mouseBox) {
+						SDL_Rect tempr = {tile[i].x+4 - camx, tile[i].y - camy, 2, 2};
+						SDL_SetRenderDrawColor(gRenderer, 255, 255, 0, 255);
+						SDL_RenderDrawRect(gRenderer, &tempr);
+					}
 
-			/*if (tile[i].mouse) {
-				stringstream tempss;
-				tempss << "x: " << tile[i].x;
-				gText.loadText(tempss.str().c_str(), white, gFont12);
-				gText.setAlpha(255);
-				gText.render(tile[i].x - cam.x, tile[i].y - cam.y, gText.getWidth(), gText.getHeight());
-				stringstream tempss1;
-				tempss1 << "y: " << tile[i].y;
-				gText.loadText(tempss1.str().c_str(), white, gFont12);
-				gText.setAlpha(255);
-				gText.render(tile[i].x - cam.x, tile[i].y+12 - cam.y, gText.getWidth(), gText.getHeight());
-			}*/
+					// Render Tile Size
+					/*SDL_Rect tempr = {tile[i].x - camx, tile[i].y - camy, tile[i].w, tile[i].h};
+					SDL_SetRenderDrawColor(gRenderer, 255, 255, 0, 255);
+					SDL_RenderDrawRect(gRenderer, &tempr);*/
+
+					/*if (tile[i].mouse) {
+						stringstream tempss;
+						tempss << "x: " << tile[i].x;
+						gText.loadText(tempss.str().c_str(), white, gFont12);
+						gText.setAlpha(255);
+						gText.render(tile[i].x - cam.x, tile[i].y - cam.y, gText.getWidth(), gText.getHeight());
+						stringstream tempss1;
+						tempss1 << "y: " << tile[i].y;
+						gText.loadText(tempss1.str().c_str(), white, gFont12);
+						gText.setAlpha(255);
+						gText.render(tile[i].x - cam.x, tile[i].y+12 - cam.y, gText.getWidth(), gText.getHeight());
+					}*/
+				}
+			}else{
+				// Identify a Collision Tile
+				if (tile[i].collide) {
+					SDL_Rect tempr = {tile[i].x - camx, tile[i].y - camy, 2, 2};
+					SDL_SetRenderDrawColor(gRenderer, 0, 0, 255, 255);
+					SDL_RenderFillRect(gRenderer, &tempr);
+				}else{
+					SDL_Rect tempr = {tile[i].x - camx, tile[i].y - camy, 2, 2};
+					SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, 255);
+					SDL_RenderFillRect(gRenderer, &tempr);
+				}
+				// If Tile is destructible
+				if (tile[i].destructible) {
+					SDL_Rect tempr = {tile[i].x - camx, tile[i].y+2 - camy, 2, 2};
+					SDL_SetRenderDrawColor(gRenderer, 255, 0, 255, 255);
+					SDL_RenderDrawRect(gRenderer, &tempr);
+				}else{
+					SDL_Rect tempr = {tile[i].x - camx, tile[i].y+2 - camy, 2, 2};
+					SDL_SetRenderDrawColor(gRenderer, 255, 0, 0, 255);
+					SDL_RenderDrawRect(gRenderer, &tempr);
+				}
+				// Identify if mouse is on top of a Tile
+				if (tile[i].mouse && tile[i].layer == layer) {
+					SDL_Rect tempr = {tile[i].x+2 - camx, tile[i].y - camy, 2, 2};
+					SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 255);
+					SDL_RenderDrawRect(gRenderer, &tempr);
+					std::stringstream tempss;
+					tempss << tile[i].id;
+					gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont12);
+					gText.setAlpha(255);
+					gText.render(gRenderer, tile[i].x - camx, tile[i].y - camy, gText.getWidth(), gText.getHeight());
+				}
+				// Identify if the size of the Tiles we are placing are over mouse
+				if (tile[i].mouseBox) {
+					SDL_Rect tempr = {tile[i].x+4 - camx, tile[i].y - camy, 2, 2};
+					SDL_SetRenderDrawColor(gRenderer, 255, 255, 0, 255);
+					SDL_RenderDrawRect(gRenderer, &tempr);
+				}
+
+				// Render Tile Size
+				/*SDL_Rect tempr = {tile[i].x - camx, tile[i].y - camy, tile[i].w, tile[i].h};
+				SDL_SetRenderDrawColor(gRenderer, 255, 255, 0, 255);
+				SDL_RenderDrawRect(gRenderer, &tempr);*/
+
+				/*if (tile[i].mouse) {
+					stringstream tempss;
+					tempss << "x: " << tile[i].x;
+					gText.loadText(tempss.str().c_str(), white, gFont12);
+					gText.setAlpha(255);
+					gText.render(tile[i].x - cam.x, tile[i].y - cam.y, gText.getWidth(), gText.getHeight());
+					stringstream tempss1;
+					tempss1 << "y: " << tile[i].y;
+					gText.loadText(tempss1.str().c_str(), white, gFont12);
+					gText.setAlpha(255);
+					gText.render(tile[i].x - cam.x, tile[i].y+12 - cam.y, gText.getWidth(), gText.getHeight());
+				}*/
+			}
 		}
 	}
 	// Render tile in hand
@@ -529,11 +645,7 @@ void Tile::LoadData(Tile tile[], int level){
 	tileCount = 0;
 	levelWidth = 64;
 	levelHeight = 64;
-	for (int i = 0; i < max; i++) {
-		if (tile[i].alive) {
-			tile[i].alive = false;
-		}
-	}
+	Init(tile);
 
 	// Open Level File
 	std::stringstream fileName;
@@ -561,6 +673,7 @@ void Tile::LoadData(Tile tile[], int level){
 								  tile[i].mouse 	>>
 								  tile[i].screen 	>>
 								  tile[i].collide 	>>
+								  tile[i].destructible 	>>
 								  tile[i].alive;
 				break;
 			}
@@ -593,6 +706,7 @@ std::string Tile::SaveData(Tile tile[]){
 					 << tile[i].mouse 		<< " "
 					 << tile[i].screen 		<< " "
 					 << tile[i].collide 	<< " "
+					 << tile[i].destructible 	<< " "
 			   	   	 << tile[i].alive 		<< "\n";
 		}
 	}

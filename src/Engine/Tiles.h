@@ -10,18 +10,22 @@
 
 #include "LWindow.h"
 #include "LTexture.h"
+#include "Helper.h"
 
-class Tile {
+class Tile: public Helper {
 public:	// editor variables
 	/* Tile Variables */
-	const int max = 5000;
+	const int max = 3000;
 	int multiW = 1;
 	int multiH = 1;
 	int tilew = 16;
 	int tileh = 16;
 	bool hideOtherLayers = false;
-	LTexture gTiles;
+
 	LTexture gText;
+	LTexture gTiles;
+	LTexture gTileBreak;
+	SDL_Rect rTileBreak[10];
 	TTF_Font *gFont12 = NULL;
 
 public:	// Level Loading Variables
@@ -42,12 +46,14 @@ public:	// instance variables
 	int layer;
 	int animTimer;
 	int animFrame;
+	int hits;			// hits before it breaks
 	bool mouse;			// Mouse point
 	bool mouseBox;		// Mouse box
 	bool screen;
 	bool player;
 	bool alive;
 	std::string side;	// collision with player
+	bool destructible;	// able to be destroyed
 	bool collide;		// collision with player
 
 public:	// Test variables
@@ -67,7 +73,9 @@ public:	// Editor functions
 
 	void ChangeCollision(Tile tile[], int click);
 
-	void ChangeLayer(Tile tile[], int value);
+	void ChangeDestructable(Tile tile[], int click);
+
+	void ChangeLayer(Tile tile[], int click);
 
 	// This will remove underlying Tile(s) before Tile placement
 	void Remove(Tile tile[], int click);

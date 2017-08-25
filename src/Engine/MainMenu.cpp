@@ -164,7 +164,7 @@ void MainMenu::Show(LWindow &gWindow, SDL_Renderer *gRenderer, MainMenu::MenuRes
 						if (menuIndex == 0) {
 							result = NewGame;
 						} else if (menuIndex == 1) {
-						//	result = HowToPlay;
+							result = HowToPlay;
 						} else if (menuIndex == 2) {
 						//	result = Options;
 							start(gWindow,gRenderer);
@@ -179,7 +179,7 @@ void MainMenu::Show(LWindow &gWindow, SDL_Renderer *gRenderer, MainMenu::MenuRes
 						if (menuIndex == 0) {
 							result = NewGame;
 						} else if (menuIndex == 1) {
-						//	result = HowToPlay;
+							result = HowToPlay;
 						} else if (menuIndex == 2) {
 							//	result = Options;
 							start(gWindow,gRenderer);
@@ -353,7 +353,7 @@ MainMenu::MenuResult MainMenu::mouseReleased(LWindow gWindow, SDL_Renderer *gRen
 					if (i == 0) {
 						result = NewGame;
 					} else if (i == 1) {
-					//	result = HowToPlay;
+						result = HowToPlay;
 					} else if (i == 2) {
 					//	result = Options;
 						start(gWindow,gRenderer);

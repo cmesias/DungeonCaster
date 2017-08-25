@@ -11,6 +11,15 @@
 ########################### Audio Credits ###########################
 #####################################################################
 #
+# + Cmesias (Using Bfxr program, here: http://www.bfxr.net/)
+#   - snd_hurt.wav
+#   - snd_hitting_wall.wav
+#   - snd_spell_explode.wav
+#   - snd_skeleton_hurt.wav
+#   - snd_typing.wav
+#
+#####################################################################
+#
 # + https://www.youtube.com/watch?v=jzxVXDNGwZc
 #   - grenadePickup
 #
@@ -44,6 +53,11 @@
 #
 # + https://opengameart.org/users/bbandrage
 #   - Strange Dungeon.mp3
+#
+#####################################################################
+#
+# + https://opengameart.org/users/artisticdude
+#   - snd_bottle.wav
 #
 #####################################################################
 

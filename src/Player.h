@@ -11,7 +11,7 @@
 #include "Engine/Helper.h"
 #include "Engine/LTexture.h"
 #include "Engine/LWindow.h"
-#include "Engine/TileC.h"
+//#include "Engine/TileC.h"
 #include "Engine/Tiles.h"
 #include "Engine/Particle.h"
 #include "Engine/Spell.h"
@@ -216,7 +216,6 @@ public:	// Core Functions
 
 	// Update
 	void Update(Particle particle[], Particle &p_dummy,
-				TileC &tc, TileC tilec[],
 				Tile &tl, Tile tile[],
 				int mx, int my, int camx, int camy,
 				LWindow gWindow, SDL_Renderer* gRenderer,
@@ -237,7 +236,6 @@ public:	// Core Functions
 
 	// Player controls
 	void move(Particle particle[], Particle &p_dummy,
-			   TileC &tc, TileC tilec[],
 			   Tile &tl, Tile tile[],
 			   int mx, int my);
 

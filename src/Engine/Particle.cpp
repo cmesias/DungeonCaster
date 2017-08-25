@@ -30,13 +30,23 @@ void Particle::load(SDL_Renderer* gRenderer){
 	setClips(cParticles[1], 8, 0, 8, 8 );
 	gParticles.loadFromFile(gRenderer, "resource/gfx/particles.png");
 	gParticles.setBlendMode(SDL_BLENDMODE_ADD);
-	sGrenadeExplode = Mix_LoadWAV("sounds/snd_grenade_explode.wav");
+
+
+	// Fireball VFX
+	for (int i=1; i<=38; i++) {
+		std::stringstream tempss;
+		tempss << "resource/vfx/fireball/fireball";
+		tempss << i;
+		tempss << ".png";
+		gFireBall[i-1].loadFromFile(gRenderer, tempss.str().c_str());
+	}
 }
 
 void Particle::free(){
+	for (int i=0; i<38; i++) {
+		gFireBall[i].free();
+	}
 	gParticles.free();
-	Mix_FreeChunk(sGrenadeExplode);
-	sGrenadeExplode 		= NULL;
 }
 
 void Particle::init(Particle particle[]) {
@@ -72,8 +82,18 @@ void Particle::init(Particle particle[]) {
 		particle[i].type 			= 0;
 		particle[i].damage 			= 0;
 		particle[i].color 			= { 255, 255, 255, 255 };
+		particle[i].fireBallTimer 	= 0;
+		particle[i].fireBallRate 	= 30.0;
+		particle[i].fireBallFrame 	= 0;
+		particle[i].goTowardsTarget 	= false;
 	}
 }
+
+void Particle::Remove(Particle particle[], int i) {
+	particle[i].alive = false;
+	count--;;
+}
+
 void Particle::RemoveAll(Particle particle[]) {
 	count = 0;
 	for (int i = 0; i < max; i++) {
@@ -93,7 +113,9 @@ void Particle::spawnParticleAngle(Particle particle[], std::string tag, int type
 		bool sizeDeath, float deathSpe,
 		bool decay, float decaySpeed,
 		bool trail, float trailRate, SDL_Color trailColor,
-		float trailMinSize, float trailMaxSize) {
+		float trailMinSize, float trailMaxSize,
+		float timerBeforeMoving,
+		bool goTowardsTarget, float targetX, float targetY) {
 	for (int i = 0; i < max; i++)
 	{
 		if (!particle[i].alive)
@@ -110,9 +132,24 @@ void Particle::spawnParticleAngle(Particle particle[], std::string tag, int type
 			particle[i].timeri 			= 0;
 			particle[i].angle 			= angle;
 			particle[i].speed 			= speed;
-			particle[i].vX 				= (cos( (3.14159265/180)*(angle) ));
-			particle[i].vY 				= (sin( (3.14159265/180)*(angle) ));
+			// If true, after timerBeforeMoving is over, the Particles will move towards the target
+			//particle[i].goTowardsTarget = goTowardsTarget;
+			if (goTowardsTarget) {
+				float shootAngle = atan2(targetY - particle[i].y-particle[i].h/2,targetX - particle[i].x-particle[i].w/2);
+				shootAngle = shootAngle * (180 / 3.1416);
+				if (shootAngle < 0) { shootAngle = 360 - (-shootAngle); }
+				particle[i].vX 				= (cos( (3.14159265/180)*(shootAngle) ));
+				particle[i].vY 				= (sin( (3.14159265/180)*(shootAngle) ));
+				// Also change Particle direction? decide this
+				particle[i].angle = shootAngle;
+			}else{
+				particle[i].vX 				= (cos( (3.14159265/180)*(angle) ));
+				particle[i].vY 				= (sin( (3.14159265/180)*(angle) ));
+			}
 			particle[i].damage 			= damage;
+			particle[i].fireBallTimer 	= 0;
+			particle[i].fireBallRate 	= 30.0;
+			particle[i].fireBallFrame 	= 0;
 			//particle[i].x 				= spawnX + (rand() % 4 + 2 * (cos( (3.14159265/180)*(angle) )));
 			//particle[i].y 				= spawnY + (rand() % 4 + 2 * (sin( (3.14159265/180)*(angle) )));
 			//particle[i].x 				= spawnX + cos( (3.14159265/180)*(angle) );
@@ -178,6 +215,7 @@ void Particle::spawnParticleAngle(Particle particle[], std::string tag, int type
 			particle[i].trailColor 		= trailColor;
 			particle[i].trailMinSize 	= trailMinSize;
 			particle[i].trailMaxSize 	= trailMaxSize;
+			particle[i].timerBeforeMoving 	= timerBeforeMoving;
 			particle[i].alive 			= true;
 			count++;
 			break;
@@ -240,7 +278,7 @@ void Particle::genStars(Particle particle[], int startX, int startY, int endW, i
 		//iint randH = rand() % 3300;
 		int randc = rand() %  100 + 150;
 		SDL_Color tempColor = {randc,randc,randc};
-		spawnParticleAngle(particle, "none", 2,
+		spawnParticleAngle(particle, "none", 4,
 				startX/randl + randW,
 				startY/randl + randH,
 						   10 - randl, 10 - randl,
@@ -320,13 +358,38 @@ void Particle::genStars(Particle particle[], int startX, int startY, int endW, i
 	}
 }*/
 
-void Particle::Update(Particle particle[], int mapX, int mapY, int mapW, int mapH, Mix_Chunk* sSpellExplode) {
+void Particle::Update(Particle particle[], int mapX, int mapY, int mapW, int mapH,
+					  float camx, float camy,
+					  float targetX, float targetY,
+					  Mix_Chunk* sSpellExplode) {
 	for (int i = 0; i < max; i++) {
 		if (particle[i].alive)
 		{
-			// Particle movement
-			particle[i].x += particle[i].vX * particle[i].speed;
-			particle[i].y += particle[i].vY * particle[i].speed;
+			// If there is a timer before moving, do timer first before handling Particle
+			if (particle[i].timerBeforeMoving != 0) {
+				particle[i].timerBeforeMoving -= 1;
+			}else{
+				// Particle movement
+				particle[i].x += particle[i].vX * particle[i].speed;
+				particle[i].y += particle[i].vY * particle[i].speed;
+
+				// Speed decay of grenade
+				if (particle[i].decay) {
+					particle[i].speed = particle[i].speed - particle[i].speed * particle[i].decaySpeed;
+				}
+				// Particle death, upon size
+				if (particle[i].sizeDeath) {
+					particle[i].w -= particle[i].deathSpe;
+					particle[i].h -= particle[i].deathSpe;
+
+				}
+				// Particle spin
+				particle[i].angle += particle[i].angleSpe * particle[i].angleDir;
+				// Particle death, Time
+				particle[i].time += particle[i].deathTimerSpeed;
+				// Particle death, transparency
+				particle[i].alpha -= particle[i].alphaspeed;
+			}
 
 			// particle center
 			particle[i].x2 = particle[i].x + particle[i].w/2;
@@ -335,8 +398,16 @@ void Particle::Update(Particle particle[], int mapX, int mapY, int mapW, int map
 			// get particle radius
 			particle[i].radius = particle[i].w;
 
+			//If the tile is in the screen
+			if (particle[i].x + particle[i].w > camx && particle[i].x < camx + screenWidth
+			 && particle[i].y + particle[i].h > camy && particle[i].y < camy + screenHeight) {
+				particle[i].onScreen = true;
+			} else {
+				particle[i].onScreen = false;
+			}
+
 			// Particle trail
-			if (particle[i].trail) {
+			/*if (particle[i].trail) {
 				particle[i].trailTimer += particle[i].trailRate;
 				if (particle[i].trailTimer > 60) {
 					particle[i].trailTimer = 0;
@@ -370,7 +441,7 @@ void Particle::Update(Particle particle[], int mapX, int mapY, int mapW, int map
 										   true, randDouble(0.005, 0.6));
 					}
 				}
-			}
+			}*/
 
 			///////////////////////////////////////////////////////////////////////////////
 			/////////////////////////// Set Corners of a Particle /////////////////////////
@@ -414,74 +485,48 @@ void Particle::Update(Particle particle[], int mapX, int mapY, int mapW, int map
 			particle[i].D.x = barrelX;
 			particle[i].D.y = barrelY;
 
-			// Speed decay of grenade
-			if (particle[i].decay) {
-				particle[i].speed = particle[i].speed - particle[i].speed * particle[i].decaySpeed;
-			}
-
-			// Particle spin
-			particle[i].angle += particle[i].angleSpe * particle[i].angleDir;
-
-			// Particle death, Time
-			particle[i].time += particle[i].deathTimerSpeed;
+			// Handle different types of deaths
 			if (particle[i].time > particle[i].deathTimer) {
-				particle[i].alive = false;
-				count--;
+				// remove particle
+				Remove(particle, i);
 			}
-
-			// Particle death, transparency
-			particle[i].alpha -= particle[i].alphaspeed;
-			if (particle[i].alpha < 0) {
-				particle[i].alive = false;
-				count--;
+			else if (particle[i].alpha < 0) {
+				Remove(particle, i);
 			}
-
-			// Particle death, upon size
-			if (particle[i].sizeDeath) {
-				particle[i].w -= particle[i].deathSpe;
-				particle[i].h -= particle[i].deathSpe;
-
-				if (particle[i].w <= 0 || particle[i].h <= 0){
-					particle[i].alive = false;
-					count--;
-				}
+			else if (particle[i].w <= 0 || particle[i].h <= 0){
+				Remove(particle, i);
 			}
-
 			// Particle map collision
-			if (particle[i].x+particle[i].w < mapX) {
+			else if (particle[i].x+particle[i].w < mapX) {
 				if (particle[i].damage > 0) {
 					//Mix_PlayChannel(-1, sSpellExplode, 0);
 					//SpawnExplosion(particle, particle[i].x2, particle[i].y2, particle[i].color);
 				}
-				particle[i].alive = false;
-				count--;
+				Remove(particle, i);
 				//particle[i].x = mapX+mapW-particle[i].w;
 			}
-			if (particle[i].x > mapX+mapW) {
+			else if (particle[i].x > mapX+mapW) {
 				if (particle[i].damage > 0) {
 					//Mix_PlayChannel(-1, sSpellExplode, 0);
 					//SpawnExplosion(particle, particle[i].x2, particle[i].y2, particle[i].color);
 				}
-				particle[i].alive = false;
-				count--;
+				Remove(particle, i);
 				//particle[i].x = mapX-particle[i].w;
 			}
-			if (particle[i].y+particle[i].h < mapY) {
+			else if (particle[i].y+particle[i].h < mapY) {
 				if (particle[i].damage > 0) {
 					//Mix_PlayChannel(-1, sSpellExplode, 0);
 					//SpawnExplosion(particle, particle[i].x2, particle[i].y2, particle[i].color);
 				}
-				particle[i].alive = false;
-				count--;
+				Remove(particle, i);
 				//particle[i].y = mapY+mapH-particle[i].h;
 			}
-			if (particle[i].y > mapY+mapH) {
+			else if (particle[i].y > mapY+mapH) {
 				if (particle[i].damage > 0) {
 					//Mix_PlayChannel(-1, sSpellExplode, 0);
 					//SpawnExplosion(particle, particle[i].x2, particle[i].y2, particle[i].color);
 				}
-				particle[i].alive = false;
-				count--;
+				Remove(particle, i);
 				//particle[i].y = mapY-particle[i].h;
 			}
 
@@ -522,10 +567,7 @@ void Particle::Update(Particle particle[], int mapX, int mapY, int mapW, int map
 									int midX = (bmx + bmx2) /2;
 									int midY = (bmy + bmy2) /2;
 									SpawnExplosion(particle, midX, midY, {255, 255,255} );
-									particle[j].alive = false;
-									count--;
-									particle[i].alive = false;
-									count--;
+									Remove(particle, i);
 								}
 							}
 						}
@@ -541,17 +583,20 @@ void Particle::updateBulletParticles(Particle particle[], int mapX, int mapY, in
 		if (particle[i].alive)
 		{
 
-			// Player particle
+			// Enemy particle I
 			if (particle[i].type == 0) {
 				// Update particles angle based on its X and Y velocities
 				particle[i].angle = atan2 ( particle[i].vY, particle[i].vX) * 180 / 3.14159265;
 			}
-
-			// Enemy particle
-			if (particle[i].type == 1) {
-			}
-
 			// Enemy particle II
+			if (particle[i].type == 1) {
+
+			}
+			// Enemy particle IV
+			if (particle[i].type == 3) {
+
+			}
+			// Enemy particle V
 			if (particle[i].type == 4) {
 
 			}
@@ -630,8 +675,7 @@ void Particle::updateBulletParticles(Particle particle[], int mapX, int mapY, in
 										   rand() % 25 + 2, 0.15);
 					}
 					// remove particle
-					particle[i].alive = false;
-					count--;
+					Remove(particle, i);
 				}
 			}*/
 		}
@@ -655,7 +699,7 @@ void Particle::updateStarParticles(Particle particle[], int mapX, int mapY, int 
 // Render bullets
 void Particle::renderBulletParticle(Particle particle[], int camX, int camY, float playerZ, SDL_Renderer* gRenderer) {
 	for (int i = 0; i < max; i++) {
-		if (particle[i].alive) {
+		if (particle[i].alive && particle[i].onScreen) {
 
 			// Render Player lazer particle
 			if (particle[i].type == 0) {
@@ -713,16 +757,49 @@ void Particle::renderBulletParticle(Particle particle[], int camX, int camY, flo
 										  particle[i].h,
 										  NULL,
 										  particle[i].angle);*/
-				gParticles.setAlpha(particle[i].alpha);
+				/*gParticles.setAlpha(particle[i].alpha);
 				gParticles.setColor(particle[i].color.r, particle[i].color.g, particle[i].color.b);
 				gParticles.render(gRenderer, particle[i].x - camX/particle[i].layer,particle[i].y - camY/particle[i].layer,
 											 particle[i].w, particle[i].h,
-											 &cParticles[0], particle[i].angle);
+											 &cParticles[0], particle[i].angle);*/
+
+				particle[i].fireBallTimer += 30;
+				if (particle[i].fireBallTimer > 60) {
+					particle[i].fireBallTimer = 0;
+					particle[i].fireBallFrame++;
+				}
+				if (particle[i].fireBallFrame > 28) {
+					particle[i].fireBallFrame = rand() % 3 + 15;
+				}
+				gFireBall[particle[i].fireBallFrame].setAlpha(particle[i].alpha);
+				gFireBall[particle[i].fireBallFrame].setBlendMode(SDL_BLENDMODE_ADD);
+				gFireBall[particle[i].fireBallFrame].setColor(particle[i].color.r, particle[i].color.g, particle[i].color.b);
+
+				float radians = (M_PI/180)*(particle[i].angle);
+				double barrelW  = (9 * cos(radians) ) - (0 * sin(radians) );
+				double barrelH  = (9 * sin(radians) ) + (0 * cos(radians) );
+				float newX = (particle[i].x+particle[i].w/2-64/2) - barrelW;
+				float newY = (particle[i].y+particle[i].h/2-64/2) - barrelH;
+				for (int j=0; j<4; j++) {
+					gFireBall[particle[i].fireBallFrame].render(gRenderer, newX - camX/particle[i].layer,
+																		   newY - camY/particle[i].layer,
+																		   64, 64, NULL, particle[i].angle);
+				}
+				/*radians = (M_PI/180)*(particle[i].angle);
+				barrelW  = (9 * cos(radians) ) - (0 * sin(radians) );
+				barrelH  = (9 * sin(radians) ) + (0 * cos(radians) );
+				newX = (particle[i].x+particle[i].w/2-64/2) - barrelW;
+				newY = (particle[i].y+particle[i].h/2-64/2) - barrelH;
+				gFireBall[particle[i].fireBallFrame].render(gRenderer, newX - camX/particle[i].layer,
+																	   newY - camY/particle[i].layer,
+																	   64, 64, NULL, particle[i].angle);*/
+
 			}
 
 			// Render Enemy particles
 			if (particle[i].type == 4) {
 				gParticles.setAlpha(particle[i].alpha);
+				gParticles.setBlendMode(SDL_BLENDMODE_ADD);
 				gParticles.setColor(particle[i].color.r, particle[i].color.g, particle[i].color.b);
 				gParticles.render(gRenderer, particle[i].x - camX/particle[i].layer,particle[i].y - camY/particle[i].layer,
 											 particle[i].w, particle[i].h,
@@ -735,7 +812,7 @@ void Particle::renderBulletParticle(Particle particle[], int camX, int camY, flo
 // Render stars
 void Particle::renderStarParticle(Particle particle[], int camx, int camy, float playerZ, SDL_Renderer* gRenderer) {
 	for (int i = 0; i < max; i++) {
-		if (particle[i].alive) {
+		if (particle[i].alive && particle[i].onScreen) {
 
 			// Render stars particle
 			if (particle[i].type == 2) {
