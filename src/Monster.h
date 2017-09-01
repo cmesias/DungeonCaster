@@ -10,12 +10,13 @@
 
 #include "Engine/Helper.h"
 #include "Engine/Spell.h"
-#include "Player.h"
+#include "Engine/Particle.h"
+#include <iostream>
+#include <vector>
 
 class Monster : public Helper {
 public:	// Resources
 	LTexture gMonster;
-	LTexture gBlueDragon;
 	/*
 	 * 12 monsters in Total
 	 * 108 clips
@@ -98,6 +99,8 @@ public:
 	bool onScreen;
 	bool mouse;				// mouse is on top of Monster
 	bool mouseBox;			// if tile placement size of on top of monster
+	bool hasVision;			// has vision of target
+	bool isSelected;		// being selected by a target
 
 public:	// Spells
 
@@ -170,9 +173,8 @@ public:	// Core functions
 	void EditorUpdate(Monster monster[], int newMx, int newMy, int mex, int mey, int camx, int camy);
 
 	// Update monsters 0-11
-	void Update(Monster monster[], Particle &part, Particle particle[],
-				Player &player, Mix_Chunk* sLazer,
-				int camx, int camy);
+	void Update(Monster monster[], Particle &part, Particle particle[], Mix_Chunk* sLazer, int camx, int camy,
+			    float targetX, float targetY);
 
 	// Update minions (index 0-11)
 	void UpdatMinions(Monster monster[], Particle &part, Particle particle[], float x, float y);
@@ -187,13 +189,16 @@ public:	// Core functions
 	void RenderInFront(SDL_Renderer* gRenderer, Monster monster[], int camx, int camy, float targetY, float targetH);
 
 	// Render health bars
-	void RenderGUI(SDL_Renderer *gRenderer, Monster monster[], int camx, int camy);
+	void RenderGUI(SDL_Renderer *gRenderer, Monster monster[], int camx, int camy, int playerIdSelected);
 
 	// Render debug informtation
 	void RenderDebug(SDL_Renderer *gRenderer, Monster monster[], int camx, int camy);
 
 	// This function will determine a Monster's spells (usually called after loading Monsters)
 	void SetSpells(Monster monster[], int i);
+
+	// get id of a monster in index
+	int getID(Monster monster[], int mx, int my);
 
 public: // Save functions
 

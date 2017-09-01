@@ -44,6 +44,7 @@ public:
 	bool hasMouseFocus();
 	bool hasKeyboardFocus();
 	bool isMinimized();
+	bool showCursor;
 
 private:
 	//Window data

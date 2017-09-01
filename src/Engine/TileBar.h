@@ -14,11 +14,14 @@
 //Tile Class
 class TileBar {
 public:
+
+	//// 37 w x 8 h =
 	const int tilesWidth = 8;
 	const int tilesHeight = 8;
 	const int tileW = 16;
 	const int tileH = 16;
-	const int uniqueTiles = 80;
+	//const int uniqueTiles = 80;
+	const int uniqueTiles = 296;
 	int tileCount;
 public:
 	SDL_Rect clip;			//Tile clips
@@ -48,7 +51,7 @@ public:
 
 	int MARGINX = 0;
 	int MARGINY = 0;
-	const int TILES_UNIQUE = 80;	// Total number of Unique Tiles
+	const int TILES_UNIQUE = 296;	// Total number of Unique Tiles
 	SDL_Rect rRect[6];				// Colors 64x64, [0: Green], [1: Orange], [2: White], [3: Blue], [4: Purple], [5: Dark Green fill, White border]
 	bool touching;					// Player is hovering over Tile Bar
 

@@ -22,6 +22,7 @@
 void Options::LoadAudioFiles() {
 	sAmbientMusic = Mix_LoadMUS("sounds/Menu Music.mp3");
 	sStrangeMusic = Mix_LoadMUS("sounds/Strange Dungeon.mp3");
+	sElement = Mix_LoadMUS("sounds/Trevor Lentz/Pixel River.mp3");
 	sRockBreak = Mix_LoadWAV("sounds/rock_break.wav");
 	sLazer = Mix_LoadWAV("sounds/snd_spell_fire.wav");
 	sAtariBoom = Mix_LoadWAV("sounds/atari_boom.wav");
@@ -32,7 +33,9 @@ void Options::LoadAudioFiles() {
 	sKeyPickup = Mix_LoadWAV("sounds/snd_key_pickup.wav");
 	sPlayerHurt = Mix_LoadWAV("sounds/snd_player_hurt.wav");
 	sSkeletonHurt = Mix_LoadWAV("sounds/snd_skeleton_hurt.wav");
-	sPotion = Mix_LoadWAV("sounds/snd_bottle.wav");
+	sDrinkMana = Mix_LoadWAV("sounds/cmesias/snd_drink_mana.wav");
+	sDrinkHealth = Mix_LoadWAV("sounds/cmesias/snd_drink_health.wav");
+	sounds.push_back ( SFX("Coin", "sounds/cmesias/snd_coin.wav"));
 }
 
 void Options::FreeAudioFiles() {
@@ -40,6 +43,7 @@ void Options::FreeAudioFiles() {
 	Mix_FreeChunk(sLazer);
 	Mix_FreeMusic(sAmbientMusic);
 	Mix_FreeMusic(sStrangeMusic);
+	Mix_FreeMusic(sElement);
 	Mix_FreeChunk(sAtariBoom);
 	Mix_FreeChunk(sGrenade);
 	Mix_FreeChunk(sSpellExplode);
@@ -48,12 +52,14 @@ void Options::FreeAudioFiles() {
 	Mix_FreeChunk(sKeyPickup);
 	Mix_FreeChunk(sPlayerHurt);
 	Mix_FreeChunk(sSkeletonHurt);
-	Mix_FreeChunk(sPotion);
+	Mix_FreeChunk(sDrinkMana);
+	Mix_FreeChunk(sDrinkHealth);
 	sRockBreak 		= NULL;
 	sAtariBoom 		= NULL;
 	sLazer 			= NULL;
 	sAmbientMusic 	= NULL;
 	sStrangeMusic 	= NULL;
+	sElement 		= NULL;
 	sGrenade 		= NULL;
 	sSpellExplode = NULL;
 	sGrenadePickup = NULL;
@@ -61,7 +67,12 @@ void Options::FreeAudioFiles() {
 	sKeyPickup = NULL;
 	sPlayerHurt = NULL;
 	sSkeletonHurt = NULL;
-	sPotion = NULL;
+	sDrinkMana = NULL;
+	sDrinkHealth = NULL;
+	for (unsigned int i=0; i<sounds.size(); i++) {
+		Mix_FreeChunk(sounds[i].getChunk());
+		sounds[i].sSFX		= NULL;
+	}
 }
 
 // Load video configurations
@@ -175,7 +186,11 @@ void Options::applyCustomAudioCFG(int MUSIC_VOL, int SFX_VOL) {
 	Mix_VolumeChunk(sKeyPickup, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sPlayerHurt, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sSkeletonHurt, SFX_VOL*(MASTER_VOL*0.01));
-	Mix_VolumeChunk(sPotion, SFX_VOL*(MASTER_VOL*0.01));
+	Mix_VolumeChunk(sDrinkMana, SFX_VOL*(MASTER_VOL*0.01));
+	Mix_VolumeChunk(sDrinkHealth, SFX_VOL*(MASTER_VOL*0.01));
+	for (unsigned int i=0; i<sounds.size(); i++) {
+		Mix_VolumeChunk(sounds[i].getChunk(), SFX_VOL*(MASTER_VOL*0.01));
+	}
 }
 
 void Options::applyOldAudioCFG() {
@@ -190,7 +205,11 @@ void Options::applyOldAudioCFG() {
 	Mix_VolumeChunk(sKeyPickup, SFX_VOL);
 	Mix_VolumeChunk(sPlayerHurt, SFX_VOL);
 	Mix_VolumeChunk(sSkeletonHurt, SFX_VOL);
-	Mix_VolumeChunk(sPotion, SFX_VOL);
+	Mix_VolumeChunk(sDrinkMana, SFX_VOL);
+	Mix_VolumeChunk(sDrinkHealth, SFX_VOL);
+	for (unsigned int i=0; i<sounds.size(); i++) {
+		Mix_VolumeChunk(sounds[i].getChunk(), SFX_VOL);
+	}
 }
 
 void Options::applyMasterAudioCFG() {
@@ -205,7 +224,11 @@ void Options::applyMasterAudioCFG() {
 	Mix_VolumeChunk(sKeyPickup, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sPlayerHurt, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sSkeletonHurt, SFX_VOL*(MASTER_VOL*0.01));
-	Mix_VolumeChunk(sPotion, SFX_VOL*(MASTER_VOL*0.01));
+	Mix_VolumeChunk(sDrinkMana, SFX_VOL*(MASTER_VOL*0.01));
+	Mix_VolumeChunk(sDrinkHealth, SFX_VOL*(MASTER_VOL*0.01));
+	for (unsigned int i=0; i<sounds.size(); i++) {
+		Mix_VolumeChunk(sounds[i].getChunk(), SFX_VOL*(MASTER_VOL*0.01));
+	}
 }
 
 //Get's input from user and returns it

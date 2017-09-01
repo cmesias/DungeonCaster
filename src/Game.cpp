@@ -36,7 +36,10 @@ void Game::Init() {
 	loadVideoCFG();
 
 	// Initialize Video
-	SDL_Init(SDL_INIT_VIDEO);
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC);
+
+	//printf("%i joysticks were found.\n\n", SDL_NumJoysticks() );
+   // printf("The names of the joysticks are:\n");
 
 	// Create window
 	gWindow.create("CEngine V2", RESOLUTION, ANTI_ALIAS, VSYNC, FULLSCREEN );//| SDL_WINDOW_RESIZABLE );
@@ -170,7 +173,7 @@ void Game::GameLoop()
 			}
 		case Game::ShowingTestRoom:							// Test Room
 			{
-				ShowTestRoom(gWindow, gRenderer);
+				ShowTestRoom(gWindow, gRenderer, levelToLoad);
 				break;
 			}
 		case Game::Exiting:									// Quit
@@ -222,7 +225,7 @@ void Game::ShowSplashScreen() {
 // Splash Screen
 void Game::ShowMenu() {
 	// Fade in Menu Music
-	//Mix_FadeInMusic( sAmbientMusic, -1, 50);
+	Mix_FadeInMusic( sAmbientMusic, -1, 50);
 	// Create Main Menu
 	MainMenu mainMenu;
 	// Show Main Menu
@@ -310,9 +313,9 @@ void Game::ShowActSelectionScreen(LWindow &gWindow, SDL_Renderer *gRenderer) {
 /* Play Game */
 void Game::ShowPlayGame(int levelToLoad) {
 	// Stop menu music
-	//Mix_HaltMusic();
+	Mix_HaltMusic();
 	// Fade in Menu Music
-	//Mix_FadeInMusic( sStrangeMusic, -1, 50);
+	Mix_FadeInMusic( sStrangeMusic, -1, 50);
 	// Create Main Menu
 	PlayGame game1;
 	// Show Main Menu
@@ -340,22 +343,29 @@ void Game::ShowPlayGame(int levelToLoad) {
 }
 
 /* Test Room */
-void Game::ShowTestRoom(LWindow &gWindow, SDL_Renderer *gRenderer) {
+void Game::ShowTestRoom(LWindow &gWindow, SDL_Renderer *gRenderer, int &levelToLoad) {
+	// Play Room Music
+	Mix_PlayMusic( sElement, -1);
 	// Create Main Menu
 	TestRoom customizeCharacter;
 	// Show Main Menu
 	TestRoom::TestResult result;
-	customizeCharacter.Show(gWindow, gRenderer, result);
+	customizeCharacter.Show(gWindow, gRenderer, result, levelToLoad);
 	// Do something on Main Menu return
 	switch(result)
 	{
+	case TestRoom::StartGame:			// Start a certain scene/level
+		_gameState = Game::ShowingPlayGame;
+		break;
 	case TestRoom::Nothing:				// Nothing
 		//
 		break;
 	case TestRoom::Exit:				// Exit Game
+		Mix_HaltMusic();
 		_gameState = Game::Exiting;
 		break;
 	case TestRoom::Back:				// Back
+		Mix_HaltMusic();
 		_gameState = Game::ShowingMenu;
 		break;
 	}

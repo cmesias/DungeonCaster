@@ -38,7 +38,7 @@ void Item::Load(SDL_Renderer* gRenderer){
 			i++;
 		}
 	}
-	gItem.loadFromFile(gRenderer, "resource/gfx/torch_key_gems.png");
+	gItem.loadFromFile(gRenderer, "resource/gfx/By Scott Matott/torch_key_gems.png");
 }
 
 void Item::Free(){

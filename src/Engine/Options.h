@@ -40,6 +40,21 @@ public:	// Bar variables
 	const int barHeight = 14;
 	const int menuTitleNamesMarginsH = 10;
 
+	struct SFX {
+		Mix_Chunk *sSFX 	= NULL;
+		std::string name;
+		SFX (std::string newName, std::string path) {
+			name = newName;
+			sSFX = Mix_LoadWAV(path.c_str());
+		}
+		Mix_Chunk *getChunk() {
+			return this->sSFX;
+		}
+		std::string getName() {
+			return name;
+		}
+	};
+
 public:	// Settings that can be changed by user
 	// Textures
 	LTexture gText;
@@ -50,6 +65,7 @@ public:	// Settings that can be changed by user
 	// Audio
 	Mix_Music *sAmbientMusic 	= NULL;
 	Mix_Music *sStrangeMusic 	= NULL;
+	Mix_Music *sElement 		= NULL;
 	Mix_Chunk *sRockBreak 		= NULL;
 	Mix_Chunk *sLazer 			= NULL;
 	Mix_Chunk *sAtariBoom 		= NULL;
@@ -60,7 +76,10 @@ public:	// Settings that can be changed by user
 	Mix_Chunk *sKeyPickup 		= NULL;
 	Mix_Chunk *sPlayerHurt 		= NULL;
 	Mix_Chunk *sSkeletonHurt	= NULL;
-	Mix_Chunk *sPotion			= NULL;
+	Mix_Chunk *sDrinkMana		= NULL;
+	Mix_Chunk *sDrinkHealth		= NULL;
+	std::vector<SFX> sounds;
+
 	// Audio, Video Settings
 	int MASTER_VOL;
 	int MUSIC_VOL;
@@ -69,6 +88,14 @@ public:	// Settings that can be changed by user
 	int ANTI_ALIAS;
 	int VSYNC;
 	int FULLSCREEN;
+
+	void playSFX(std::vector<SFX> &s, std::string targetName) {
+		for (unsigned int i=0; i<s.size(); i++) {
+			if (s[i].getName() == targetName) {
+				Mix_PlayChannel(-1, s[i].getChunk(), 0);
+			}
+		}
+	}
 
 public: // Bar sliders and text
 

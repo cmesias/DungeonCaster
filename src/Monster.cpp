@@ -9,10 +9,8 @@
 #include "Engine/Particle.h"
 
 #include <math.h>
-#include <iostream>
 #include <fstream>
 #include <sstream>
-#include <vector>
 #include <stdio.h>
 #include <stdlib.h>
 #include <SDL2/SDL.h>
@@ -85,6 +83,8 @@ void Monster::Init(Monster monster[]){
 		monster[i].onScreen 		= false;
 		monster[i].mouse 			= false;
 		monster[i].mouseBox 		= false;
+		monster[i].hasVision 		= false;
+		monster[i].hasVision 		= isSelected;
 		monster[i].id 				= 0;
 		monster[i].rJ   = 0;
 		monster[i].spell.clear();				// if we don't clear every time, the instances will remain
@@ -92,13 +92,11 @@ void Monster::Init(Monster monster[]){
 }
 
 void Monster::Load(SDL_Renderer* gRenderer){
-	gMonster.loadFromFile(gRenderer, "resource/gfx/monsters.png");
-	gBlueDragon.loadFromFile(gRenderer, "resource/gfx/blue_dragon_and_iceblasts.png");
+	gMonster.loadFromFile(gRenderer, "resource/gfx/By Scott Matott/monsters.png");
 }
 
 void Monster::Free(){
 	gMonster.free();
-	gBlueDragon.free();
 }
 
 void Monster::Spawn(Monster monster[], float x, float y,
@@ -134,6 +132,8 @@ void Monster::Spawn(Monster monster[], float x, float y,
 			monster[i].attack 			= false;
 			monster[i].mouse 			= false;
 			monster[i].mouseBox 		= false;
+			monster[i].hasVision 		= false;
+			monster[i].hasVision 		= isSelected;
 			monster[i].thinkTimer		= 0;
 			monster[i].damage 			= 75;
 			monster[i].atkSpe 			= 10;
@@ -250,21 +250,17 @@ void Monster::EditorUpdate(Monster monster[], int newMx, int newMy, int mex, int
 	}
 }
 
-void Monster::Update(Monster monster[], Particle &part, Particle particle[], Player &player, Mix_Chunk* sLazer,
-		int camx, int camy) {
-	// Player correct size and coordinates
-	int playerX = player.x - 3;
-	int playerY = player.y - 9;
-	int playerW = 16;
-	int playerH = 16;
+void Monster::Update(Monster monster[], Particle &part, Particle particle[], Mix_Chunk* sLazer, int camx, int camy,
+					 float targetX, float targetY) {
 	// mouse and mouseBox check
 	int tileW = 16*multiW;
 	int tileH = 16*multiH;
+	float bmx  = targetX;
+	float bmy  = targetY;
 	for (int i = 0; i < max; i++) {
 		if (monster[i].alive) {
+
 			//  Center of Monster and Target
-			float bmx  = playerX+playerW/2;
-			float bmy  = playerY+playerH/2;
 			float bmx2 = monster[i].x+monster[i].w/2;
 			float bmy2 = monster[i].y+monster[i].h/2;
 			//double barrelW  = (57 * cos(radians) ) - (16 * sin(radians) );				// add this to center of monster (this will give us the guns barrel position)
@@ -272,26 +268,34 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 			// Distance from Target
 			monster[i].distance = sqrt((bmx - bmx2) * (bmx - bmx2) + (bmy - bmy2) * (bmy - bmy2));
 			if (monster[i].distance <= 1) { monster[i].distance = 1; }
-			// If target is within eye sight and not attacking, get angle towards target and follow
+
+			// If target is within sight range
+			// if target is not attacking
+			// then get angle towards target and follow
 			if (monster[i].distance <= monster[i].sightRange && !monster[i].attack) {
-				// Face towards target
-				monster[i].angle = atan2(bmy - bmy2,bmx - bmx2);
-				monster[i].angle = monster[i].angle * (180 / 3.1416);
-				if (monster[i].angle < 0) { monster[i].angle = 360 - (-monster[i].angle); }
-				// Set direction monster is facing based on angle
-				if (monster[i].angle >= 315 || monster[i].angle < 45) {					// Right
-					monster[i].facing = 2;
-				}else if (monster[i].angle >= 45 && monster[i].angle < 135) {			// Down
-					monster[i].facing = 0;
-				}else if (monster[i].angle >= 135 && monster[i].angle < 225) {			// Left
-					monster[i].facing = 3;
-				}else if (monster[i].angle >= 225 && monster[i].angle < 315) {			// Up
-					monster[i].facing = 1;
+				// If Monster has vision of target
+				if (monster[i].hasVision) {
+					// Face towards target
+					monster[i].angle = atan2(bmy - bmy2,bmx - bmx2);
+					monster[i].angle = monster[i].angle * (180 / 3.1416);
+					if (monster[i].angle < 0) { monster[i].angle = 360 - (-monster[i].angle); }
+					// Set direction monster is facing based on angle
+					if (monster[i].angle >= 315 || monster[i].angle < 45) {					// Right
+						monster[i].facing = 2;
+					}else if (monster[i].angle >= 45 && monster[i].angle < 135) {			// Down
+						monster[i].facing = 0;
+					}else if (monster[i].angle >= 135 && monster[i].angle < 225) {			// Left
+						monster[i].facing = 3;
+					}else if (monster[i].angle >= 225 && monster[i].angle < 315) {			// Up
+						monster[i].facing = 1;
+					}
+					// Follow target
+					monster[i].follow = true;
+				}else{
+					//monster[i].follow = false;
 				}
-				// Follow target
-				monster[i].follow = true;
 			}else{
-				monster[i].follow = false;
+				//monster[i].follow = false;
 			}
 
 			// If we're following the target
@@ -330,7 +334,7 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 			}
 
 			// random index spell to cast
-			if (!monster[i].attack && !monster[i].cooldown) {
+			if (!monster[i].attack && !monster[i].cooldown && monster[i].hasVision) {
 				if (monster[i].distance <= monster[i].atkRange) {
 					monster[i].rJ = rand () % monster[i].spell.size();
 					// Reset cooldown timer at 0
@@ -401,22 +405,43 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 							 */
 							int flipDuration = monster[i].spell[ monster[i].rJ ].maxDuration - monster[i].spell[ monster[i].rJ ].currentDuration;
 							int increment = flipDuration / (monster[i].spell[ monster[i].rJ ].maxDuration/monster[i].spell[ monster[i].rJ ].occurances);
-							std::cout << "currentDuration: " << monster[i].spell[ monster[i].rJ ].maxDuration - monster[i].spell[ monster[i].rJ ].currentDuration
-									   << ", maxDuration: " << monster[i].spell[ monster[i].rJ ].maxDuration
-									   << ", occurrences: " << monster[i].spell[ monster[i].rJ ].occurances
-									   << ", increment: " << increment-1 << "\n";
+							//std::cout << "currentDuration: " << monster[i].spell[ monster[i].rJ ].maxDuration - monster[i].spell[ monster[i].rJ ].currentDuration
+							//		   << ", maxDuration: " << monster[i].spell[ monster[i].rJ ].maxDuration
+							//		   << ", occurrences: " << monster[i].spell[ monster[i].rJ ].occurances
+							//		   << ", increment: " << increment-1 << "\n";
 							// Minions
 							for (double h = 0.0; h < monster[i].spell[ monster[i].rJ ].scope; h += monster[i].spell[ monster[i].rJ ].scope/monster[i].spell[monster[i].rJ].projectiles) {
 								if (monster[i].type < 12) {
 									int rands = 4;
 									float spe = randDouble(monster[i].spell[ monster[i].rJ ].minSpe, monster[i].spell[ monster[i].rJ ].maxSpe);
 									float size = randDouble(monster[i].spell[ monster[i].rJ ].minSize, monster[i].spell[ monster[i].rJ ].maxSize);
+									//float finalAngle = (shootAngle) + h - (monster[i].spell[ monster[i].rJ ].scope/2);
 									float finalAngle = (monster[i].angle) + h - (monster[i].spell[ monster[i].rJ ].scope/2);
 									float newX = monster[i].x + monster[i].w / 2 - size/2;
 									float newY = monster[i].y + monster[i].h / 2 - size/2;
+
+									// If we're not incrementing
+									float radians;
+									float distanceW = increment * monster[i].spell[ monster[i].rJ ].distanceW;
+									float distanceH = increment * monster[i].spell[ monster[i].rJ ].distanceH;
+									double barrelW = 0;
+									double barrelH = 0;
+									if (monster[i].spell[ monster[i].rJ ].increAngleMax == 0) {
+										finalAngle = (monster[i].angle) + h - monster[i].spell[ monster[i].rJ ].scope/2;
+									}
+									// If we are incrementing
+									else{
+										finalAngle = (monster[i].angle) + h;
+										finalAngle += monster[i].spell[ monster[i].rJ ].increAngle;
+										finalAngle -= monster[i].spell[ monster[i].rJ ].increAngleMax/2;
+										radians = ( M_PI/180) * (finalAngle);
+										barrelW  = (distanceW * cos(radians) ) - (distanceH * sin(radians) );
+										barrelH  = (distanceW * sin(radians) ) + (distanceH * cos(radians) );
+									}
+									//finalAngle += 13;
 									// Spawn Spell as a particle
 									part.spawnParticleAngle(particle, monster[i].tag, monster[i].spell[ monster[i].rJ ].type,
-											newX, newY,
+											newX + barrelW, newY + barrelH,
 											size, size,
 											finalAngle, spe,
 											monster[i].spell[ monster[i].rJ ].damage,
@@ -428,14 +453,62 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 											monster[i].spell[ monster[i].rJ ].decay, monster[i].spell[ monster[i].rJ ].decaySpe,
 											monster[i].spell[ monster[i].rJ ].trail, monster[i].spell[ monster[i].rJ ].trailRate, monster[i].spell[ monster[i].rJ ].trailColor,
 											monster[i].spell[ monster[i].rJ ].trailMinSize, monster[i].spell[ monster[i].rJ ].trailMaxSize,
-											monster[i].spell[ monster[i].rJ ].timerBeforeMoving);
+											monster[i].spell[ monster[i].rJ ].timerBeforeMoving,
+											monster[i].spell[ monster[i].rJ ].goTowardsTarget, bmx, bmy);
 								}
 							}
 							// Boss
 							//int randProj = rand() % monster[i].spell[monster[i].rJ].projectiles;
 							for (double h = 0.0; h < monster[i].spell[ monster[i].rJ ].scope; h += monster[i].spell[ monster[i].rJ ].scope/monster[i].spell[monster[i].rJ].projectiles) {
 								if (monster[i].type == 12) {
+
 									int rands = 4;
+									float spe = randDouble(monster[i].spell[ monster[i].rJ ].minSpe, monster[i].spell[ monster[i].rJ ].maxSpe);
+									float size = randDouble(monster[i].spell[ monster[i].rJ ].minSize, monster[i].spell[ monster[i].rJ ].maxSize);
+									//float finalAngle = (shootAngle) + h - (monster[i].spell[ monster[i].rJ ].scope/2);
+									float finalAngle = (monster[i].angle) + h - (monster[i].spell[ monster[i].rJ ].scope/2);
+									float newX = monster[i].x + monster[i].w / 2 - size/2;
+									float newY = monster[i].y + monster[i].h / 2 - size/2;
+
+									// If we're not incrementing
+									float radians;
+									float distanceW = monster[i].spell[monster[i].rJ].increment * monster[i].spell[ monster[i].rJ ].distanceW;
+									float distanceH = monster[i].spell[monster[i].rJ].increment * monster[i].spell[ monster[i].rJ ].distanceH;
+									double barrelW = 0;
+									double barrelH = 0;
+									if (monster[i].spell[ monster[i].rJ ].increAngleMax == 0) {
+									}
+									// If we are incrementing
+									else{
+									}
+									finalAngle = (monster[i].angle) + h - monster[i].spell[ monster[i].rJ ].scope/2;
+									finalAngle = (monster[i].angle) + h;
+									finalAngle += monster[i].spell[ monster[i].rJ ].increAngle;
+									finalAngle -= monster[i].spell[ monster[i].rJ ].increAngleMax/2;
+									radians = ( M_PI/180) * (finalAngle);
+									barrelW  = (distanceW * cos(radians) ) - (distanceH * sin(radians) );
+									barrelH  = (distanceW * sin(radians) ) + (distanceH * cos(radians) );
+									//finalAngle += 13;
+									// Spawn Spell as a particle
+									part.spawnParticleAngle(particle, monster[i].tag, monster[i].spell[ monster[i].rJ ].type,
+											newX + barrelW, newY + barrelH,
+											size, size,
+											finalAngle, spe,
+											monster[i].spell[ monster[i].rJ ].damage,
+											monster[i].spell[ monster[i].rJ ].color, 1,
+											monster[i].spell[ monster[i].rJ ].dir, randDouble(0.0, monster[i].spell[ monster[i].rJ ].dirSpe),
+											monster[i].spell[ monster[i].rJ ].alpha, monster[i].spell[ monster[i].rJ ].alphaSpe,
+											monster[i].spell[ monster[i].rJ ].deathTimer, monster[i].spell[ monster[i].rJ ].deathTimerSpe,
+											monster[i].spell[ monster[i].rJ ].sizeDeath, monster[i].spell[ monster[i].rJ ].sizeDeathSpe,
+											monster[i].spell[ monster[i].rJ ].decay, monster[i].spell[ monster[i].rJ ].decaySpe,
+											monster[i].spell[ monster[i].rJ ].trail, monster[i].spell[ monster[i].rJ ].trailRate, monster[i].spell[ monster[i].rJ ].trailColor,
+											monster[i].spell[ monster[i].rJ ].trailMinSize, monster[i].spell[ monster[i].rJ ].trailMaxSize,
+											monster[i].spell[ monster[i].rJ ].timerBeforeMoving,
+											monster[i].spell[ monster[i].rJ ].goTowardsTarget, bmx, bmy);
+
+
+
+									/*int rands = 4;
 									float spe = randDouble(monster[i].spell[ monster[i].rJ ].minSpe, monster[i].spell[ monster[i].rJ ].maxSpe);
 									float size = randDouble(monster[i].spell[ monster[i].rJ ].minSize, monster[i].spell[ monster[i].rJ ].maxSize);
 									float newX;
@@ -485,7 +558,7 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 											monster[i].spell[ monster[i].rJ ].trail, monster[i].spell[ monster[i].rJ ].trailRate, monster[i].spell[ monster[i].rJ ].trailColor,
 											monster[i].spell[ monster[i].rJ ].trailMinSize, monster[i].spell[ monster[i].rJ ].trailMaxSize,
 											monster[i].spell[ monster[i].rJ ].timerBeforeMoving,
-											monster[i].spell[ monster[i].rJ ].goTowardsTarget, bmx, bmy);
+											monster[i].spell[ monster[i].rJ ].goTowardsTarget, bmx, bmy);*/
 								}
 
 							}
@@ -502,6 +575,11 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 							// Increment angle to shoot all around but incrementally going up
 							if (monster[i].spell[ monster[i].rJ ].increAngle < monster[i].spell[ monster[i].rJ ].increAngleMax) {
 								monster[i].spell[ monster[i].rJ ].increAngle += increValue;
+							}
+							// Increment if we have to
+							if (monster[i].spell[monster[i].rJ].incrementing) {
+								monster[i].spell[monster[i].rJ].increment++;
+							//	std::cout << "monster[i].spell[monster[i].rJ].increment: " << monster[i].spell[monster[i].rJ].increment << "\n";
 							}
 						} // end check for specific duration
 
@@ -575,6 +653,7 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 						monster[i].spell[ monster[i].rJ ].currentDuration = monster[i].spell[ monster[i].rJ ].maxDuration;
 						// Reset incrementing angle
 						monster[i].spell[ monster[i].rJ ].increAngle = 0.0;
+						monster[i].spell[monster[i].rJ].increment = 0;
 					}
 				}
 				/*// If spell is on cooldown
@@ -683,15 +762,11 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Pla
 
 			// This is not Monster movement, this is velocity
 			// if the Monster gets knocked backed from another force
-			monster[i].x += monster[i].velX;
-			monster[i].y += monster[i].velY;
-			monster[i].velX = monster[i].velX - monster[i].velX * 0.08;
-			monster[i].velY = monster[i].velY - monster[i].velY * 0.08;
 
 			// monster death
 			if (monster[i].health <= 0)
 			{
-				player.score += 20;
+				//player.score += 20;
 				monster[i].alive = false;
 				count--;
 			}
@@ -745,7 +820,7 @@ void Monster::UpdateBoss(Monster monster[], Particle &part, Particle particle[],
 }
 
 void Monster::RenderBehind(SDL_Renderer* gRenderer, Monster monster[], int camx, int camy, float targetY, float targetH) {
-	int playerY = targetY - 9;
+	int playerY = targetY;
 	int playerH = 16;
 	for (int i = 0; i < max; i++) {
 		// Render 16x16 monsters
@@ -834,7 +909,7 @@ void Monster::RenderBehind(SDL_Renderer* gRenderer, Monster monster[], int camx,
 }
 
 void Monster::RenderInFront(SDL_Renderer* gRenderer, Monster monster[], int camx, int camy, float targetY, float targetH) {
-	int playerY = targetY - 9;
+	int playerY = targetY;
 	int playerH = 16;
 	for (int i = 0; i < max; i++) {
 		// Only render 16x16 monsters
@@ -918,9 +993,15 @@ void Monster::RenderInFront(SDL_Renderer* gRenderer, Monster monster[], int camx
 	}
 }
 
-void Monster::RenderGUI(SDL_Renderer *gRenderer, Monster monster[], int camx, int camy) {
+void Monster::RenderGUI(SDL_Renderer *gRenderer, Monster monster[], int camx, int camy, int playerIdSelected) {
 	for (int i = 0; i < max; i++) {
 		if (monster[i].alive && monster[i].onScreen){
+			// if monster is being selected by Target
+			if (i == playerIdSelected) {
+				SDL_Rect tempRect = {monster[i].x - camx, monster[i].y - camy, 16, 16};
+				SDL_SetRenderDrawColor(gRenderer, 200, 50, 60, 255);
+				SDL_RenderDrawRect(gRenderer, &tempRect);
+			}
 
 			if (monster[i].type == 12) {
 				renderStatusBar(gRenderer, monster[i].x+monster[i].w/2-camx, monster[i].y-camy, 20, 3,
@@ -995,77 +1076,26 @@ void Monster::SetSpells(Monster monster[], int i) {
 		monster[i].cooldownTimer = 0;
 		monster[i].baseCooldown = 60*2;
 		monster[i].cooldown = false;
-		monster[i].spell.push_back( Spell("Skely Blast", 3,
-								1, 1.0,
-								1,
-								4, 4,
-								0.6, 0.6,
-								10, {180,20,180},
-								0, 0,
-								255, 0,
-								60, 0.33,
-								false, 0.0,
-								false, 0.0,
-								false, 7, {180,20,180},
-								1, 6,
-								0,
-								0, 0.0,
-								1, 1,
-								0, false,
-								false, 0, 0) );
+		monster[i].spell.push_back( Spell("Skelly Blast") );
 	}
 	if (monster[i].type == 1) {
 		monster[i].cooldownTimer = 0;
 		monster[i].baseCooldown = 60*2;
 		monster[i].cooldown = false;
-		monster[i].spell.push_back( Spell("Goblin Blast", 3,
-							    3, 45.0,
-								1,
-								4, 4,
-								0.5, 0.5,
-								5, {20,180,20},
-								0, 0,
-								255, 0,
-								60, 0.33,
-								false, 0.0,
-								false, 0.0,
-								false, 7, {20,180,20},
-								1, 6,
-								0,
-								0, 0.0,
-								1, 1,
-								0, false,
-								false, 0, 0) );
+		monster[i].spell.push_back( Spell("Goble Blast") );
 	}
 	if (monster[i].type == 2) {
 		monster[i].cooldownTimer = 0;
 		monster[i].baseCooldown = 60*3;
 		monster[i].cooldown = false;
-		monster[i].spell.push_back( Spell("Ghost Mage Cull", 3,
-								9, 360.0,
-								3,
-								4, 4,
-								0.7, 0.7,
-								2.5, {180,20,20},
-								0, 0,
-								255, 0,
-								60, 0.33,
-								false, 0.0,
-								false, 0.0,
-								false, 7, {180,20,20},
-								1, 6,
-								0,
-								0, 0.0,
-								1, 60*2,
-								0, false,
-								false, 0, 0) );
+		monster[i].spell.push_back( Spell("Fire Dance") );
 	}
 	// Set most Monsters ranges
 	if (monster[i].type < 12) {
 		monster[i].w = 16;
 		monster[i].h = 16;
 		monster[i].atkRange = 48;
-		monster[i].sightRange = 64;
+		monster[i].sightRange = 96;
 		monster[i].health = 100;
 		monster[i].healthDecay = 100;
 		monster[i].maxHealth = 100;
@@ -1075,7 +1105,7 @@ void Monster::SetSpells(Monster monster[], int i) {
 		monster[i].w = 48;
 		monster[i].h = 16;
 		monster[i].frameSpeed = 5;
-		monster[i].atkRange = 64;
+		monster[i].atkRange = 100;
 		monster[i].sightRange = 10000;
 		monster[i].health = 2500;
 		monster[i].healthDecay = 2500;
@@ -1168,24 +1198,14 @@ void Monster::SetSpells(Monster monster[], int i) {
 								0, 360,
 								1, 60*3,
 								0, false) );*/
-		monster[i].spell.push_back( Spell("Fire Blast III", 3,
-								3, 360.0,
-								10,
-								4, 4,
-								1.2, 1.2,
-								10, {200,30,20},
-								0, 0,
-								255, 0,
-								60, 0.5,
-								false, 0.05,
-								false, 0.03,
-								false, 25, {200,30,20},
-								1, 6,
-								0,
-								0, 90.0,
-								1, 60*3,
-								0, false,
-								false, 0, 0) );
+
+
+		//monster[i].spell.push_back( Spell("Fire Dance") );
+		//monster[i].spell.push_back( Spell("Fire Blast") );
+		monster[i].spell.push_back( Spell("Ice Blast") );
+		//monster[i].spell.push_back( Spell("Lightning") );
+
+
 		/*monster[i].spell.push_back( Spell("Fire Blast V", 3,
 								5, 360.0,
 								5,
@@ -1273,5 +1293,15 @@ std::string Monster::SaveData(Monster monster[]){
 		}
 	}
 	return tempData.str().c_str();
+}
+
+int Monster::getID(Monster monster[], int mx, int my) {
+	for (int i = 0; i < max; i++) {
+		if (monster[i].alive && monster[i].onScreen){
+			if (checkCollision(mx, my, 1, 1, monster[i].x, monster[i].y, monster[i].w, monster[i].h )) {
+				return i;
+			}
+		}
+	}
 }
 

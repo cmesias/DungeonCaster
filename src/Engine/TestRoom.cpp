@@ -15,7 +15,7 @@
 #include "TestRoom.h"
 
 
-void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestResult &result) {
+void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestResult &result, int &levelToLoad) {
 
 	// particle
 	static Particle part;
@@ -30,13 +30,18 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 	// Upon entry
 	showDialogue = true;
 	dialogueIndex = 0;
+	indicatorTimer = 0;
+	indicatorFrame = 0;
+	indicator = ">";
 	quit = false;
-	gFont 	= TTF_OpenFont("resource/fonts/FredokaOne-Regular.ttf", 18);
+	gFont 	= TTF_OpenFont("resource/fonts/PressStart2P.ttf", 18);
 	gTexture.loadFromFile(gRenderer, "resource/gfx/test.png");
 	gLightBG.loadFromFile(gRenderer, "resource/gfx/light_bg.png");
 	gLight.loadFromFile(gRenderer, "resource/gfx/light.png");
+	gDialogueBox.loadFromFile(gRenderer, "resource/gfx/dialogue-box.png");
 	gTargetTexture.createBlank( gRenderer, screenWidth, screenHeight, SDL_TEXTUREACCESS_TARGET );
 	sTyping = Mix_LoadWAV("sounds/snd_typing.wav");
+	Mix_VolumeChunk(sTyping, 30);
 
 	// Events
 	SDL_Event event;
@@ -48,16 +53,17 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 	dialogue.push_back("...");
 	dialogue.push_back("You there soldier!");
 	dialogue.push_back("I know this may be too much to ask but you are the last of our soldiers...");
-	dialogue.push_back("I beg of you bring this final message to King.");
+	dialogue.push_back("I beg of you bring this final message to the King.");
+	dialogue.push_back("I don't have much time left...");
 	dialogue.push_back("Tell him...");
 	dialogue.push_back("\"Cough cough\"");
 	dialogue.push_back("Tell him his daughter lives.");
 	dialogue.push_back("That's it.");
 	dialogue.push_back("...");
 	dialogue.push_back("Me?");
-	dialogue.push_back("I will try and fend them off for as long as I can.");
+	dialogue.push_back("I will try and fend off these wild beasts for as long as I stand.");
 	dialogue.push_back("There are plenty monsters in the castle still but the majority are in front of the gates.");
-	dialogue.push_back("Once you deliver this message to the King, if you would like to help come find me at the gates.");
+	dialogue.push_back("Once you deliver this message to the King, if you would like to help, come find me at the gates.");
 	dialogue.push_back("I will see you soldier.");
 	dialogue.push_back("What was it, your name was?");
 
@@ -75,7 +81,7 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 	float timer;
 	float rate;
 	unsigned int letters;
-	std::stringstream tempss2;
+	std::stringstream dialogueToRender;
 
 	timer = 0;
 	rate = 20;
@@ -117,6 +123,33 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 			// Handle window events
 			gWindow.handleEvent(gRenderer, event);
 
+			// Controller button down
+		if (event.type == SDL_JOYBUTTONDOWN){
+
+				// if dialogue did not complete, render the rest of the dialogue before going to the next one
+				if (letters < dialogue[dialogueIndex].size()) {
+					// Clear dialogue
+					dialogueToRender.str(std::string());
+					// Get max length for current dialogue
+					letters = dialogue[dialogueIndex].size();
+					// Get current dialogue for rendering
+					dialogueToRender << dialogue[dialogueIndex];
+				}
+				// Go to next dialogue
+				else{
+					if (dialogueIndex < dialogue.size()-1) {
+						letters = 0;
+						dialogueToRender.str(std::string());
+						dialogueIndex++;
+					}else{
+						showDialogue = false;
+						levelToLoad = 5;
+						result = StartGame;
+						return;
+					}
+				}
+			}
+
 			// Key Pressed
 			if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
 				switch (event.key.keysym.sym) {
@@ -126,7 +159,7 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 					timer = 0;
 					rate = 20;
 					letters = 0;
-					tempss2.str(std::string());
+					dialogueToRender.str(std::string());
 					break;
 				case SDLK_q:
 					SDL_ShowCursor(SDL_TRUE);
@@ -139,21 +172,23 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 					// if dialogue did not complete, render the rest of the dialogue before going to the next one
 					if (letters < dialogue[dialogueIndex].size()) {
 						// Clear dialogue
-						tempss2.str(std::string());
+						dialogueToRender.str(std::string());
 						// Get max length for current dialogue
 						letters = dialogue[dialogueIndex].size();
 						// Get current dialogue for rendering
-						tempss2 << dialogue[dialogueIndex];
+						dialogueToRender << dialogue[dialogueIndex];
 					}
 					// Go to next dialogue
 					else{
 						if (dialogueIndex < dialogue.size()-1) {
-							// Go to next dialogue
 							letters = 0;
-							tempss2.str(std::string());
+							dialogueToRender.str(std::string());
 							dialogueIndex++;
 						}else{
 							showDialogue = false;
+							levelToLoad = 5;
+							result = StartGame;
+							return;
 						}
 					}
 
@@ -173,7 +208,7 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 			// Mouse Pressed
 			if (event.type == SDL_MOUSEBUTTONDOWN) {
 				if (event.button.button == SDL_BUTTON_LEFT) {
-					part.spawnParticleAngle(particle, "none", 3,
+					/*part.spawnParticleAngle(particle, "none", 3,
 							mx - 4/2,
 							my - 4/2,
 							4, 4,
@@ -184,21 +219,9 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 						   255, 0,
 						   60, 1,
 						   false, 0.0,
-						   false, 0.0);
+						   false, 0.0);*/
 				}
 				if (event.button.button == SDL_BUTTON_RIGHT) {
-					part.spawnParticleAngle(particle, "none", 4,
-							mx - 4/2,
-							my - 4/2,
-							4, 4,
-							0.0, 1.2,
-						   25,
-						   {25,255,25}, 1,
-						   0, 0,
-						   255, 0,
-						   60, 1,
-						   false, 0.0,
-						   false, 0.0);
 				}
 			}
 			// Mouse Released
@@ -225,6 +248,21 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 				break;
 		}
 
+		// Indicator animation
+		indicatorTimer += 3;
+		if (indicatorTimer > 60) {
+			indicatorTimer = 0;
+			indicatorFrame++;
+			if (indicatorFrame > 1) {
+				indicatorFrame = 0;
+			}
+		}
+		if (indicatorFrame == 0) {
+			indicator = "";
+		}else{
+			indicator = ">";
+		}
+
 		// Update particle
 		part.Update(particle, 0, 0, room.w, room.h, 0, 0, 100, 100);
 		part.updateStarParticles(particle, 0, 0, room.w, room.h);
@@ -245,7 +283,7 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 
 			// Render particle
 			part.renderStarParticle(particle, 1, 1, 1, gRenderer);
-			part.renderBulletParticle(particle, 1, 1, 1, gRenderer);
+			part.RenderBullets(gRenderer, particle, 1, 1, 1);
 
 		//Reset render target
 		SDL_SetRenderTarget( gRenderer, NULL );
@@ -292,7 +330,7 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 				if ( letters < dialogue[dialogueIndex].size() ) {
 					timer += rate;
 					if (timer > 60) {
-						tempss2 << dialogue[dialogueIndex][letters];
+						dialogueToRender << dialogue[dialogueIndex][letters];
 						timer = 0;
 						letters++;
 						// Play typing sound effect
@@ -300,16 +338,23 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 					}
 				}
 				std::string temps;
-				temps = tempss2.str().c_str();
+				temps = dialogueToRender.str().c_str();
+				float x = 0+4;
+				float y = screenHeight-24 - 8;
+
+				//gDialogueBox.render(gRenderer, x, y - 9 - 2, 50, 9);
+				//gDialogueBox.render(gRenderer, x, y, 262, 24);
+
 				renderDialogText(gRenderer, "Jacky The Jacker",
-								 temps.c_str(),
-							     0+4, screenHeight-24 - 8, 21, 24,
-							     0+4, screenHeight-24 - 8, screenWidth-8, 24,
+								 temps.c_str(), indicator.c_str(),
+							     x, y, 21, 24,
+							     x, y, screenWidth-8, 24,
 							     {255,255,255}, {255,255,255},
-							     {60,60,60}, {255,255,255},
-							     {60,60,60}, {255,255,255},
+							     {18,18,18}, {200,100,250},
+							     {18,18,18}, {200,100,250},
 							     gFont, gFont, gText,
-								 gWindow.getWidth());
+								 1000,  true);
+
 			}
 
 		// Update screen
@@ -329,9 +374,12 @@ void TestRoom::free() {
 	// Free resources
 	TTF_CloseFont(gFont);
 	gFont = NULL;
+	gText.free();
+	gLightBG.free();
+	gLight.free();
 	gTexture.free();
 	gTargetTexture.free();
-	gText.free();
+	gDialogueBox.free();
 	Mix_FreeChunk(sTyping);
 	sTyping 		= NULL;
 }

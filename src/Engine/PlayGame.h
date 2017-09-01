@@ -10,13 +10,17 @@
 
 #include "../Monster.h"
 #include "../Player.h"
+#include "Character.h"
 #include "Spawners.h"
+#include "VisualEffect.h"
 #include "Helper.h"
 #include "Item.h"
 #include "Options.h"
 #include "TileBar.h"
 #include "Tiles.h"
 //#include "TileC.h"
+
+#include <list>
 
 class PlayGame : public Helper, public Options {
 
@@ -25,6 +29,84 @@ public: // System variables
 	void Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result &result, int levelToLoad);
 	PlayGame::Result mousePressed(SDL_Event event);
 	PlayGame::Result mouseReleased(SDL_Event event);
+
+	// Textures
+	LTexture gMouse;
+	LTexture gXboxButtons;
+	LTexture gCharacters;
+	LTexture gMonsters;
+	LTexture gSpellIcons;
+	LTexture gRect;
+	LTexture gGUI;
+
+	/* Character clips
+	 * 0-1: walk down
+	 * 2-3: walk up
+	 * 4-5: walk right
+	 * 6-7: walk left
+	 * 8-9: attack
+	 * */
+	std::vector<SDL_Rect> rGreenMage;
+	std::vector<SDL_Rect> rBlueMage;
+	std::vector<SDL_Rect> rWhiteMage;
+	SDL_Rect rMouse[16];
+	/*
+	 * 0: X button
+	 * 1: A button
+	 * 2: Y button
+	 * 3: B button
+	 * 4: LB button
+	 * 5: RB button
+	 */
+	SDL_Rect rXboxButtons[16];
+	SDL_Rect rSpellIcons[4];
+	/*
+	 * 0: Circle thing that is left of health/mana bars
+	 *    84x64 is the original size
+	 *    we will work with 21x16
+	 *
+	 * 1: the bar backgrounds, very left
+	 *    8x56 original size
+	 *    2x14 is what we will be working with
+	 *
+	 * 2: the bar backgrounds, used for the middle spot to the end
+	 *    8x56 original size
+	 *    2x14 is what we will be working with
+	 *
+	 * 3: the end of the bar right-side
+	 *    32x60 original size
+	 *    8x15 is what we will be working with
+	 */
+	SDL_Rect rGUI[4];
+
+	/* 592, 186 clip
+	 * 0: first health bar
+	 *    8x12 original size
+	 *    2x3 is what we will be working with
+	 *
+	 * 1: the rest of the health bar
+	 *    8x12 original size
+	 *    2x3 is what we will be working with
+	 */
+	SDL_Rect rHealthBar[2];
+
+	/* 592, 206 clip
+	 * - same as rHealthBar description
+	 */
+	SDL_Rect rManaBar[2];
+
+	/* 592, 226 clip
+	 * - same as rHealthBar description
+	 * - undecided on what to used this for
+	 */
+	SDL_Rect rGreenGar[2];
+
+	/* Monster clips
+	 * 12 monsters in Total
+	 * 108 clips
+	 * 9 x 12 ( 9 clips going to the right, 12  going down)
+	 */
+	std::vector<SDL_Rect> rSkeleton;
 
 public:	// Scene textures
 	LTexture gDoor;
@@ -52,7 +134,8 @@ public:	// Scene textures
 		float y;
 		int w;
 		int h;
-		int alpha;
+		float alpha;
+		float alphaSpeed;
 		int timer;
 		bool alive;
 		float vX;
@@ -66,7 +149,7 @@ public:	// Scene textures
 				text[i].color = {255,255,255};
 			}
 		}
-		void spawn(Text text[], float x, float y, float vX, float vY, int alpha, std::string textfield, SDL_Color color = {255,255,255}) {
+		void spawn(Text text[], float x, float y, float vX, float vY, int alpha, std::string textfield, SDL_Color color = {255,255,255}, float alphaSpeed = 5) {
 			for (int i=0; i<100; i++) {
 				if (!text[i].alive) {
 					text[i].x = x;
@@ -78,6 +161,7 @@ public:	// Scene textures
 					text[i].timer = timer;
 					text[i].color = color;
 					text[i].alpha = alpha;
+					text[i].alphaSpeed = alphaSpeed;
 					text[i].textfield = textfield;
 					text[i].alive = true;
 					count++;
@@ -91,7 +175,7 @@ public:	// Scene textures
 					text[i].x += text[i].vX;
 					text[i].y += text[i].vY;
 
-					text[i].alpha -= 5;
+					text[i].alpha -= text[i].alphaSpeed;
 					if (text[i].alpha <= 0) {
 						text[i].alive = false;
 						count--;
@@ -105,15 +189,20 @@ public:	// Scene textures
 	Text text[100];
 
 public:	// Other classes
+	// Characters & Monsters
+	Character player1;
 
 	// Monsters
 	Monster mon;
 	Monster monster[100];
 	//  Spawners
 	Spawner spaw;
-	Spawner spawner[200];
+	Spawner spawner[100];
+	//  Spawners
+	VisualEffect vf;
+	VisualEffect vfx[100];
 	// Player
-	Player player;
+	//Player player;
 	// Tiles
 	Tile tl;
 	Tile tile[3000];
@@ -125,8 +214,8 @@ public:	// Other classes
 
 	// Tilebar
 	TileBar tb;
-	TileBar tilebar[80];
-	SDL_Rect rTiles[80];		// how many unique tiles are, on the tile-bar
+	TileBar tilebar[296];
+	SDL_Rect rTiles[296];		// how many unique tiles are, on the tile-bar
 
 	// Items
 	Item obj;
@@ -139,8 +228,11 @@ public:
 
 public:	// Core functions
 
-	// Initialize
-	void Init(Particle &part, Particle particles[]);
+	// Creations
+	void Create(SDL_Renderer *gRenderer);
+
+	// Initializations
+	void Initialize(Particle &part, Particle particles[]);
 
 	// Load resources
 	void Load(LWindow &gWindow, SDL_Renderer *gRenderer, Particle &part, Particle particles[]);
@@ -150,6 +242,8 @@ public:	// Core functions
 
 	// Update everything
 	void Update(LWindow &gWindow, SDL_Renderer *gRenderer, Particle &part, Particle particles[]);
+
+	//std::list<Character> listofMonsters;
 
 public:	// Render Editor UI
 
@@ -182,7 +276,6 @@ public:	// Render Player GUI (or what the Player sees including Tiles)
 	// Render Player GUI
 	void RenderGUI(SDL_Renderer *gRenderer);
 
-
 public:	// Functions mixed with other classes
 
 	// Check collision between Particle & Monster
@@ -211,6 +304,9 @@ public:	// Functions mixed with other classes
 
 	// Check collision between Particles that do damage & Tiles
 	void checkCollisionParticleTile(Particle &part, Particle particles[]);
+
+	// Check if Enemy has vision of Player
+	void checkEnemyPlayerVision(SDL_Renderer *gRenderer);
 
 	// Spawn Asteroids upon destroying all Asteroids
 	void spawnAsteroidsNow2();
@@ -285,6 +381,7 @@ private:	// used for some debugging
 	int mx, my;
 	bool quit;
 	bool shift;
+	bool ctrl;
 	SDL_Event event;
 };
 

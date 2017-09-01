@@ -56,7 +56,7 @@ private:
 	void ShowPlayGame(int levelToLoad);
 
 	// Show text room
-	void ShowTestRoom(LWindow &gWindow, SDL_Renderer *gRenderer);
+	void ShowTestRoom(LWindow &gWindow, SDL_Renderer *gRenderer, int &levelToLoad);
 
 	enum GameState {Uninitialized, ShowingSplash, ShowingMenu,
 					ShowingCustomizeCharacter, ShowingActSelection,

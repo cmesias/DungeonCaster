@@ -38,7 +38,7 @@ void Player::Load(SDL_Renderer* gRenderer){
     joy = SDL_JoystickOpen(0);
 
     // load textures
-	gPlayer.loadFromFile(gRenderer, "resource/gfx/players-mages.png");
+	gPlayer.loadFromFile(gRenderer, "resource/gfx/ByJoseLuisPeiroLima/players-mages.png");
 	gShield.loadFromFile(gRenderer, "resource/gfx/shield.png");
 	for (int i=0; i<8; i++){setClips(rPlayer[i], i*16, 32, 16, 16);}
 	for (int i=0; i<7; i++){setClips(rShield[i], i*48, 0, 48, 48);}
@@ -94,7 +94,7 @@ void Player::Init() {
 
 	test = false;
 	trigger = false;
-	tag = "player";
+	tag = "player1";
 
 	/* Ship */
 	shootAngle = 0.0;
@@ -128,46 +128,7 @@ void Player::Init() {
 	// Create Spells
 	// Fireball Spell
 
-
-	spell.push_back( Spell("Fireball", 3,
-							1, 65.0,
-							1,
-							4, 4,
-							1.2, 1.2,
-							75, {244,144,25},
-							0, 0,
-							255, 0,
-							60, 0.33,
-							false, 0.0,
-							false, 0.0,
-							false, 25, {244,144,25},
-							4, 4,
-							0,
-							0, 1.0,
-							1, 1,
-							0, false,
-							false, 0, 0) );
-
-	spell.push_back( Spell("Lightning", 3,
-							1, 65.0,
-							1,
-							4, 4,
-							2.5, 2.5,
-							25, {255,144,244},
-							0, 0,
-							255, 0,
-							60, 0.1,
-							false, 0.0,
-							false, 0.0,
-							false, 25, {244,144,244},
-							1, 5,
-							0,
-							0, 1.0,
-							1, 1,
-							0, false,
-							false, 0, 0) );
-
-
+	spell.push_back( Spell("Fire Dance") );
 
 
 	/*spell.push_back( Spell("Fireball",

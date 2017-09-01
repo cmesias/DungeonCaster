@@ -86,6 +86,7 @@ void Particle::init(Particle particle[]) {
 		particle[i].fireBallRate 	= 30.0;
 		particle[i].fireBallFrame 	= 0;
 		particle[i].goTowardsTarget 	= false;
+		particle[i].playSFXBeforeMoving 	= false;
 	}
 }
 
@@ -115,7 +116,8 @@ void Particle::spawnParticleAngle(Particle particle[], std::string tag, int type
 		bool trail, float trailRate, SDL_Color trailColor,
 		float trailMinSize, float trailMaxSize,
 		float timerBeforeMoving,
-		bool goTowardsTarget, float targetX, float targetY) {
+		bool goTowardsTarget, float targetX, float targetY,
+		bool playSFXBeforeMoving, int bounces) {
 	for (int i = 0; i < max; i++)
 	{
 		if (!particle[i].alive)
@@ -217,6 +219,8 @@ void Particle::spawnParticleAngle(Particle particle[], std::string tag, int type
 			particle[i].trailMaxSize 	= trailMaxSize;
 			particle[i].timerBeforeMoving 	= timerBeforeMoving;
 			particle[i].alive 			= true;
+			particle[i].playSFXBeforeMoving 	= playSFXBeforeMoving;
+			particle[i].bounces 	= bounces;
 			count++;
 			break;
 		}
@@ -361,7 +365,7 @@ void Particle::genStars(Particle particle[], int startX, int startY, int endW, i
 void Particle::Update(Particle particle[], int mapX, int mapY, int mapW, int mapH,
 					  float camx, float camy,
 					  float targetX, float targetY,
-					  Mix_Chunk* sSpellExplode) {
+					  Mix_Chunk* sFireBall) {
 	for (int i = 0; i < max; i++) {
 		if (particle[i].alive)
 		{
@@ -369,6 +373,13 @@ void Particle::Update(Particle particle[], int mapX, int mapY, int mapW, int map
 			if (particle[i].timerBeforeMoving != 0) {
 				particle[i].timerBeforeMoving -= 1;
 			}else{
+				// Play one time sound effect
+				if (particle[i].playSFXBeforeMoving) {
+					particle[i].playSFXBeforeMoving = false;
+					// play SFX
+					//Mix_PlayChannel(-1, sFireBall, 0);
+				}
+
 				// Particle movement
 				particle[i].x += particle[i].vX * particle[i].speed;
 				particle[i].y += particle[i].vY * particle[i].speed;
@@ -696,73 +707,13 @@ void Particle::updateStarParticles(Particle particle[], int mapX, int mapY, int 
 	}
 }
 
-// Render bullets
-void Particle::renderBulletParticle(Particle particle[], int camX, int camY, float playerZ, SDL_Renderer* gRenderer) {
+void Particle::RenderBullets(SDL_Renderer* gRenderer, Particle particle[],
+							int camX, int camY, float playerZ) {
 	for (int i = 0; i < max; i++) {
 		if (particle[i].alive && particle[i].onScreen) {
 
-			// Render Player lazer particle
-			if (particle[i].type == 0) {
-				/*SDL_Rect tempRect = {particle[i].x - camX,
-						   particle[i].y - camY,
-						   particle[i].w,  particle[i].h};
-				SDL_SetRenderDrawColor(gRenderer, 255,255,255,255);
-				SDL_RenderFillRect(gRenderer, &tempRect);*/
-
-				//gParticles.setAlpha(particle[i].alpha);
-				//gParticles.setColor(particle[i].color.r, particle[i].color.g, particle[i].color.b);
-				//gParticles.render(gRenderer, particle[i].x - camX,particle[i].y - camY,
-				//		 particle[i].w, particle[i].h,
-				//		 &cParticles[0], particle[i].angle);
-
-
-
-				/*gBullet.setBlendMode(SDL_BLENDMODE_ADD);
-				gBullet.setAlpha(110);
-				gBullet.render(gRenderer, particle[i].x-16 - camX,particle[i].y-16 - camY,
-						 particle[i].w+32, particle[i].h+32,
-						NULL, particle[i].angle);*/
-				gParticles.setAlpha(particle[i].alpha);
-				gParticles.setColor(particle[i].color.r, particle[i].color.g, particle[i].color.b);
-				gParticles.render(gRenderer, particle[i].x - camX/particle[i].layer,particle[i].y - camY/particle[i].layer,
-											 particle[i].w, particle[i].h,
-											 &cParticles[0], particle[i].angle);
-			}
-
-			// Render Enemy lazer particle
-			if (particle[i].type == 1) {
-				/*int center = 160 - 30;
-				gParticles.setAlpha(particle[i].alpha);
-				gParticles.setColor(255, 255, 255);
-				gParticles.render(gRenderer, particle[i].x-center/2 - camX,
-										     particle[i].y-center/2 - camY,
-											 particle[i].w,
-											 particle[i].h,
-											 &cParticles[3],
-											 particle[i].angle);*/
-				gParticles.setAlpha(particle[i].alpha);
-				gParticles.setColor(particle[i].color.r, particle[i].color.g, particle[i].color.b);
-				gParticles.render(gRenderer, particle[i].x - camX/particle[i].layer,particle[i].y - camY/particle[i].layer,
-											 particle[i].w, particle[i].h,
-											 &cParticles[0], particle[i].angle);
-			}
-
-			// Render Grenade
-			if (particle[i].type == 3) {
-				/*spr_grenade.setAlpha(255);
-				spr_grenade.setColor(255,255,255);
-				spr_grenade.render(gRenderer, particle[i].x - camX,
-										  particle[i].y - camY,
-										  particle[i].w,
-										  particle[i].h,
-										  NULL,
-										  particle[i].angle);*/
-				/*gParticles.setAlpha(particle[i].alpha);
-				gParticles.setColor(particle[i].color.r, particle[i].color.g, particle[i].color.b);
-				gParticles.render(gRenderer, particle[i].x - camX/particle[i].layer,particle[i].y - camY/particle[i].layer,
-											 particle[i].w, particle[i].h,
-											 &cParticles[0], particle[i].angle);*/
-
+			// Fireball particle
+			if  (particle[i].type == 3) {
 				particle[i].fireBallTimer += 30;
 				if (particle[i].fireBallTimer > 60) {
 					particle[i].fireBallTimer = 0;
@@ -785,25 +736,126 @@ void Particle::renderBulletParticle(Particle particle[], int camX, int camY, flo
 																		   newY - camY/particle[i].layer,
 																		   64, 64, NULL, particle[i].angle);
 				}
-				/*radians = (M_PI/180)*(particle[i].angle);
-				barrelW  = (9 * cos(radians) ) - (0 * sin(radians) );
-				barrelH  = (9 * sin(radians) ) + (0 * cos(radians) );
-				newX = (particle[i].x+particle[i].w/2-64/2) - barrelW;
-				newY = (particle[i].y+particle[i].h/2-64/2) - barrelH;
-				gFireBall[particle[i].fireBallFrame].render(gRenderer, newX - camX/particle[i].layer,
-																	   newY - camY/particle[i].layer,
-																	   64, 64, NULL, particle[i].angle);*/
-
 			}
+			// All other particles
+			else if (particle[i].type < 5 && particle[i].type != 2) {
+				/*SDL_Rect tempRect = {particle[i].x - camX,
+						   particle[i].y - camY,
+						   particle[i].w,  particle[i].h};
+				SDL_SetRenderDrawColor(gRenderer, 255,255,255,255);
+				SDL_RenderFillRect(gRenderer, &tempRect);*/
 
-			// Render Enemy particles
-			if (particle[i].type == 4) {
+				/*gBullet.setBlendMode(SDL_BLENDMODE_ADD);
+				gBullet.setAlpha(110);
+				gBullet.render(gRenderer, particle[i].x-16 - camX,particle[i].y-16 - camY,
+						 particle[i].w+32, particle[i].h+32,
+						NULL, particle[i].angle);*/
+
 				gParticles.setAlpha(particle[i].alpha);
-				gParticles.setBlendMode(SDL_BLENDMODE_ADD);
 				gParticles.setColor(particle[i].color.r, particle[i].color.g, particle[i].color.b);
 				gParticles.render(gRenderer, particle[i].x - camX/particle[i].layer,particle[i].y - camY/particle[i].layer,
 											 particle[i].w, particle[i].h,
 											 &cParticles[0], particle[i].angle);
+			}
+		}
+	}
+}
+void Particle::RenderBulletsBehind(SDL_Renderer* gRenderer, Particle particle[],
+							int camX, int camY, float playerZ,
+							float targetY) {
+	for (int i = 0; i < max; i++) {
+		if (particle[i].alive && particle[i].onScreen) {
+			if (particle[i].y+particle[i].h <= targetY) {
+
+				// Fireball particle
+				if  (particle[i].type == 3) {
+					particle[i].fireBallTimer += 30;
+					if (particle[i].fireBallTimer > 60) {
+						particle[i].fireBallTimer = 0;
+						particle[i].fireBallFrame++;
+					}
+					if (particle[i].fireBallFrame > 28) {
+						particle[i].fireBallFrame = rand() % 3 + 15;
+					}
+					gFireBall[particle[i].fireBallFrame].setAlpha(particle[i].alpha);
+					gFireBall[particle[i].fireBallFrame].setBlendMode(SDL_BLENDMODE_ADD);
+					gFireBall[particle[i].fireBallFrame].setColor(particle[i].color.r, particle[i].color.g, particle[i].color.b);
+
+					float radians = (M_PI/180)*(particle[i].angle);
+					double barrelW  = (9 * cos(radians) ) - (0 * sin(radians) );
+					double barrelH  = (9 * sin(radians) ) + (0 * cos(radians) );
+					float newX = (particle[i].x+particle[i].w/2-64/2) - barrelW;
+					float newY = (particle[i].y+particle[i].h/2-64/2) - barrelH;
+					for (int j=0; j<4; j++) {
+						gFireBall[particle[i].fireBallFrame].render(gRenderer, newX - camX/particle[i].layer,
+																			   newY - camY/particle[i].layer,
+																			   64, 64, NULL, particle[i].angle);
+					}
+				}
+				// All other particles
+				else if (particle[i].type < 5 && particle[i].type != 2) {
+						//SDL_Rect tempRect = {particle[i].x - camX,
+						//		   particle[i].y - camY,
+						//		   particle[i].w,  particle[i].h};
+						//SDL_SetRenderDrawColor(gRenderer, 255,255,255,255);
+						//SDL_RenderFillRect(gRenderer, &tempRect);
+
+						//gBullet.setBlendMode(SDL_BLENDMODE_ADD);
+						//gBullet.setAlpha(110);
+						//gBullet.render(gRenderer, particle[i].x-16 - camX,particle[i].y-16 - camY,
+						//		 particle[i].w+32, particle[i].h+32,
+						//		NULL, particle[i].angle);
+
+						gParticles.setAlpha(particle[i].alpha);
+						gParticles.setColor(particle[i].color.r, particle[i].color.g, particle[i].color.b);
+						gParticles.render(gRenderer, particle[i].x - camX/particle[i].layer,particle[i].y - camY/particle[i].layer,
+													 particle[i].w, particle[i].h,
+													 &cParticles[0], particle[i].angle);
+				}
+			}
+		}
+	}
+}
+void Particle::RenderBulletsFront(SDL_Renderer* gRenderer, Particle particle[],
+							int camX, int camY, float playerZ,
+							float targetY) {
+	for (int i = 0; i < max; i++) {
+		if (particle[i].alive && particle[i].onScreen) {
+			if (particle[i].y+particle[i].h > targetY) {
+
+				// Fireball particle
+				if  (particle[i].type == 3) {
+					particle[i].fireBallTimer += 30;
+					if (particle[i].fireBallTimer > 60) {
+						particle[i].fireBallTimer = 0;
+						particle[i].fireBallFrame++;
+					}
+					if (particle[i].fireBallFrame > 28) {
+						particle[i].fireBallFrame = rand() % 3 + 15;
+					}
+					gFireBall[particle[i].fireBallFrame].setAlpha(particle[i].alpha);
+					gFireBall[particle[i].fireBallFrame].setBlendMode(SDL_BLENDMODE_ADD);
+					gFireBall[particle[i].fireBallFrame].setColor(particle[i].color.r, particle[i].color.g, particle[i].color.b);
+
+					float radians = (M_PI/180)*(particle[i].angle);
+					double barrelW  = (9 * cos(radians) ) - (0 * sin(radians) );
+					double barrelH  = (9 * sin(radians) ) + (0 * cos(radians) );
+					float newX = (particle[i].x+particle[i].w/2-64/2) - barrelW;
+					float newY = (particle[i].y+particle[i].h/2-64/2) - barrelH;
+					for (int j=0; j<4; j++) {
+						gFireBall[particle[i].fireBallFrame].render(gRenderer, newX - camX/particle[i].layer,
+																			   newY - camY/particle[i].layer,
+																			   64, 64, NULL, particle[i].angle);
+					}
+				}
+				// All other particles
+				else if (particle[i].type < 5 && particle[i].type != 2) {
+						gParticles.setAlpha(particle[i].alpha);
+						gParticles.setColor(particle[i].color.r, particle[i].color.g, particle[i].color.b);
+						gParticles.render(gRenderer, particle[i].x - camX/particle[i].layer,particle[i].y - camY/particle[i].layer,
+													 particle[i].w, particle[i].h,
+													 &cParticles[0], particle[i].angle);
+				}
 			}
 		}
 	}

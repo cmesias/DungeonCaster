@@ -24,7 +24,7 @@
 #include "TileBar.h"
 
 void TileBar::Load(SDL_Renderer *gRenderer) {
-	gTileBar.loadFromFile(gRenderer, "resource/gfx/tile00.png");
+	gTileBar.loadFromFile(gRenderer, "resource/gfx/By Scott Matott/tile00.png");
 	gRect.loadFromFile(gRenderer, "resource/gfx/rect.png");
 	rRect[0] = { 0, 0, 64, 64 };
 	rRect[1] = { 64, 0, 64, 64 };
@@ -93,26 +93,50 @@ void TileBar::Spawn(TileBar tilebar[], int x, int y, int w, int h,
 }
 
 void TileBar::SpawnMultiple(TileBar tilebar[]) {
+	// tile textures
 	for (int h = 0; h < tilesHeight; h++) {
 		for (int w = 0; w < tilesWidth; w++) {
 			//for (int j = 0; j < 26; j++) {
 				//for (int i = 0; i < 8; i++) {
-			Spawn(tilebar, 0 + w * 8, 0 + (h * 8), 8, 8,
-							   0 + w * tileW, 0 + (h * tileH), tileW, tileH,
-							   "off");
+			Spawn(tilebar, 0 + w * 8,
+						   0 + (h * 8),
+						   8, 8,
+						   0 + w * tileW, 0 + (h * tileH),
+						   tileW, tileH, "off");
 		}
 		// Reset x margin
 		MARGINX = 0;
 		// Add y margin
 		//MARGINY++;
 	}
+	// door textures
 	for (int h = 0; h < 4; h++) {
 		for (int w = 0; w < 4; w++) {
 			//for (int j = 0; j < 26; j++) {
 				//for (int i = 0; i < 8; i++) {
-			Spawn(tilebar, 0 + w * 16, 64 + (h * 16), 16, 16,
-							   0 + w * 32, 128 + (h * 32), 32, 32,
-							   "off");
+			Spawn(tilebar, 0 + w * 16,
+						   64 + (h * 16),
+						   16, 16,
+						   0 + w * 32, 128 + (h * 32),
+						   32, 32, "off");
+		}
+		// Reset x margin
+		MARGINX = 0;
+		// Add y margin
+		//MARGINY++;
+	}
+	// castle textures
+	int spawnH = 64 + 32;
+	for (int h = 0; h < 21; h++) {
+		for (int w = 0; w < tilesWidth; w++) {
+			//for (int j = 0; j < 26; j++) {
+				//for (int i = 0; i < 8; i++) {
+			Spawn(tilebar, 0 + w * 8,
+					       spawnH + (h * 8),
+						   8, 8,
+						   0 + w * 16,
+						   256 + (h * 16),
+						   16, 16, "off");
 		}
 		// Reset x margin
 		MARGINX = 0;

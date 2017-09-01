@@ -13,6 +13,7 @@
 
 class Spawner: public Helper {
 public:
+	const int max = 100;
 	int count = 0;
 	LTexture gText;
 	TTF_Font *gFont = NULL;

@@ -73,7 +73,8 @@ public:	// variables
 	float trailMaxSize;
 	float timerBeforeMoving;		// when it hits 0, it will move
 	bool goTowardsTarget;			// If true, after timerBeforeMoving is over, the Particles will move towards the target
-
+	bool playSFXBeforeMoving;		// After waiting to move, should particle play a sound (i.e.: make a swoosh sound)
+	int bounces;					// amount of times a particle may bounce before being destroyed
 public:	// SAT theorem for collision during rotation's
 
 	/* Frigate Corners
@@ -111,7 +112,8 @@ public:	// functions
 			bool trail = false, float trailRate = 0.0, SDL_Color trailColor = {0, 255, 0},
 			float trailMinSize = 0.0, float trailMaxSize = 0.0,
 			float timerBeforeMoving = 0.0,
-			bool goTowardsTarget = false, float targetXe = 0.0, float targetYe = 0.0);
+			bool goTowardsTarget = false, float targetXe = 0.0, float targetYe = 0.0,
+			bool playSFXBeforeMoving = false, int bounces = 0);
 	/*void fireParticle(Particle particle[], int type, int damage,
 										   int spawnx, int spawny, int w, int h,
 										   double speed, float vX, float vY,
@@ -128,13 +130,20 @@ public:	// functions
 	void Update(Particle particle[], int mapX, int mapY, int mapW, int mapH,
 				float camx, float camy,
 				float targetX, float targetY,
-			    Mix_Chunk* sSpellExplode = NULL);
+			    Mix_Chunk* sFireBall = NULL);
 
 	// Update Bullet Particles
 	void updateBulletParticles(Particle particle[], int mapX, int mapY, int mapW, int mapH);
 
 	// Render Bullet Particles
-	void renderBulletParticle(Particle particle[], int camX, int camY, float playerZ, SDL_Renderer* gRenderer);
+	void RenderBullets(SDL_Renderer* gRenderer, Particle particle[],
+					   int camX, int camY, float playerZ);
+	void RenderBulletsFront(SDL_Renderer* gRenderer, Particle particle[],
+					   int camX, int camY, float playerZ,
+					   float targetY);
+	void RenderBulletsBehind(SDL_Renderer* gRenderer, Particle particle[],
+					   int camX, int camY, float playerZ,
+					   float targetY);
 
 public:	// Function extensions
 

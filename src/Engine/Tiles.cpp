@@ -21,7 +21,7 @@
 #include "Tiles.h"
 
 void Tile::Load(SDL_Renderer *gRenderer) {
-	gTiles.loadFromFile(gRenderer, "resource/gfx/tile00.png");
+	gTiles.loadFromFile(gRenderer, "resource/gfx/By Scott Matott/tile00.png");
 	gTileBreak.loadFromFile(gRenderer, "resource/gfx/tile-break.png");
 	int j = 0;
 	for (int w = 0; w < 10; w++) {
@@ -89,8 +89,8 @@ void Tile::Spawn(Tile tile[], float x, float y, int w, int h, int id, int layer,
 			tile[i].screen 	= false;
 			tile[i].player = false;
 			tile[i].side = "right";
-			tile[i].collide = false;
-			tile[i].destructible = false;
+			tile[i].collide = collide;
+			tile[i].destructible = destructible;
 			tile[i].alive 	= true;
 			tileCount++;
 			break;
@@ -438,7 +438,6 @@ void Tile::checkCollision(Tile tile[], float x, float y, int w, int h, float &co
 			} // end checking tile-9
 		}
 	}*/
-
 }
 
 void Tile::Render(SDL_Renderer *gRenderer, Tile tile[], int layer_dummy, int camx, int camy) {
@@ -453,8 +452,6 @@ void Tile::Render(SDL_Renderer *gRenderer, Tile tile[], int layer_dummy, int cam
 			// Render layer that Editor has selected
 			if (hideOtherLayers) {
 				if (layer == tile[i].layer) {
-					gTiles.setAlpha(tile[i].alpha);
-					gTiles.render(gRenderer, tile[i].x - camx, tile[i].y - camy, tile[i].w, tile[i].h, &tile[i].clip);
 				}
 			// Render all tiles
 			}else{

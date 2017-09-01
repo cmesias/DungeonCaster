@@ -16,6 +16,7 @@ LWindow::LWindow() {
 	mKeyboardFocus = false;
 	mFullScreen = false;
 	mMinimized = false;
+	showCursor = false;
 	mWidth = 0;
 	mHeight = 0;
 	name = "window name here";
@@ -198,6 +199,15 @@ void LWindow::handleEvent(SDL_Renderer *gRenderer, SDL_Event& e) {
 			mFullScreen = true;
 			mMinimized = false;
 			SDL_MaximizeWindow(mWindow);
+		}
+	}
+	else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_F10) {
+		if (showCursor) {
+			showCursor = false;
+			SDL_ShowCursor(SDL_FALSE);
+		} else {
+			showCursor = true;
+			SDL_ShowCursor(SDL_TRUE);
 		}
 	}
 }

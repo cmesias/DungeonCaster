@@ -12,6 +12,16 @@
 
 #include "Helper.h"
 
+/*void Helper::RenderInstances(SDL_Renderer *gRenderer, LTexture &gTexture,
+						 int maxInstances,
+						 float x, float y, float w, float h, float alpha, SDL_Rect clip,
+						 float camx, float camy) {
+	for( int i = 0; i < maxInstances; ++i ) {
+		gTexture.setAlpha(alpha);
+		gTexture.render(gRenderer, x - camx, y - camy, w, h, &clip);
+	}
+}*/
+
 bool Helper::checkCollision(int x, int y, int w, int h, int x2, int y2, int w2, int h2) {
 	bool collide;
 	if (x+w > x2 && x < x2 + w2 && y+h > y2 && y < y2 + h2) {
@@ -146,15 +156,16 @@ bool Helper::doIntersect(Point p1, Point q1, Point p2, Point q2)
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-void Helper::renderDialogText(SDL_Renderer *gRenderer, std::string speakerName,
-					  std::string speakerText,
+void Helper::renderDialogText(SDL_Renderer *gRenderer,
+					  std::string speakerName, std::string speakerText, std::string indicator,
 					  float speakerX, float speakerY, float speakerW, float speakerH,
 					  float dialogueX, float dialogueY, float dialogueW, float dialogueH,
 					  SDL_Color speakerNameColor, SDL_Color speakerTextColor,
 					  SDL_Color colorBG, SDL_Color colorBorder,
 					  SDL_Color colorBGSpeaker, SDL_Color colorBorderSpeaker,
 					  TTF_Font *gFontName, TTF_Font *gFontDialog, LTexture &gText,
-					  Uint32 wrapLength){
+					  Uint32 wrapLength, bool drawBorders){
+
 
 	// Speaker Name
 	std::stringstream tempss;
@@ -167,12 +178,25 @@ void Helper::renderDialogText(SDL_Renderer *gRenderer, std::string speakerName,
 		speakerH = newHeight + 4;
 		speakerX = dialogueX;
 		speakerY = dialogueY - newHeight - 6;
+
+		// Draw boxes with SDL? (false if we are drawing our own
+	if (drawBorders) {
+		// Speaker name dialogue box
 		SDL_Rect tempRect = {speakerX, speakerY, speakerW, speakerH};
 		SDL_SetRenderDrawColor(gRenderer, colorBGSpeaker.r, colorBGSpeaker.g, colorBGSpeaker.b, 255);
 		SDL_RenderFillRect(gRenderer, &tempRect);
-
 		SDL_SetRenderDrawColor(gRenderer, colorBorderSpeaker.r, colorBorderSpeaker.g, colorBorderSpeaker.b, 255);
 		SDL_RenderDrawRect(gRenderer, &tempRect);
+
+		// Dialogue text boxes
+		SDL_Rect tempr = {dialogueX, dialogueY, dialogueW, dialogueH};
+		SDL_SetRenderDrawColor(gRenderer, colorBG.r, colorBG.g, colorBG.b, 255);
+		SDL_RenderFillRect(gRenderer, &tempr);
+		SDL_SetRenderDrawColor(gRenderer, colorBorder.r, colorBorder.g, colorBorder.b, 255);
+		SDL_RenderDrawRect(gRenderer, &tempr);
+	}
+
+	// Render speaker name
 	gText.render(gRenderer, speakerX + speakerW/2-newWidth/2,
 							speakerY + speakerH/2-newHeight/2,
 							newWidth, newHeight);
@@ -181,14 +205,23 @@ void Helper::renderDialogText(SDL_Renderer *gRenderer, std::string speakerName,
 	tempss.str(std::string());
 	tempss << speakerText;
 	gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), speakerTextColor, gFontDialog, wrapLength);
-	newWidth = gText.getWidth()/4;
-	newHeight = gText.getHeight()/4;
-		SDL_Rect tempr = {dialogueX, dialogueY, dialogueW, dialogueH};
-		SDL_SetRenderDrawColor(gRenderer, colorBG.r, colorBG.g, colorBG.b, 255);
-		SDL_RenderFillRect(gRenderer, &tempr);
-		SDL_SetRenderDrawColor(gRenderer, colorBorder.r, colorBorder.g, colorBorder.b, 255);
-		SDL_RenderDrawRect(gRenderer, &tempr);
-	gText.render(gRenderer, dialogueX+3, dialogueY+3, newWidth, newHeight);
+		newWidth = gText.getWidth()/4;
+		newHeight = gText.getHeight()/4;
+
+	// Render speaker dialogue
+	gText.render(gRenderer, dialogueX+6, dialogueY+5, newWidth, newHeight);
+
+	// Indicator
+	tempss.str(std::string());
+	tempss << indicator;
+	gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), speakerTextColor, gFontDialog, wrapLength);
+		newWidth = gText.getWidth()/4;
+		newHeight = gText.getHeight()/4;
+
+	// Render ">" indicator
+	gText.render(gRenderer, dialogueX + dialogueW - newWidth - 3,
+						    dialogueY + dialogueH - newHeight - 2,
+							newWidth, newHeight);
 }
 
 void Helper::renderStatusBar(SDL_Renderer *gRenderer, float x, float y, float w, float h,
