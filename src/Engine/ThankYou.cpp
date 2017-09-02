@@ -1,5 +1,5 @@
 /*
- * TestRoom.cpp
+ * ThankYou.cpp
  *
  *  Created on: Aug 22, 2017
  *      Author: Carl
@@ -12,10 +12,10 @@
 #include <vector>
 #include <SDL2/SDL.h>
 
-#include "TestRoom.h"
+#include "ThankYou.h"
 
 
-void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestResult &result, int &levelToLoad) {
+void ThankYou::Show(LWindow &gWindow, SDL_Renderer *gRenderer, ThankYou::ThankYouResult &result) {
 
 	// particle
 	static Particle part;
@@ -125,72 +125,22 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 
 			// Controller button down
 			if (event.type == SDL_JOYBUTTONDOWN){
-				// if dialogue did not complete, render the rest of the dialogue before going to the next one
-				if (letters < dialogue[dialogueIndex].size()) {
-					// Clear dialogue
-					dialogueToRender.str(std::string());
-					// Get max length for current dialogue
-					letters = dialogue[dialogueIndex].size();
-					// Get current dialogue for rendering
-					dialogueToRender << dialogue[dialogueIndex];
-				}
-				// Go to next dialogue
-				else{
-					if (dialogueIndex < dialogue.size()-1) {
-						letters = 0;
-						dialogueToRender.str(std::string());
-						dialogueIndex++;
-					}else{
-						showDialogue = false;
-						levelToLoad = 1;
-						result = StartGame;
-						return;
-					}
-				}
+
 			}
 
 			// Key Pressed
 			if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
 				switch (event.key.keysym.sym) {
 				case SDLK_r:						// reset test-room
-					showDialogue = true;
-					dialogueIndex = 0;
-					timer = 0;
-					rate = 20;
-					letters = 0;
-					dialogueToRender.str(std::string());
+
 					break;
 				case SDLK_q:
-					SDL_ShowCursor(SDL_TRUE);
+					//SDL_ShowCursor(SDL_TRUE);
 					break;
 				case SDLK_e:
-					SDL_ShowCursor(SDL_FALSE);
+					//SDL_ShowCursor(SDL_FALSE);
 					break;
 				case SDLK_RETURN:				// Cycle through dialogue
-
-					// if dialogue did not complete, render the rest of the dialogue before going to the next one
-					if (letters < dialogue[dialogueIndex].size()) {
-						// Clear dialogue
-						dialogueToRender.str(std::string());
-						// Get max length for current dialogue
-						letters = dialogue[dialogueIndex].size();
-						// Get current dialogue for rendering
-						dialogueToRender << dialogue[dialogueIndex];
-					}
-					// Go to next dialogue
-					else{
-						if (dialogueIndex < dialogue.size()-1) {
-							letters = 0;
-							dialogueToRender.str(std::string());
-							dialogueIndex++;
-						}else{
-							showDialogue = false;
-							levelToLoad = 1;
-							result = StartGame;
-							return;
-						}
-					}
-
 					break;
 				case SDLK_ESCAPE:
 					result = Back;
@@ -206,28 +156,6 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 			}
 			// Mouse Pressed
 			if (event.type == SDL_MOUSEBUTTONDOWN) {
-				// if dialogue did not complete, render the rest of the dialogue before going to the next one
-				if (letters < dialogue[dialogueIndex].size()) {
-					// Clear dialogue
-					dialogueToRender.str(std::string());
-					// Get max length for current dialogue
-					letters = dialogue[dialogueIndex].size();
-					// Get current dialogue for rendering
-					dialogueToRender << dialogue[dialogueIndex];
-				}
-				// Go to next dialogue
-				else{
-					if (dialogueIndex < dialogue.size()-1) {
-						letters = 0;
-						dialogueToRender.str(std::string());
-						dialogueIndex++;
-					}else{
-						showDialogue = false;
-						levelToLoad = 1;
-						result = StartGame;
-						return;
-					}
-				}
 				if (event.button.button == SDL_BUTTON_LEFT) {
 					/*part.spawnParticleAngle(particle, "none", 3,
 							mx - 4/2,
@@ -347,7 +275,25 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 			//gTargetTexture.setBlendMode(SDL_BLENDMODE_MOD);
 			gTargetTexture.render( gRenderer, 0, 0, screenWidth, screenHeight);
 
-			if (showDialogue) {
+
+
+			float x = 0+4;
+			float y = screenHeight-24 - 8;
+
+			renderDialogText(gRenderer, "Cmesias",
+							 "Thank you for playing my game, I hope you liked it. \nPress Escape to return to the Main Menu.", indicator.c_str(),
+						     x, y, 21, 24,
+						     x, y, screenWidth-8, 24,
+						     {255,255,255}, {255,255,255},
+						     {18,18,18}, {60,200,40},
+						     {18,18,18}, {60,200,40},
+						     gFont, gFont, gText,
+							 1000,  true);
+
+
+
+
+			/*if (showDialogue) {
 				if ( letters < dialogue[dialogueIndex].size() ) {
 					timer += rate;
 					if (timer > 60) {
@@ -366,9 +312,9 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 				//gDialogueBox.render(gRenderer, x, y - 9 - 2, 50, 9);
 				//gDialogueBox.render(gRenderer, x, y, 262, 24);
 
-				renderDialogText(gRenderer, "Genia",
+				renderDialogText(gRenderer, "Jacky The Jacker",
 								 temps.c_str(), indicator.c_str(),
-							     x, y, 21, 26,
+							     x, y, 21, 24,
 							     x, y, screenWidth-8, 24,
 							     {255,255,255}, {255,255,255},
 							     {18,18,18}, {200,100,250},
@@ -376,7 +322,7 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 							     gFont, gFont, gText,
 								 1000,  true);
 
-			}
+			}*/
 
 		// Update screen
 		SDL_RenderPresent(gRenderer);
@@ -391,7 +337,7 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 	free();
 }
 
-void TestRoom::free() {
+void ThankYou::free() {
 	// Free resources
 	TTF_CloseFont(gFont);
 	gFont = NULL;

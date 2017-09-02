@@ -7,3 +7,4 @@ sounds/
 *.settings/
 *.cproject
 *.project
+/Release/

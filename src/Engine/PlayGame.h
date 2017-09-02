@@ -25,7 +25,7 @@
 class PlayGame : public Helper, public Options {
 
 public: // System variables
-	enum Result { Back, Nothing, StartGame, ShowingMenu, Exit };
+	enum Result { Back, Nothing, StartGame, ShowingMenu, ShowingThankYouPage, Exit };
 	void Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result &result, int levelToLoad);
 	PlayGame::Result mousePressed(SDL_Event event);
 	PlayGame::Result mouseReleased(SDL_Event event);

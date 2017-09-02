@@ -7,9 +7,6 @@
 #
 #####################################################################
 
-
-
-
 #####################################################################
 ############################## Graphics #############################
 #####################################################################
@@ -24,15 +21,8 @@
 #
 #####################################################################
 #
-# + Cmesias
-#   - spell-icons.png
-#   - fireball animation
-#	- buttons.png
-#	- tile-break.png
-#	- cc-buttons.png
-#   - fireball[x].png
-#	- I included a mana pot, and a health pot in Scott Matott's
-      "torch_key_gems.png"
+# + Buch (https://opengameart.org/users/buch)
+#   - see folder "By Buch"
 #
 #####################################################################
 #
@@ -41,13 +31,24 @@
 #
 #####################################################################
 #
-# + Buch (https://opengameart.org/users/buch)
-#   - see folder "By Buch"
+# + Cmesias
+#   - spell-icons.png
+#   - fireball animation
+#	- buttons.png
+#	- tile-break.png
+#	- cc-buttons.png
+#   - fireball[x].png
+#	- I included a mana pot, and a health pot in Scott Matott's
+#     "torch_key_gems.png"
 #
 #####################################################################
-
 #####################################################################
 ########################### Audio Credits ###########################
+#####################################################################
+#
+# + Pant0don (https://opengameart.org/users/pant0don)
+#   - Relaxing Interlude.mp3
+#
 #####################################################################
 #
 # + Cmesias (Using Bfxr program, here: http://www.bfxr.net/)
@@ -110,6 +111,8 @@
 #####################################################################
 #
 # + press-start-2p - http://www.fontspace.com/codeman38/press-start-2p
+# + Viga-Regular.ttf
+# + FredokaOne-Regular.ttf
 #
 #####################################################################
 

@@ -59,11 +59,12 @@ bool LWindow::create(std::string newName, int RESOLUTION, int ANTI_ALIS, int VSY
 	// Anti-aliasing
 	if (ANTI_ALIS==1) {
 		// On
-		SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1");
+	//	SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1");
 	}else{
 		// Off
-		SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "0");
+	//	SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "0");
 	}
+	SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
 	// Vsync
 	if (VSYNC==1) {
@@ -243,11 +244,12 @@ void LWindow::applySettings(int RESOLUTION, int ANTI_ALIS, int VSYNC, int FULLSC
 	// Anti-aliasing
 	if (ANTI_ALIS==1) {
 		// On
-		SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1");
+	//	SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "1");
 	}else{
 		// Off
-		SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "0");
+	//	SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "0");
 	}
+	SDL_SetHint( SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
 	// Vsync
 	if (VSYNC==1) {

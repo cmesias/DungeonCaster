@@ -58,9 +58,19 @@ private:
 	// Show text room
 	void ShowTestRoom(LWindow &gWindow, SDL_Renderer *gRenderer, int &levelToLoad);
 
+	// Show thannk you page
+	void ShowThankYouPage(LWindow &gWindow, SDL_Renderer *gRenderer);
+
+	// Show credits page
+	void ShowCredits(LWindow &gWindow, SDL_Renderer *gRenderer);
+
+	// Show HTP page
+	void ShowHowToPlay(LWindow &gWindow, SDL_Renderer *gRenderer);
+
 	enum GameState {Uninitialized, ShowingSplash, ShowingMenu,
 					ShowingCustomizeCharacter, ShowingActSelection,
-					ShowingPlayGame, ShowingTestRoom,
+					ShowingPlayGame, ShowingTestRoom, ShowingThankYouPage,
+					ShowingCredits, ShowingHowToPlay,
 					OptionScene, CreditScene, Exiting };
 	static GameState _gameState;
 };

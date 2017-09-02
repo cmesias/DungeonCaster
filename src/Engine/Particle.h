@@ -56,7 +56,7 @@ public:	// variables
 	 */
 	int type;
 	std::string tag;		// who the owner of this particle is
-	int damage;
+	float damage;
 	SDL_Color color;
 	int layer;
 

@@ -48,7 +48,7 @@ Character::Character() {
 	basicAttack = false;
 	basicAttackDelay = false;
 	bATimer = 0.0;
-	atkSpe = 1.8;
+	atkSpe = 2.4;
 
 	// Used in-game
 	angle = 90.0;
@@ -745,17 +745,31 @@ void Character::setTarget(float *newTargetX, float *newTargetY, int newTargetID)
 	target.id = newTargetID;
 }
 
-void Character::addHealth(float newAmount) {
-	health += newAmount;
+void Character::addHealth(float amount) {
+	health += amount;
 	if (health > maxHealth) {
 		health = maxHealth;
 	}
 }
 
-void Character::addMana(float newAmount) {
-	mana += newAmount;
+void Character::addMana(float amount) {
+	mana += amount;
 	if (mana > maxMana) {
 		mana = maxMana;
+	}
+}
+
+void Character::minusHealth(float amount) {
+	health -= amount;
+	if (health <= 0) {
+		health = 0;
+	}
+}
+
+void Character::minusMana(float amount) {
+	mana -= amount;
+	if (mana <= 0) {
+		mana = 0;
 	}
 }
 

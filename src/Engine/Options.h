@@ -15,16 +15,16 @@
 #include <SDL2/SDL_mixer.h>
 #include <SDL2/SDL_ttf.h>
 #include "../Player.h"
+#include "JoyStick.h"
 
-class Options {
+class Options: public JoyStick {
 public:
 	Helper helper;
-	enum OptionsResult { Back, Nothing, StartGame, ShowingMenu, Exit };
+	enum OptionsResult { Back, Exit, Nothing, StartGame, ShowingMenu };
 	OptionsResult optionsResult = Nothing;
 public:
 	// don't declare
 	int mx, my;
-	SDL_Event e;
 	// declare these
 	bool pauseLoop;
 	bool leftclick;
@@ -63,12 +63,12 @@ public:	// Settings that can be changed by user
 	TTF_Font *gFont13 			= NULL;
 	TTF_Font *gFont26 			= NULL;
 	// Audio
+	Mix_Music *sRelaxingInterlude 	= NULL;
 	Mix_Music *sAmbientMusic 	= NULL;
 	Mix_Music *sStrangeMusic 	= NULL;
 	Mix_Music *sElement 		= NULL;
 	Mix_Chunk *sRockBreak 		= NULL;
 	Mix_Chunk *sLazer 			= NULL;
-	Mix_Chunk *sAtariBoom 		= NULL;
 	Mix_Chunk *sGrenade 		= NULL;
 	Mix_Chunk *sSpellExplode 	= NULL;
 	Mix_Chunk *sGrenadePickup 	= NULL;
@@ -99,8 +99,23 @@ public:	// Settings that can be changed by user
 
 public: // Bar sliders and text
 
-	// Show different options based on type
-	int type;	// [0: PauseMenu], [1: HowToPlay], [2: Options], [3: Exit Main Menu]
+	/*
+	 * type 0:
+	 *    - typeShown:
+	 *    	0: Resume
+	 *    	1: How To Play
+	 *    	2: Settings
+	 *    	3: Main Menu
+	 *    	4: Exit To Desktop
+	 * type 1:
+	 *    - typeShown:
+	 *      0: Audio
+	 *    	1: Video
+	 *    	2: back
+	 *    	3: Apply Audio
+	 *    	4: Apply Video
+	 */
+	int type;
 
 	// Sub menu options
 	int HIGHLIGHT_INDEX;
@@ -338,6 +353,12 @@ public:	// functions
 	void applyOldAudioCFG();
 	void applyMasterAudioCFG();
 
+	// when you press the button, this action should be called
+	void actionApplyAudio();
+	void actionApplyVideo(LWindow &gWindow);
+	void actionKeep();
+	void actionRevert(LWindow &gWindow);
+
 	// Load Options menu
 	void start(LWindow &gWindow, SDL_Renderer *gRenderer);
 
@@ -362,6 +383,57 @@ public:	// functions
 
 	// Render Text
 	void RenderTextII(SDL_Renderer *gRenderer);
+
+private:
+	void updateJoystick(SDL_Renderer *gRenderer, LWindow &gWindow, SDL_Event *e);
+
+	bool A;									// XBOX a button
+	bool LAnalogTrigger;					// this will let us use the joystick as a trigger rather than an axis
+	bool RAnalogTrigger;					// this will let us use the joystick as a trigger rather than an axis
+	const int JOYSTICK_DEAD_ZONE = 8000;
+	const int LTRIGGER_DEAD_ZONE = 25000;
+	const int RTRIGGER_DEAD_ZONE = 25000;
+	int joyStickID;
+	double LAngle;
+	double RAngle;
+	bool confirmKey;
+	// Used in type: 2
+	// 0: If we are in the Audio, Video, back, Apply Audio, Apply Video indexX
+	// 1: we will cycle through the Master volume and other option's index, which is indexOther
+	// going left and right through Settings menu, where master volume is
+	int indexX;
+	int maxIndexX = 1; // will go up to 3 if we are confirming an action
+	/*
+	 * 0: master volume
+	 * 1: music volume
+	 * 2: sfx volume
+	 * 3: resolution
+	 * 4: anti-aliasing
+	 * 5: vsync
+	 * 6: fullscreen
+	 * 7: apply audio
+	 * 8: apply video
+	 */
+	int indexOther;
+	const int maxIndexOther = 8;
+	bool focusedOther;	// controller focused on an indexOther item, indexX should not move in this state
+
+	/* change values in indexX == 1
+	 * Used by these keys:
+	 * Left-DPAD key
+	 * Keyboard_A key
+	 * Left_Arrow key
+	 */
+	void minusValues();
+
+	/* change values in indexX == 1
+	 * Used by these keys:
+	 * Right-DPAD key
+	 * Keyboard_D key
+	 * RIGHT_Arrow key
+	 */
+	void addValues();
+
 };
 
 #endif /* OPTIONS_H_ */

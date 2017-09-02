@@ -8,6 +8,7 @@
 #include "LWindow.h"
 
 #include <iostream>
+#include <math.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
@@ -36,9 +37,10 @@ void MainMenu::Load(SDL_Renderer *gRenderer) {
 	// Buttons
 	buttonName[0] = "New Game";
 	buttonName[1] = "How To Play";
-	buttonName[2] = "Options";
-	buttonName[3] = "Credits";
+	buttonName[2] = "Credits";
+	buttonName[3] = "Options";
 	buttonName[4] = "Exit";
+    joy = SDL_JoystickOpen(0);
 }
 
 void MainMenu::Free() {
@@ -52,6 +54,8 @@ void MainMenu::Free() {
 	gFont = NULL;
 	gFont13 = NULL;
 	gFont26 = NULL;
+    SDL_JoystickClose(joy);
+	joy = NULL;
 }
 
 void MainMenu::Show(LWindow &gWindow, SDL_Renderer *gRenderer, MainMenu::MenuResult &result) {
@@ -61,6 +65,8 @@ void MainMenu::Show(LWindow &gWindow, SDL_Renderer *gRenderer, MainMenu::MenuRes
 	leftClick = false;
 	confirmKey = false;
 	shift = false;
+	A = false;
+	LAnalogTrigger = false;
 	key	= 0;
 	menuIndex = -1;
 	result = Nothing;
@@ -98,6 +104,15 @@ void MainMenu::Show(LWindow &gWindow, SDL_Renderer *gRenderer, MainMenu::MenuRes
 
 			// Handle window events
 			gWindow.handleEvent(gRenderer, event);
+
+			// switch key if controller moved
+			if (event.type == SDL_JOYAXISMOTION) {
+				key = 0;
+			}
+			// Controller button down
+			if (event.type == SDL_JOYBUTTONDOWN){
+				key = 0;
+			}
 
 			// Back Game
 			if (event.type == SDL_QUIT) {
@@ -166,10 +181,10 @@ void MainMenu::Show(LWindow &gWindow, SDL_Renderer *gRenderer, MainMenu::MenuRes
 						} else if (menuIndex == 1) {
 							result = HowToPlay;
 						} else if (menuIndex == 2) {
+							result = Credits;
+						} else if (menuIndex == 3) {
 						//	result = Options;
 							start(gWindow,gRenderer);
-						} else if (menuIndex == 3) {
-						//	result = Credits;
 						} else if (menuIndex == 4) {
 							result = Exit;
 						}
@@ -181,10 +196,10 @@ void MainMenu::Show(LWindow &gWindow, SDL_Renderer *gRenderer, MainMenu::MenuRes
 						} else if (menuIndex == 1) {
 							result = HowToPlay;
 						} else if (menuIndex == 2) {
+							result = Credits;
+						} else if (menuIndex == 3) {
 							//	result = Options;
 							start(gWindow,gRenderer);
-						} else if (menuIndex == 3) {
-						//	result = Credits;
 						} else if (menuIndex == 4) {
 							result = Exit;
 						}
@@ -205,6 +220,9 @@ void MainMenu::Show(LWindow &gWindow, SDL_Renderer *gRenderer, MainMenu::MenuRes
 					// Mouse Released
 					result = mouseReleased(gWindow, gRenderer, event);
 				}
+
+				// Get title index from keyboard or xbox controller
+				updateJoystick(gRenderer, gWindow, &event, result);
 
 				// Handle results
 				switch (result)  {
@@ -240,6 +258,26 @@ void MainMenu::Show(LWindow &gWindow, SDL_Renderer *gRenderer, MainMenu::MenuRes
 			}
 		}
 
+		// Customize Character results
+		switch (optionsResult)  {
+		case Options::Back:				// Exit to Main Menu
+			quit = true;
+			break;
+		case Options::Nothing:
+			//
+			break;
+		case Options::StartGame:
+			//
+			break;
+		case Options::ShowingMenu:
+			//
+			break;
+		case Options::Exit:				// Exit Desktop
+			result = MainMenu::Exit;
+			quit = true;
+			break;
+		}
+
 		// Clear render screen
 		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
 		SDL_RenderClear(gRenderer);
@@ -267,7 +305,7 @@ void MainMenu::Render(SDL_Renderer *gRenderer) {
 		// Render border around title menu item
 		if (key == 0) {
 			if (menuIndex==i) {
-				if (confirmKey) {
+				if (confirmKey || A) {
 					SDL_Rect tempr = {levelsBox[i].x+1, levelsBox[i].y+1, levelsBox[i].w-2, levelsBox[i].h-2};
 					SDL_SetRenderDrawColor(gRenderer, 0, 200, 0, 255);
 					SDL_RenderDrawRect(gRenderer, &tempr);
@@ -355,10 +393,10 @@ MainMenu::MenuResult MainMenu::mouseReleased(LWindow gWindow, SDL_Renderer *gRen
 					} else if (i == 1) {
 						result = HowToPlay;
 					} else if (i == 2) {
+						result = Credits;
+					} else if (i == 3) {
 					//	result = Options;
 						start(gWindow,gRenderer);
-					} else if (i == 3) {
-					//	result = Credits;
 					} else if (i == 4) {
 						result = Exit;
 					}
@@ -372,6 +410,192 @@ MainMenu::MenuResult MainMenu::mouseReleased(LWindow gWindow, SDL_Renderer *gRen
 	return result;
 }
 
+
+void MainMenu::updateJoystick(SDL_Renderer *gRenderer, LWindow &gWindow, SDL_Event *e, MainMenu::MenuResult &result) {
+	////////////////// Xbox 360 Controls /////////////
+	if (e->type == SDL_CONTROLLERAXISMOTION) {
+		//controls = 1;
+	}
+	/* Xbox 360 Controls */
+	// Left Analog
+	if ( ((SDL_JoystickGetAxis(joy, 0) < -8000) || (SDL_JoystickGetAxis(joy, 0) > 8000)) ||
+		 ((SDL_JoystickGetAxis(joy, 1) < -8000) || (SDL_JoystickGetAxis(joy, 1) > 8000)) ){
+		LAngle = atan2(SDL_JoystickGetAxis(joy, 1), SDL_JoystickGetAxis(joy, 0)) * ( 180.0 / M_PI );
+	}
+	// Right Analog
+	if ( ((SDL_JoystickGetAxis(joy, 3) < -8000) || (SDL_JoystickGetAxis(joy, 3) > 8000)) ||
+		 ((SDL_JoystickGetAxis(joy, 4) < -8000) || (SDL_JoystickGetAxis(joy, 4) > 8000)) ){
+		RAngle = atan2(SDL_JoystickGetAxis(joy, 4), SDL_JoystickGetAxis(joy, 3)) * ( 180.0 / M_PI );
+	}
+	if (LAngle < 0) { LAngle = 360 - (-LAngle); }
+	if (RAngle < 0) { RAngle = 360 - (-RAngle); }
+
+	//// Left Analog/////
+	// Move left, x-axis
+	if (SDL_JoystickGetAxis(joy, 0)/30 < -500){
+		//
+	}
+	// Move right, x-axis
+	if (SDL_JoystickGetAxis(joy, 0)/30 > 500){
+		//
+	}
+	// joy range between -500 and 500, no moving
+	if (SDL_JoystickGetAxis(joy, 0)/30 >= -500 && SDL_JoystickGetAxis(joy, 0)/30 <= 500){
+		//
+	}
+	// Move up, y-axis
+	if (SDL_JoystickGetAxis(joy, 1) < -JOYSTICK_DEAD_ZONE){
+		if (!LAnalogTrigger) {
+			LAnalogTrigger = true;
+			if (menuIndex > 0) {
+				menuIndex--;
+			}
+		}
+	}
+	// Move down, y-axis
+	else if (SDL_JoystickGetAxis(joy, 1) > JOYSTICK_DEAD_ZONE){
+		if (!LAnalogTrigger) {
+			LAnalogTrigger = true;
+			if (menuIndex < 4) {
+				menuIndex++;
+			}
+		}
+	}else{
+		LAnalogTrigger = false;
+	}
+	// joy range between -500 and 500, no moving
+	if (SDL_JoystickGetAxis(joy, 1)/30 >= -500 && SDL_JoystickGetAxis(joy, 1)/30 <= 500){
+		//
+	}
+
+	//// Right Analog/////
+	// Face left, x-axis
+	if (SDL_JoystickGetAxis(joy, 3)/30 < -500){
+	//	moveLeft = true;
+	}
+	// Face right, x-axis
+	if (SDL_JoystickGetAxis(joy, 3)/30 > 500){
+	//	moveRight = true;
+	}
+	// Face up, y-axis
+	if (SDL_JoystickGetAxis(joy, 4)/30 < -500){
+	//	moveUp = true;
+	}
+	// Face down, y-axis
+	if (SDL_JoystickGetAxis(joy, 4)/30 > 500){
+	//	moveDown = true;
+	}
+
+	//// Triggers Analog/////
+	// Left Trigger
+	if (SDL_JoystickGetAxis(joy, 2) > -LTRIGGER_DEAD_ZONE){
+		//
+	}
+	// Right Trigger
+	if (SDL_JoystickGetAxis(joy, 5) > -RTRIGGER_DEAD_ZONE){
+		//
+	}
+	//// DPAD Triggers ////
+	if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_UP) {
+		if (menuIndex > 0) {
+			menuIndex--;
+		}
+	}
+	if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_DOWN) {
+		if (menuIndex < 4) {
+			menuIndex++;
+		}
+	}
+	if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_LEFT) {
+		//
+	}
+	if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_RIGHT) {
+		//
+	}
+
+	if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_LEFTUP) {
+		//
+	}
+	else if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_RIGHTUP) {
+		//
+	}
+	else if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_LEFTDOWN) {
+		//
+	}
+	else if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_RIGHTDOWN) {
+		//
+	}
+
+	// Xbox 360 Controls
+	if (e->type == SDL_JOYBUTTONDOWN && e->jbutton.state == SDL_PRESSED && e->jbutton.which == 0){
+		key = 0;
+		switch(e->jbutton.button){
+		case SDL_CONTROLLER_BUTTON_DPAD_UP:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_A:
+			A = true;
+			break;
+		case SDL_CONTROLLER_BUTTON_B:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_X:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_Y:
+			//
+			break;
+		}
+	}else if (e->type == SDL_JOYBUTTONUP && e->jbutton.state == SDL_RELEASED && e->jbutton.which == 0){
+		switch(e->jbutton.button){
+		case SDL_CONTROLLER_BUTTON_DPAD_UP:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_A:
+			A = false;
+			if (menuIndex == 0) {
+				result = NewGame;
+			} else if (menuIndex == 1) {
+				result = HowToPlay;
+			} else if (menuIndex == 2) {
+				result = Credits;
+			} else if (menuIndex == 3) {
+			//	result = Options;
+				start(gWindow,gRenderer);
+			} else if (menuIndex == 4) {
+				result = Exit;
+			}
+			break;
+		case SDL_CONTROLLER_BUTTON_B:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_X:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_Y:
+			//
+			break;
+		}
+	}
+}
 
 
 

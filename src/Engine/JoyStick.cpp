@@ -17,7 +17,7 @@
 
 JoyStick::JoyStick() {
 	// TODO Auto-generated constructor stub
-	printf("%i joysticks were found.\n\n", SDL_NumJoysticks() );
+	//printf("%i joysticks were found.\n\n", SDL_NumJoysticks() );
     joy = SDL_JoystickOpen(0);
     if (joy == NULL) {
     	//printf("Error opening joystick!");

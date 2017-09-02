@@ -96,6 +96,28 @@ void Item::Spawn(Item item[], float x, float y, float w , float h) {
 	}
 }
 
+void Item::Spawn(Item item[], float x, float y, float w , float h, int id) {
+	Remove(item, 0);
+	for (int i = 0; i < max; i++) {
+		if (!item[i].alive) {
+			item[i].x 				= x;
+			item[i].y 				= y;
+			item[i].w 				= w;
+			item[i].h 				= h;
+			item[i].vX 				= 0.0;
+			item[i].vY 				= 0.0;
+			item[i].id 				= id;
+			item[i].collision 		= false;
+			item[i].mouse 			= false;
+			item[i].mouseBox 			= false;
+			item[i].onScreen 			= false;
+			item[i].alive 			= true;
+			count++;
+			break;
+		}
+	}
+}
+
 void Item::Update(Item item[], int mouseX, int mouseY, int mx, int my, int camx, int camy) {
 	int tileW = 16*1;
 	int tileH = 16*1;
@@ -211,7 +233,7 @@ void Item::Render(SDL_Renderer* gRenderer, Item item[], int camx, int camy) {
 			}
 
 			gItem.render(gRenderer, item[i].x - camx, newY - camy, item[i].w, item[i].h, &rClips[item[i].id]);
-			if (item[i].mouse) {
+			/*if (item[i].mouse) {
 				SDL_Rect tempr = {item[i].x+1 - camx, item[i].y+1 - camy, item[i].w-2, item[i].h-2};
 				SDL_SetRenderDrawColor(gRenderer, 255, 144, 25, 255);
 				SDL_RenderDrawRect(gRenderer, &tempr);
@@ -220,7 +242,7 @@ void Item::Render(SDL_Renderer* gRenderer, Item item[], int camx, int camy) {
 				SDL_Rect tempr = {item[i].x+2 - camx, item[i].y+2 - camy, item[i].w-4, item[i].h-4};
 				SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 255);
 				SDL_RenderDrawRect(gRenderer, &tempr);
-			}
+			}*/
 		}
 	}
 }

@@ -1,5 +1,5 @@
 /*
- * TestRoom.cpp
+ * Credits.cpp
  *
  *  Created on: Aug 22, 2017
  *      Author: Carl
@@ -8,14 +8,16 @@
 #include "LTexture.h"
 #include "LWindow.h"
 #include "Particle.h"
+#include <fstream>
 #include <sstream>
 #include <vector>
+#include <math.h>
 #include <SDL2/SDL.h>
 
-#include "TestRoom.h"
+#include "Credits.h"
 
 
-void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestResult &result, int &levelToLoad) {
+void Credits::Show(LWindow &gWindow, SDL_Renderer *gRenderer, Credits::CreditsResult &result) {
 
 	// particle
 	static Particle part;
@@ -33,15 +35,23 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 	indicatorTimer = 0;
 	indicatorFrame = 0;
 	indicator = ">";
+	holdUp = false;
+	holdDown = false;
+	holdTimer = 0.0;
 	quit = false;
 	gFont 	= TTF_OpenFont("resource/fonts/PressStart2P.ttf", 18);
 	gTexture.loadFromFile(gRenderer, "resource/gfx/test.png");
-	gLightBG.loadFromFile(gRenderer, "resource/gfx/light_bg.png");
-	gLight.loadFromFile(gRenderer, "resource/gfx/light.png");
+	gPoof.loadFromFile(gRenderer, "resource/gfx/poof.png");
+	gBG.loadFromFile(gRenderer, "resource/gfx/credits-bg.png");
+	gBG2.loadFromFile(gRenderer, "resource/gfx/credits-bg-2.png");
 	gDialogueBox.loadFromFile(gRenderer, "resource/gfx/dialogue-box.png");
 	gTargetTexture.createBlank( gRenderer, screenWidth, screenHeight, SDL_TEXTUREACCESS_TARGET );
 	sTyping = Mix_LoadWAV("sounds/snd_typing.wav");
 	Mix_VolumeChunk(sTyping, 30);
+
+	for (int i=0; i<7; i++) {
+		rPoof[i] = {0+i*8, 0, 8, 8};
+	}
 
 	// Events
 	SDL_Event event;
@@ -87,6 +97,21 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 	rate = 20;
 	letters = 0;
 
+
+	// Load Credits.txt into a vector
+	// this will make it so we can save CPU
+	// while only rendering a few lines at a time
+	wholeText.clear();
+	std::ifstream infile("CREDITS.txt");
+	std::string line;
+    while (std::getline(infile, line)) {
+    	wholeText.push_back(line);
+    }
+    slideIndex = 0;
+
+
+
+
 	// While loop
 	while (!quit) {
 
@@ -125,72 +150,46 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 
 			// Controller button down
 			if (event.type == SDL_JOYBUTTONDOWN){
-				// if dialogue did not complete, render the rest of the dialogue before going to the next one
-				if (letters < dialogue[dialogueIndex].size()) {
-					// Clear dialogue
-					dialogueToRender.str(std::string());
-					// Get max length for current dialogue
-					letters = dialogue[dialogueIndex].size();
-					// Get current dialogue for rendering
-					dialogueToRender << dialogue[dialogueIndex];
-				}
-				// Go to next dialogue
-				else{
-					if (dialogueIndex < dialogue.size()-1) {
-						letters = 0;
-						dialogueToRender.str(std::string());
-						dialogueIndex++;
-					}else{
-						showDialogue = false;
-						levelToLoad = 1;
-						result = StartGame;
-						return;
-					}
-				}
+
 			}
 
 			// Key Pressed
 			if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
 				switch (event.key.keysym.sym) {
+				case SDLK_UP:						// reset test-room
+					holdUp = true;
+					if (slideIndex > 0) {
+						slideIndex--;
+					}
+					break;
+				case SDLK_DOWN:						// reset test-room
+					holdDown = true;
+					if (slideIndex < wholeText.size()-45) {
+						slideIndex++;
+					}
+					break;
+				case SDLK_w:						// reset test-room
+					holdUp = true;
+					if (slideIndex > 0) {
+						slideIndex--;
+					}
+					break;
+				case SDLK_s:						// reset test-room
+					holdDown = true;
+					if (slideIndex < wholeText.size()-45) {
+						slideIndex++;
+					}
+					break;
 				case SDLK_r:						// reset test-room
-					showDialogue = true;
-					dialogueIndex = 0;
-					timer = 0;
-					rate = 20;
-					letters = 0;
-					dialogueToRender.str(std::string());
+
 					break;
 				case SDLK_q:
-					SDL_ShowCursor(SDL_TRUE);
+					//SDL_ShowCursor(SDL_TRUE);
 					break;
 				case SDLK_e:
-					SDL_ShowCursor(SDL_FALSE);
+					//SDL_ShowCursor(SDL_FALSE);
 					break;
 				case SDLK_RETURN:				// Cycle through dialogue
-
-					// if dialogue did not complete, render the rest of the dialogue before going to the next one
-					if (letters < dialogue[dialogueIndex].size()) {
-						// Clear dialogue
-						dialogueToRender.str(std::string());
-						// Get max length for current dialogue
-						letters = dialogue[dialogueIndex].size();
-						// Get current dialogue for rendering
-						dialogueToRender << dialogue[dialogueIndex];
-					}
-					// Go to next dialogue
-					else{
-						if (dialogueIndex < dialogue.size()-1) {
-							letters = 0;
-							dialogueToRender.str(std::string());
-							dialogueIndex++;
-						}else{
-							showDialogue = false;
-							levelToLoad = 1;
-							result = StartGame;
-							return;
-						}
-					}
-
 					break;
 				case SDLK_ESCAPE:
 					result = Back;
@@ -200,34 +199,27 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 			// Key Released
 			else if (event.type == SDL_KEYUP && event.key.repeat == 0) {
 				switch (event.key.keysym.sym) {
-				case SDLK_e:
+				case SDLK_UP:
+					holdUp = false;
+					holdTimer = 0;
+					break;
+				case SDLK_DOWN:
+					holdDown = false;
+					holdTimer = 0;
+					break;
+				case SDLK_w:
+					holdUp = false;
+					holdTimer = 0;
+					break;
+				case SDLK_s:
+					holdDown = false;
+					holdTimer = 0;
 					break;
 				}
 			}
 			// Mouse Pressed
 			if (event.type == SDL_MOUSEBUTTONDOWN) {
-				// if dialogue did not complete, render the rest of the dialogue before going to the next one
-				if (letters < dialogue[dialogueIndex].size()) {
-					// Clear dialogue
-					dialogueToRender.str(std::string());
-					// Get max length for current dialogue
-					letters = dialogue[dialogueIndex].size();
-					// Get current dialogue for rendering
-					dialogueToRender << dialogue[dialogueIndex];
-				}
-				// Go to next dialogue
-				else{
-					if (dialogueIndex < dialogue.size()-1) {
-						letters = 0;
-						dialogueToRender.str(std::string());
-						dialogueIndex++;
-					}else{
-						showDialogue = false;
-						levelToLoad = 1;
-						result = StartGame;
-						return;
-					}
-				}
+				poofs.push_back( Poof(mx-4, my-4) );
 				if (event.button.button == SDL_BUTTON_LEFT) {
 					/*part.spawnParticleAngle(particle, "none", 3,
 							mx - 4/2,
@@ -254,7 +246,23 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 
 				}
 			}
+
+		     if(event.wheel.y == 1) // scroll up
+		     {
+					if (slideIndex > 0) {
+						slideIndex--;
+					}
+		     }
+		     else if(event.wheel.y == -1) // scroll down
+		     {
+					if (slideIndex < wholeText.size()-45) {
+						slideIndex++;
+					}
+		     }
 		}
+
+		// update joystick
+		updateJoystick(gRenderer, gWindow, &event, result);
 
 		// Customize Character results
 		switch (result)  {
@@ -267,6 +275,25 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 			case Exit:			// Exit
 				quit = true;
 				break;
+		}
+
+		if (holdUp) {
+			holdTimer++;
+			if (holdTimer > 21) {
+				holdTimer = 21;
+				if (slideIndex > 0) {
+					slideIndex--;
+				}
+			}
+		}
+		if (holdDown) {
+			holdTimer++;
+			if (holdTimer > 21) {
+				holdTimer = 21;
+				if (slideIndex < wholeText.size()-45) {
+					slideIndex++;
+				}
+			}
 		}
 
 		// Indicator animation
@@ -288,6 +315,31 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 		part.Update(particle, 0, 0, room.w, room.h, 0, 0, 100, 100);
 		part.updateStarParticles(particle, 0, 0, room.w, room.h);
 		part.updateBulletParticles(particle, 0, 0, room.w, room.h);
+
+		if (poofs.size() < maxPoofs) {
+			timer += 3;
+			if (timer > 60) {
+				timer = 0;
+				float x =  randDouble(0, screenWidth-8);
+				float y =  randDouble(0, screenHeight-8);
+				poofs.push_back( Poof(x, y) );
+			}
+		}
+
+		// update poofs
+		for (unsigned int i=0; i<poofs.size(); i++) {
+			// do timer for poofs
+			poofs[i].timer += 11;
+			if (poofs[i].timer > 60) {
+				poofs[i].timer = 0;
+				poofs[i].frame++;
+				if (poofs[i].frame > 6) {
+					poofs[i].frame = 0;
+					// expired poofs
+					poofs.erase(poofs.begin()+i);
+				}
+			}
+		}
 
 		////////////////////////////////////////////////////////////////////////////////////////////////
 		////////////////////////////////////////////////////////////////////////////////////////////////
@@ -346,8 +398,41 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 			// Render sceene
 			//gTargetTexture.setBlendMode(SDL_BLENDMODE_MOD);
 			gTargetTexture.render( gRenderer, 0, 0, screenWidth, screenHeight);
+			gBG.render( gRenderer, 0, 0, screenWidth, screenHeight);
 
-			if (showDialogue) {
+			// render "stars"
+			for (unsigned int i=0; i<poofs.size(); i++) {
+				gPoof.render( gRenderer, poofs[i].x, poofs[i].y, 8, 8, &rPoof[poofs[i].frame] );
+			}
+			gBG2.setAlpha(170);
+			gBG2.render( gRenderer, 0, 0, screenWidth, screenHeight);
+
+			// Render credits text
+			for (unsigned int i=0+slideIndex; i<45+slideIndex; i++) {
+		    	gText.loadFromRenderedText(gRenderer, wholeText[i].c_str(), {255,255,255}, gFont, 2000);
+				int newWidth = gText.getWidth()/10;
+				int newHeight = gText.getHeight()/8;
+		    	gText.render(gRenderer, 5, 5+(       (i-slideIndex)   *   (newHeight+1)           ), newWidth, newHeight);
+			}
+
+
+			float x = 0+4;
+			float y = screenHeight-24 - 8;
+
+			/*renderDialogText(gRenderer, "Credits",
+							 "Thank you for playing my game, I hope you liked it. \nPress Escape to return to the Main Menu.", indicator.c_str(),
+						     x, y, 21, 24,
+						     x, y, screenWidth-8, 24,
+						     {255,255,255}, {255,255,255},
+						     {18,18,18}, {60,200,40},
+						     {18,18,18}, {60,200,40},
+						     gFont, gFont, gText,
+							 1000,  true);*/
+
+
+
+
+			/*if (showDialogue) {
 				if ( letters < dialogue[dialogueIndex].size() ) {
 					timer += rate;
 					if (timer > 60) {
@@ -366,9 +451,9 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 				//gDialogueBox.render(gRenderer, x, y - 9 - 2, 50, 9);
 				//gDialogueBox.render(gRenderer, x, y, 262, 24);
 
-				renderDialogText(gRenderer, "Genia",
+				renderDialogText(gRenderer, "Jacky The Jacker",
 								 temps.c_str(), indicator.c_str(),
-							     x, y, 21, 26,
+							     x, y, 21, 24,
 							     x, y, screenWidth-8, 24,
 							     {255,255,255}, {255,255,255},
 							     {18,18,18}, {200,100,250},
@@ -376,7 +461,7 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 							     gFont, gFont, gText,
 								 1000,  true);
 
-			}
+			}*/
 
 		// Update screen
 		SDL_RenderPresent(gRenderer);
@@ -391,16 +476,196 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 	free();
 }
 
-void TestRoom::free() {
+void Credits::free() {
 	// Free resources
 	TTF_CloseFont(gFont);
 	gFont = NULL;
 	gText.free();
-	gLightBG.free();
-	gLight.free();
+	gBG.free();
+	gBG2.free();
 	gTexture.free();
 	gTargetTexture.free();
 	gDialogueBox.free();
 	Mix_FreeChunk(sTyping);
 	sTyping 		= NULL;
+	gPoof.free();
+}
+
+
+
+void Credits::updateJoystick(SDL_Renderer *gRenderer, LWindow &gWindow, SDL_Event *e, Credits::CreditsResult &result) {
+	////////////////// Xbox 360 Controls /////////////
+	if (e->type == SDL_CONTROLLERAXISMOTION) {
+		//controls = 1;
+	}
+	/* Xbox 360 Controls */
+	// Left Analog
+	if ( ((SDL_JoystickGetAxis(joy, 0) < -8000) || (SDL_JoystickGetAxis(joy, 0) > 8000)) ||
+		 ((SDL_JoystickGetAxis(joy, 1) < -8000) || (SDL_JoystickGetAxis(joy, 1) > 8000)) ){
+		LAngle = atan2(SDL_JoystickGetAxis(joy, 1), SDL_JoystickGetAxis(joy, 0)) * ( 180.0 / M_PI );
+	}
+	// Right Analog
+	if ( ((SDL_JoystickGetAxis(joy, 3) < -8000) || (SDL_JoystickGetAxis(joy, 3) > 8000)) ||
+		 ((SDL_JoystickGetAxis(joy, 4) < -8000) || (SDL_JoystickGetAxis(joy, 4) > 8000)) ){
+		RAngle = atan2(SDL_JoystickGetAxis(joy, 4), SDL_JoystickGetAxis(joy, 3)) * ( 180.0 / M_PI );
+	}
+	if (LAngle < 0) { LAngle = 360 - (-LAngle); }
+	if (RAngle < 0) { RAngle = 360 - (-RAngle); }
+
+	//// Left Analog/////
+	// Move left, x-axis
+	if (SDL_JoystickGetAxis(joy, 0) < -JOYSTICK_DEAD_ZONE){
+		if (!RAnalogTrigger) {
+			RAnalogTrigger = true;
+		}
+	}
+	// Move right, x-axis
+	else if (SDL_JoystickGetAxis(joy, 0) > JOYSTICK_DEAD_ZONE){
+		if (!RAnalogTrigger) {
+			RAnalogTrigger = true;
+		}
+	}else{
+		RAnalogTrigger = false;
+	}
+	// joy range between -500 and 500, no moving
+	if (SDL_JoystickGetAxis(joy, 0)/30 >= -500 && SDL_JoystickGetAxis(joy, 0)/30 <= 500){
+		//
+	}
+	// Move up, y-axis
+	if (SDL_JoystickGetAxis(joy, 1) < -JOYSTICK_DEAD_ZONE){
+		if (!LAnalogTrigger) {
+			LAnalogTrigger = true;
+		}
+		if (slideIndex > 0) {
+			slideIndex--;
+		}
+	}
+	// Move down, y-axis
+	else if (SDL_JoystickGetAxis(joy, 1) > JOYSTICK_DEAD_ZONE){
+		if (!LAnalogTrigger) {
+			LAnalogTrigger = true;
+		}
+		if (slideIndex < wholeText.size()-45) {
+			slideIndex++;
+		}
+	}else{
+		LAnalogTrigger = false;
+	}
+	// joy range between -500 and 500, no moving
+	if (SDL_JoystickGetAxis(joy, 1)/30 >= -500 && SDL_JoystickGetAxis(joy, 1)/30 <= 500){
+		//
+	}
+
+	//// Right Analog/////
+	// Face left, x-axis
+	if (SDL_JoystickGetAxis(joy, 3)/30 < -500){
+	//	moveLeft = true;
+	}
+	// Face right, x-axis
+	if (SDL_JoystickGetAxis(joy, 3)/30 > 500){
+	//	moveRight = true;
+	}
+	// Face up, y-axis
+	if (SDL_JoystickGetAxis(joy, 4)/30 < -500){
+	//	moveUp = true;
+	}
+	// Face down, y-axis
+	if (SDL_JoystickGetAxis(joy, 4)/30 > 500){
+	//	moveDown = true;
+	}
+
+	//// Triggers Analog/////
+	// Left Trigger
+	if (SDL_JoystickGetAxis(joy, 2) > -LTRIGGER_DEAD_ZONE){
+		//
+	}
+	// Right Trigger
+	if (SDL_JoystickGetAxis(joy, 5) > -RTRIGGER_DEAD_ZONE){
+		//
+	}
+	//// DPAD Triggers ////
+	if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_UP) {
+		if (slideIndex > 0) {
+			slideIndex--;
+		}
+	}
+	if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_DOWN) {
+		if (slideIndex < wholeText.size()-45) {
+			slideIndex++;
+		}
+	}
+	if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_LEFT) {
+	}
+	if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_RIGHT) {
+	}
+
+	if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_LEFTUP) {
+		//
+	}
+	else if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_RIGHTUP) {
+		//
+	}
+	else if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_LEFTDOWN) {
+		//
+	}
+	else if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_RIGHTDOWN) {
+		//
+	}
+
+	// Xbox 360 Controls
+	if (e->type == SDL_JOYBUTTONDOWN && e->jbutton.state == SDL_PRESSED && e->jbutton.which == 0){
+		switch(e->jbutton.button){
+		case SDL_CONTROLLER_BUTTON_DPAD_UP:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_A:
+			A = true;
+			break;
+		case SDL_CONTROLLER_BUTTON_B:
+			result = Back;
+			break;
+		case SDL_CONTROLLER_BUTTON_X:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_Y:
+			//
+			break;
+		}
+	}else if (e->type == SDL_JOYBUTTONUP && e->jbutton.state == SDL_RELEASED && e->jbutton.which == 0){
+		switch(e->jbutton.button){
+		case SDL_CONTROLLER_BUTTON_DPAD_UP:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_A:
+			A = false;
+			break;
+		case SDL_CONTROLLER_BUTTON_B:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_X:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_Y:
+			//
+			break;
+		}
+	}
 }

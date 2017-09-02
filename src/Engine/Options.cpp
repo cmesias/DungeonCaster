@@ -10,6 +10,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <math.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -20,12 +21,12 @@
 //			  After coding of Options Menu, the goal is to remove the Pause.cpp class.
 
 void Options::LoadAudioFiles() {
+	sRelaxingInterlude = Mix_LoadMUS("sounds/Pant0don/Relaxing Interlude.mp3");
 	sAmbientMusic = Mix_LoadMUS("sounds/Menu Music.mp3");
 	sStrangeMusic = Mix_LoadMUS("sounds/Strange Dungeon.mp3");
 	sElement = Mix_LoadMUS("sounds/Trevor Lentz/Pixel River.mp3");
 	sRockBreak = Mix_LoadWAV("sounds/rock_break.wav");
 	sLazer = Mix_LoadWAV("sounds/snd_spell_fire.wav");
-	sAtariBoom = Mix_LoadWAV("sounds/atari_boom.wav");
 	sGrenade = Mix_LoadWAV("sounds/snd_grenade.wav");
 	sSpellExplode = Mix_LoadWAV("sounds/snd_hitting_wall.wav");
 	sGrenadePickup = Mix_LoadWAV("sounds/snd_grenade_pickup.wav");
@@ -41,10 +42,10 @@ void Options::LoadAudioFiles() {
 void Options::FreeAudioFiles() {
 	Mix_FreeChunk(sRockBreak);
 	Mix_FreeChunk(sLazer);
+	Mix_FreeMusic(sRelaxingInterlude);
 	Mix_FreeMusic(sAmbientMusic);
 	Mix_FreeMusic(sStrangeMusic);
 	Mix_FreeMusic(sElement);
-	Mix_FreeChunk(sAtariBoom);
 	Mix_FreeChunk(sGrenade);
 	Mix_FreeChunk(sSpellExplode);
 	Mix_FreeChunk(sGrenadePickup);
@@ -55,8 +56,8 @@ void Options::FreeAudioFiles() {
 	Mix_FreeChunk(sDrinkMana);
 	Mix_FreeChunk(sDrinkHealth);
 	sRockBreak 		= NULL;
-	sAtariBoom 		= NULL;
 	sLazer 			= NULL;
+	sRelaxingInterlude = NULL;
 	sAmbientMusic 	= NULL;
 	sStrangeMusic 	= NULL;
 	sElement 		= NULL;
@@ -178,7 +179,6 @@ void Options::applyCustomAudioCFG(int MUSIC_VOL, int SFX_VOL) {
 	Mix_VolumeMusic(MUSIC_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sRockBreak, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sLazer, SFX_VOL*(MASTER_VOL*0.01));
-	Mix_VolumeChunk(sAtariBoom, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sGrenade, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sSpellExplode, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sGrenadePickup, SFX_VOL*(MASTER_VOL*0.01));
@@ -197,7 +197,6 @@ void Options::applyOldAudioCFG() {
 	Mix_VolumeMusic(MUSIC_VOL);
 	Mix_VolumeChunk(sRockBreak, SFX_VOL);
 	Mix_VolumeChunk(sLazer, 	SFX_VOL);
-	Mix_VolumeChunk(sAtariBoom, SFX_VOL);
 	Mix_VolumeChunk(sGrenade, SFX_VOL);
 	Mix_VolumeChunk(sSpellExplode, SFX_VOL);
 	Mix_VolumeChunk(sGrenadePickup, SFX_VOL);
@@ -216,7 +215,6 @@ void Options::applyMasterAudioCFG() {
 	Mix_VolumeMusic(MUSIC_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sRockBreak, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sLazer, SFX_VOL*(MASTER_VOL*0.01));
-	Mix_VolumeChunk(sAtariBoom, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sGrenade, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sSpellExplode, SFX_VOL*(MASTER_VOL*0.01));
 	Mix_VolumeChunk(sGrenadePickup, SFX_VOL*(MASTER_VOL*0.01));
@@ -234,6 +232,8 @@ void Options::applyMasterAudioCFG() {
 //Get's input from user and returns it
 void Options::start(LWindow &gWindow, SDL_Renderer *gRenderer)
 {
+	SDL_Event e;
+
 	// Create title bar names
 	au.init(bar);
 	au.create(bar, "MASTER VOLUME");
@@ -247,7 +247,7 @@ void Options::start(LWindow &gWindow, SDL_Renderer *gRenderer)
 	// Reset upon entering
 	for (int i=0; i<5; i++) {mouseTitle[i] = false;}
 	title[0].name 		= "RESUME";
-	title[1].name 		= "HOW TO PLAY";
+	title[1].name 		= "TBA";
 	title[2].name 		= "SETTINGS";
 	title[3].name 		= "EXIT MAIN MENU";
 	title[4].name 		= "EXIT TO DESKTOP";
@@ -262,8 +262,15 @@ void Options::start(LWindow &gWindow, SDL_Renderer *gRenderer)
 	confirmMouse[0]		= false;
 	confirmMouse[1]		= false;
 	confirm				= false;
+	confirmKey			= false;
+	A					= false;
+	LAnalogTrigger		= false;
+	RAnalogTrigger		= false;
+	focusedOther		= false;
 	//timer				= revertSettingsTimer;
 	timer				= revertSettingsTimer;
+	indexX				= 0;
+	indexOther = 0;
 	//frame 				= 0;
 	//SDL_ShowCursor(true);
 
@@ -297,15 +304,15 @@ void Options::start(LWindow &gWindow, SDL_Renderer *gRenderer)
 
 		// Apply Bar button
 		applyButton[0].w = barWidth;
-		applyButton[0].h = barHeight;
-		applyButton[0].x = 5;
-		applyButton[0].y = helper.screenHeight-applyButton[0].h;
+		applyButton[0].h = barHeight/2;
+		applyButton[0].x = 270/2 - barWidth/2;
+		applyButton[0].y = helper.screenHeight-applyButton[0].h*2 - 3 - 2;
 
 		// Apply Video button
 		applyButton[1].w = barWidth;
-		applyButton[1].h = barHeight;
-		applyButton[1].x = 5 + barWidth + 4;
-		applyButton[1].y = helper.screenHeight-applyButton[1].h;
+		applyButton[1].h = barHeight/2;
+		applyButton[1].x = 270/2 - barWidth/2;
+		applyButton[1].y = helper.screenHeight-applyButton[1].h - 3;
 
 		// Get mouse coordinates
 		SDL_GetMouseState(&mx, &my);
@@ -331,6 +338,15 @@ void Options::start(LWindow &gWindow, SDL_Renderer *gRenderer)
 				pauseLoop 	= false;
 				//gameLoop 	= false;
 				//selection 	= -1;
+			}
+
+			// switch key if controller moved
+			if (e.type == SDL_JOYAXISMOTION) {
+				key = 0;
+			}
+			// Controller button down
+			if (e.type == SDL_JOYBUTTONDOWN){
+				key = 0;
 			}
 
 			//Handle window events
@@ -372,6 +388,8 @@ void Options::start(LWindow &gWindow, SDL_Renderer *gRenderer)
 			if (e.type == SDL_MOUSEMOTION) {
 				key = 1;
 			}
+			// Get title index from keyboard or xbox controller
+			updateJoystick(gRenderer, gWindow, &e);
 		}
 
 		// Update
@@ -380,7 +398,10 @@ void Options::start(LWindow &gWindow, SDL_Renderer *gRenderer)
 
 		for (int i=0; i<5; i++) {
 			if (helper.checkCollision(mx, my, 1, 1, title[i].x-3, title[i].y-3, title[i].w+3, title[i].h+3)) {
-				mouseTitle[i] = true; }else{ mouseTitle[i] = false;
+				mouseTitle[i] = true;
+				index=i;
+			}else{
+				mouseTitle[i] = false;
 			}
 		}
 
@@ -396,6 +417,13 @@ void Options::start(LWindow &gWindow, SDL_Renderer *gRenderer)
 
 		// Update Particles
 		//part.updateStarParticles(particle, 0, 0, helper.screenWidth, helper.screenHeight);
+
+		// if confirm button appeared, change max to 3 so we can go to the keep/revert buttons
+		if (confirm) {
+			maxIndexX = 3;
+		}else {
+			maxIndexX = 1;
+		}
 
 		// Clear screen
 		SDL_SetRenderDrawColor(gRenderer, 0, 0, 0, 255);
@@ -828,20 +856,116 @@ std::string Options::GetInput(LWindow &gWindow, SDL_Renderer *gRenderer, bool &m
 // Key Pressed
 void Options::OnKeyDown(SDL_Keycode sym) {
 	switch (sym) {
+	case SDLK_RETURN:
+		confirmKey = true;
+		if (type == 2) {
+			if (focusedOther) {					// if we are currently focused on a Bar item
+				focusedOther = false;			// stop focus
+			}
+
+			// if we are not focused on a Bar item
+			else {
+				// If we are in the Bar selecting index (indexX == 1), focus on that bar
+				if (indexX == 1) {
+					focusedOther = true;
+				}
+			}
+		}
+		break;
+	case SDLK_LEFT:
+		if (type == 2) {
+			if (!focusedOther) {
+				if (indexX > 0) {
+					indexX -= 1;				// change indexX
+				}
+			}
+			minusValues();						// change values in type==2 (volume sliders/resolutions
+		}
+		break;
+	case SDLK_RIGHT:
+		if (type == 2) {
+			if (!focusedOther) {
+				if (indexX < maxIndexX) {
+					indexX += 1;				// change indexX
+				}
+			}
+			addValues();						// change values in type==2 (volume sliders/resolutions
+		}
+		break;
+	case SDLK_a:
+		if (type == 2) {
+			if (!focusedOther) {
+				if (indexX > 0) {
+					indexX -= 1;				// change indexX
+				}
+			}
+			minusValues();						// change values in type==2 (volume sliders/resolutions
+		}
+		break;
+	case SDLK_d:
+		if (type == 2) {
+			if (!focusedOther) {
+				if (indexX < maxIndexX) {
+					indexX += 1;				// change indexX
+				}
+			}
+			addValues();						// change values in type==2 (volume sliders/resolutions
+		}
+		break;
 	case SDLK_UP:
-		if (index > 0) {
-			index -= 1;
+		if (indexX == 0) {
+			if (index > 0) {
+				index -= 1;
+			}
+		}else if (indexX == 1 && !focusedOther) {
+			if (indexOther > 0) {
+				indexOther -= 1;
+			}
 		}
 		break;
 	case SDLK_DOWN:
-		int typeShown;
-		if (type==0) {
-			typeShown=4;
-		}else if (type==2) {
-			typeShown=2;
+		if (indexX == 0) {
+			int typeShown;
+			if (type==0) {
+				typeShown=4;
+			}else if (type==2) {
+				typeShown=2;
+			}
+			if (index < typeShown) {
+				index += 1;
+			}
+		}else if (indexX == 1 && !focusedOther) {
+			if (indexOther < maxIndexOther) {
+				indexOther += 1;
+			}
 		}
-		if (index < typeShown) {
-			index += 1;
+		break;;
+	case SDLK_w:
+		if (indexX == 0) {
+			if (index > 0) {
+				index -= 1;
+			}
+		}else if (indexX == 1 && !focusedOther) {
+			if (indexOther > 0) {
+				indexOther -= 1;
+			}
+		}
+		break;
+	case SDLK_s:
+		if (indexX == 0) {
+			int typeShown;
+			if (type==0) {
+				typeShown=4;
+			}else if (type==2) {
+				typeShown=2;
+			}
+			if (index < typeShown) {
+				index += 1;
+			}
+		}else if (indexX == 1 && !focusedOther) {
+			if (indexOther < maxIndexOther) {
+				indexOther += 1;
+			}
 		}
 		break;
 	}
@@ -850,58 +974,60 @@ void Options::OnKeyDown(SDL_Keycode sym) {
 void Options::OnKeyUp(SDL_Keycode sym) {
 	switch (sym) {
 	case SDLK_RETURN:
-		// PauseMenu
-		if (type==0)
-		{
-			if (index==0) {
-				pauseLoop 		= false;
-			}
-			// Enter Settings
-			else if (index==2) {
-				// Change type
-				type = 2;
+		confirmKey = false;
+		if (indexX == 0) {
+			// PauseMenu
+			if (type==0) {
+				if (index==0) {
+					pauseLoop 		= false;
+				}
+				// Enter Settings
+				else if (index==2) {
+					// Change type
+					type = 2;
 
-				// Change options
-				title[0].name = "AUDIO";
-				title[1].name = "VIDEO";
-				title[2].name = "BACK";
-				/*title[2].name = "CONTROLLER";
-				title[3].name = "MOUSE AND KEYBOARD";
-				title[4].name = "BACK";*/
-				HIGHLIGHT_INDEX = -1;
+					// Change options
+					title[0].name = "AUDIO";
+					title[1].name = "VIDEO";
+					title[2].name = "BACK";
+					/*title[2].name = "CONTROLLER";
+					title[3].name = "MOUSE AND KEYBOARD";
+					title[4].name = "BACK";*/
+					HIGHLIGHT_INDEX = -1;
+				}
+				// Exit To Main Menu
+				else if (index==3) {
+					optionsResult	= Back;
+					pauseLoop 		= false;
+					//gameLoop 		= false;
+					//selection 	= 0;
+				}
+				// Exit To Desktop
+				else if (index==4) {
+					optionsResult	= Exit;
+					pauseLoop 		= false;
+					//gameLoop 	= false;
+					//selection = -1;
+				}
 			}
-			// Exit To Main Menu
-			else if (index==3) {
-				optionsResult	= Back;
-				pauseLoop 		= false;
-				//gameLoop 		= false;
-				//selection 	= 0;
-			}
-			// Exit To Desktop
-			else if (index==4) {
-				optionsResult	= Exit;
-				pauseLoop 		= false;
-				//gameLoop 	= false;
-				//selection = -1;
-			}
-		}
-		// SubMenu
-		else if (type==2) {
-			if (index==0) {
-				HIGHLIGHT_INDEX = 0;
-			}else if (index==1) {
-				HIGHLIGHT_INDEX = 1;
-			}else if (index==2) {
-				// Change type
-				type = 0;
+			// SubMenu
+			else if (type==2) {
+				if (index==0) {
+					HIGHLIGHT_INDEX = 0;
+				}else if (index==1) {
+					HIGHLIGHT_INDEX = 1;
+				}else if (index==2) {
+					// Change type
+					type = 0;
 
-				// Change options
-				title[0].name = "RESUME";
-				title[1].name = "HOW TO PLAY";
-				title[2].name = "SETTINGS";
-				title[3].name = "EXIT MAIN MENU";
-				title[4].name = "EXIT TO DESKTOP";
-				HIGHLIGHT_INDEX = -1;
+					// Change options
+					title[0].name = "RESUME";
+					title[1].name = "TBA";
+					title[2].name = "SETTINGS";
+					title[3].name = "EXIT MAIN MENU";
+					title[4].name = "EXIT TO DESKTOP";
+					HIGHLIGHT_INDEX = -1;
+				}
 			}
 		}
 		break;
@@ -961,7 +1087,7 @@ void Options::mouseReleased(LWindow &gWindow) {
 					type = 0;
 					// Change options
 					title[0].name = "RESUME";
-					title[1].name = "HOW TO PLAY";
+					title[1].name = "TBA";
 					title[2].name = "SETTINGS";
 					title[3].name = "EXIT MAIN MENU";
 					title[4].name = "EXIT TO DESKTOP";
@@ -982,114 +1108,23 @@ void Options::mouseReleased(LWindow &gWindow) {
 	}
 
 	/* Apply Audio Button */
-	if (helper.checkCollision(mx, my, 1, 1, applyButton[0].x, applyButton[0].y, applyButton[0].w, applyButton[0].h))
-	{
-		// Apply new Bar Settings
-		/*Mix_VolumeMusic();
-		// Apply new SFX Bar Settings
-		Mix_VolumeChunk(sRockBreak, 	bar[2].value*(bar[0].value*0.01));
-		Mix_VolumeChunk(sLazer, 		bar[2].value*(bar[0].value*0.01));
-		Mix_VolumeChunk(sAtariBoom, 	bar[2].value*(bar[0].value*0.01));
-		Mix_VolumeChunk(sGrenade, 		bar[2].value*(bar[0].value*0.01));*/
-
-
-		// Apply new Bar Settings and new SFX Bar Settings
-		applyCustomAudioCFG(bar[1].value*(bar[0].value*0.01), bar[2].value*(bar[0].value*0.01));
-		// player preview of new settings
-		Mix_PlayChannel(-1, sLazer, 0);
-		//applyOldAudioCFG();
-
-		// Display confirm prompt
-		confirm			= true;
-		timer 			= revertSettingsTimer;
-		button = "a";
+	if (helper.checkCollision(mx, my, 1, 1, applyButton[0].x, applyButton[0].y, applyButton[0].w, applyButton[0].h)) {
+		actionApplyAudio();
 	}
 
 	/* Apply Video Button */
-	if (helper.checkCollision(mx, my, 1, 1, applyButton[1].x, applyButton[1].y, applyButton[1].w, applyButton[1].h))
-	{
-		// Apply new Video Settings
-		gWindow.applySettings(bar[3].value, bar[4].value, bar[5].value, bar[6].value);
-
-		// Display confirm prompt
-		confirm			= true;
-		timer 			= revertSettingsTimer;
-		button = "v";
+	if (helper.checkCollision(mx, my, 1, 1, applyButton[1].x, applyButton[1].y, applyButton[1].w, applyButton[1].h)) {
+		actionApplyVideo(gWindow);
 	}
 
 	/* Keep Button */
-	if (helper.checkCollision(mx, my, 1, 1, confirmButton[0].x, confirmButton[0].y, confirmButton[0].w, confirmButton[0].h))
-	{
-		// file name .cfg
-		std::string temps;
-
-		// file data
-		std::stringstream tempss;
-
-		// Turn off confirm prompt
-		confirm 		= false;
-		timer 			= revertSettingsTimer;
-
-		// Keep new Audio Settings
-		if (button=="a") {
-			MASTER_VOL		= bar[0].value;
-			MUSIC_VOL		= bar[1].value;
-			SFX_VOL			= bar[2].value;
-			temps = "cfg/audio.cfg";
-			tempss << MASTER_VOL << " "
-				   << MUSIC_VOL  << " "
-				   << SFX_VOL;
-			// Save Audio Settings
-			saveAudioCFG();
-		}
-
-		// Keep new Video Settings
-		if (button=="v") {
-			RESOLUTION		= bar[3].value;
-			ANTI_ALIAS		= bar[4].value;
-			VSYNC			= bar[5].value;
-			FULLSCREEN		= bar[6].value;
-
-			temps = "cfg/video.cfg";
-			tempss << RESOLUTION << " "
-				   << ANTI_ALIAS << " "
-				   << VSYNC 	 << " "
-				   << FULLSCREEN;
-			// Save Video Settings
-			saveVideoCFG();
-		}
-
-		// save .cfg file
-		std::ofstream fileSettings;
-		fileSettings.open( temps.c_str() );
-			fileSettings << tempss.str().c_str();
-		fileSettings.close();
+	if (helper.checkCollision(mx, my, 1, 1, confirmButton[0].x, confirmButton[0].y, confirmButton[0].w, confirmButton[0].h)) {
+		actionKeep();
 	}
 
 	/* Revert Button */
 	if (helper.checkCollision(mx, my, 1, 1, confirmButton[1].x, confirmButton[1].y, confirmButton[1].w, confirmButton[1].h)) {
-		// Turn off confirm prompt
-		confirm 		= false;
-		timer 			= revertSettingsTimer;
-
-		// Revert to old Bar Settings
-		if (button=="a") {
-			applyOldAudioCFG();
-			// player preview of new settings
-			Mix_PlayChannel(-1, sLazer, 0);
-			bar[0].value	= MASTER_VOL;
-			bar[1].value	= MUSIC_VOL;
-			bar[2].value	= SFX_VOL;
-		}
-
-		// Revert to old Video Settings
-		if (button=="v") {
-			bar[3].value	= RESOLUTION;
-			bar[4].value	= ANTI_ALIAS;
-			bar[5].value	= VSYNC;
-			bar[6].value	= FULLSCREEN;
-			gWindow.applySettings(RESOLUTION, ANTI_ALIAS, VSYNC, FULLSCREEN);
-		}
+		actionRevert(gWindow);
 	}
 }
 
@@ -1100,7 +1135,7 @@ void Options::RenderII(LWindow &gWindow, SDL_Renderer *gRenderer) {
 
 	// Welcome text
 	std::stringstream tempss;
-	tempss << "Press F11 for Fullscreen, if Fullscreen has issues.";
+	tempss << "index: " << index << ", indexX: " << indexX << ", indexOther: " << indexOther << ", focusedOther: " << focusedOther;
 	gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont);
 	int newWidth = gText.getWidth()/4;
 	int newHeight = gText.getHeight()/4;
@@ -1120,32 +1155,32 @@ void Options::RenderII(LWindow &gWindow, SDL_Renderer *gRenderer) {
 			std::stringstream tempss;
 			tempss << title[i].name;
 
-			// Determine color
-			if (index==i) {
+			// Set index if selection if over a title item
+			if (((index == i && confirmKey) || (index == i && A)) && indexX == 0) {
+				gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {0,200,0}, gFont);
+			}else if (index == i && indexX == 0) {
 				gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {244,144,20}, gFont);
-			}else{
-				gText.loadFromRenderedText(gRenderer,tempss.str().c_str(), {255,255,255}, gFont);
+			}
+			else{
+				gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont);
 			}
 
 			// Render text
 			title[i].w = gText.getWidth()/4;
 			title[i].h = gText.getHeight()/4;
 			gText.render(gRenderer, title[i].x,title[i].y, title[i].w, title[i].h);
-		}else if (key==1)
-		{
-			// Set index if mouseAudio is over a menu item
-			if (mouseTitle[i]) {
-				index=i;
-			}
+		}else if (key==1) {
 
 			// Get PauseMenu item name
 			std::stringstream tempss;
 			tempss << title[i].name;
-
-			// Determine color
-			if (index==i) {
+			// Set index if mouse if over a title item
+			if (mouseTitle[i] && leftclick) {
+				gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {0,200,0}, gFont);
+			}else if (mouseTitle[i]) {
 				gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {244,144,20}, gFont);
-			}else{
+			}
+			else{
 				gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont);
 			}
 
@@ -1268,12 +1303,12 @@ void Options::RenderII(LWindow &gWindow, SDL_Renderer *gRenderer) {
 			if (bar[j].value==1) {
 				ssF << "On";
 				// Render if it is selected
-				SDL_Rect tempr {bar[j].rect.x, bar[j].rect.y, bar[j].rect.w/2, bar[j].rect.h};
+				SDL_Rect tempr {bar[j].rect.x+bar[j].rect.w/2, bar[j].rect.y, bar[j].rect.w/2, bar[j].rect.h};
 				SDL_SetRenderDrawColor(gRenderer, 55, 55, 55, 155);
 				SDL_RenderFillRect(gRenderer, &tempr);
 			}else if (bar[j].value==0) {
 				ssF << "Off";
-				SDL_Rect tempr {bar[j].rect.x+bar[j].rect.w/2, bar[j].rect.y, bar[j].rect.w/2, bar[j].rect.h};
+				SDL_Rect tempr {bar[j].rect.x, bar[j].rect.y, bar[j].rect.w/2, bar[j].rect.h};
 				SDL_SetRenderDrawColor(gRenderer, 55, 55, 55, 155);
 				SDL_RenderFillRect(gRenderer, &tempr);
 			}
@@ -1294,31 +1329,51 @@ void Options::RenderII(LWindow &gWindow, SDL_Renderer *gRenderer) {
 
 		// Applies to all PauseMenu text
 		for (int i=0; i<barMax; i++) {
-			// Mouse on PauseMenu text
-			if (bar[i].mouse) {
-				SDL_SetRenderDrawColor(gRenderer, 255, 144, 20, 155);
-				SDL_RenderDrawRect(gRenderer, &bar[i].rect);
-			}
-
 			// PauseMenu option highlighted
 			if (bar[i].highlight) {
-				SDL_Rect tempr {bar[i].rect.x, bar[i].rect.y, bar[i].rect.w, bar[i].rect.h};
+				SDL_Rect tempr {bar[i].rect.x-2, bar[i].rect.y, 2, bar[i].rect.h};
 				SDL_SetRenderDrawColor(gRenderer, 255, 255, 0, 155);
-				SDL_RenderDrawRect(gRenderer, &tempr);
+				SDL_RenderFillRect(gRenderer, &tempr);
+			}
+
+			// If we are using a controller, or a keyboard for selection
+			if (key == 0) {
+				if (indexX == 1) {
+					if (indexOther == i) {
+						if (focusedOther) {
+							SDL_SetRenderDrawColor(gRenderer, 0, 200, 0, 155);
+							SDL_RenderDrawRect(gRenderer, &bar[i].rect);
+						}else{
+							SDL_SetRenderDrawColor(gRenderer, 255, 144, 20, 155);
+							SDL_RenderDrawRect(gRenderer, &bar[i].rect);
+						}
+					}
+				}
+			}
+			// Using mouse for selection
+			else{
+				// Mouse on PauseMenu text
+				if (bar[i].mouse) {
+					SDL_SetRenderDrawColor(gRenderer, 255, 144, 20, 155);
+					SDL_RenderDrawRect(gRenderer, &bar[i].rect);
+				}
 			}
 		}
 
-		/* Render Apply Bar and Video button */
+		/* Render apply audio video buttons */
 		for (int i=0; i<2; i++) {
 			SDL_Rect temprV {applyButton[i].x, applyButton[i].y, applyButton[i].w, applyButton[i].h};
 			// Hover
-			if (applyMouse[i]) {
-				SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 155);
-				if (leftclick) {
-					SDL_SetRenderDrawColor(gRenderer, 0, 125, 0, 155);
-				}
+			if ( ((applyMouse[i] || (indexOther-7) == i) && A) && indexX == 1 ) {
+				SDL_SetRenderDrawColor(gRenderer, 0, 200, 0, 155);
+			}
+			// Hover
+			else if ((applyMouse[i] || (indexOther-7) == i) && indexX == 1 ) {
+				SDL_SetRenderDrawColor(gRenderer, 244, 144, 20, 155);
+			}
+
 			// No Hover
-			}else if (!applyMouse[i]) {
+			else if (!applyMouse[i]) {
 				SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 155);
 			}
 			SDL_RenderDrawRect(gRenderer, &temprV);
@@ -1338,16 +1393,16 @@ void Options::RenderII(LWindow &gWindow, SDL_Renderer *gRenderer) {
 		/* Render Keep and Revert prompt */
 		if (confirm) {
 
-			int confirmButtonWidth = 48;
+			int confirmButtonWidth = 40;
 			// Keep button
 			confirmButton[0].w = confirmButtonWidth;
-			confirmButton[0].h = barHeight;
+			confirmButton[0].h = barHeight/2;
 			confirmButton[0].x = helper.screenWidth - confirmButtonWidth*2;
 			confirmButton[0].y = helper.screenHeight - barHeight;
 
 			// Revert button
 			confirmButton[1].w = confirmButtonWidth;
-			confirmButton[1].h = barHeight;
+			confirmButton[1].h = barHeight/2;
 			confirmButton[1].x = helper.screenWidth - confirmButtonWidth;
 			confirmButton[1].y = helper.screenHeight - barHeight;
 
@@ -1398,26 +1453,65 @@ void Options::RenderII(LWindow &gWindow, SDL_Renderer *gRenderer) {
 
 			/* Keep & Revert button */
 			for (int i=0; i<2; i++) {
-				if (confirmMouse[i]) {
-					SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 155);
-					if (leftclick) {
-						SDL_SetRenderDrawColor(gRenderer, 0, 125, 0, 155);
+				// keyboard and controller render
+				if (key == 0) {
+					std::cout << "key0\n";
+					if (indexX == 2 && i == 0) {
+						SDL_SetRenderDrawColor(gRenderer, 244, 144, 20, 155);
+						/*if (!confirmKey) {
+							SDL_SetRenderDrawColor(gRenderer, 244, 144, 20, 155);
+						}else{
+						SDL_SetRenderDrawColor(gRenderer, 0, 200, 0, 155);
+						}*/
 					}
-				// No Hover
-				}else if (!confirmMouse[i]) {
-					SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 155);
+					else if (indexX == 3 && i == 1) {
+						SDL_SetRenderDrawColor(gRenderer, 244, 144, 20, 155);
+						/*if (!confirmKey) {
+							SDL_SetRenderDrawColor(gRenderer, 244, 144, 20, 155);
+						}else{
+							SDL_SetRenderDrawColor(gRenderer, 0, 200, 0, 155);
+						}*/
+					}else{
+						SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 155);
+					}
+
+
+					// Render Keep and Revert buttons as White, no selection
+					SDL_RenderDrawRect(gRenderer, &confirmButton[i]);
+					if (i==0) {
+						gText.loadFromRenderedText(gRenderer, "Keep", {255,255,255}, gFont);
+					}else{
+						gText.loadFromRenderedText(gRenderer, "Revert", {255,255,255}, gFont);
+					}
+					int newWidth = gText.getWidth()/4;
+					int newHeight = gText.getHeight()/4;
+					gText.render(gRenderer, confirmButton[i].x+confirmButton[i].w/2-newWidth/2,
+												 confirmButton[i].y+confirmButton[i].h/2-newHeight/2,
+												 newWidth, newHeight);
 				}
-				SDL_RenderDrawRect(gRenderer, &confirmButton[i]);
-				if (i==0) {
-					gText.loadFromRenderedText(gRenderer, "Keep", {255,255,255}, gFont);
-				}else{
-					gText.loadFromRenderedText(gRenderer, "Revert", {255,255,255}, gFont);
+				// mouse renders
+				else if (key == 1) {
+					if (confirmMouse[i]) {
+						SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 155);
+						if (leftclick) {
+							SDL_SetRenderDrawColor(gRenderer, 0, 125, 0, 155);
+						}
+					// No Hover
+					}else if (!confirmMouse[i]) {
+						SDL_SetRenderDrawColor(gRenderer, 255, 255, 255, 155);
+					}
+					SDL_RenderDrawRect(gRenderer, &confirmButton[i]);
+					if (i==0) {
+						gText.loadFromRenderedText(gRenderer, "Keep", {255,255,255}, gFont);
+					}else{
+						gText.loadFromRenderedText(gRenderer, "Revert", {255,255,255}, gFont);
+					}
+					int newWidth = gText.getWidth()/4;
+					int newHeight = gText.getHeight()/4;
+					gText.render(gRenderer, confirmButton[i].x+confirmButton[i].w/2-newWidth/2,
+												 confirmButton[i].y+confirmButton[i].h/2-newHeight/2,
+												 newWidth, newHeight);
 				}
-				int newWidth = gText.getWidth()/4;
-				int newHeight = gText.getHeight()/4;
-				gText.render(gRenderer, confirmButton[i].x+confirmButton[i].w/2-newWidth/2,
-											 confirmButton[i].y+confirmButton[i].h/2-newHeight/2,
-											 newWidth, newHeight);
 			}
 		}
 	}
@@ -1426,4 +1520,497 @@ void Options::RenderII(LWindow &gWindow, SDL_Renderer *gRenderer) {
 
 void Options::RenderTextII(SDL_Renderer *gRenderer) {
 
+}
+
+void Options::updateJoystick(SDL_Renderer *gRenderer, LWindow &gWindow, SDL_Event *e) {
+	////////////////// Xbox 360 Controls /////////////
+	if (e->type == SDL_CONTROLLERAXISMOTION) {
+		//controls = 1;
+	}
+	/* Xbox 360 Controls */
+	// Left Analog
+	if ( ((SDL_JoystickGetAxis(joy, 0) < -8000) || (SDL_JoystickGetAxis(joy, 0) > 8000)) ||
+		 ((SDL_JoystickGetAxis(joy, 1) < -8000) || (SDL_JoystickGetAxis(joy, 1) > 8000)) ){
+		LAngle = atan2(SDL_JoystickGetAxis(joy, 1), SDL_JoystickGetAxis(joy, 0)) * ( 180.0 / M_PI );
+	}
+	// Right Analog
+	if ( ((SDL_JoystickGetAxis(joy, 3) < -8000) || (SDL_JoystickGetAxis(joy, 3) > 8000)) ||
+		 ((SDL_JoystickGetAxis(joy, 4) < -8000) || (SDL_JoystickGetAxis(joy, 4) > 8000)) ){
+		RAngle = atan2(SDL_JoystickGetAxis(joy, 4), SDL_JoystickGetAxis(joy, 3)) * ( 180.0 / M_PI );
+	}
+	if (LAngle < 0) { LAngle = 360 - (-LAngle); }
+	if (RAngle < 0) { RAngle = 360 - (-RAngle); }
+
+	//// Left Analog/////
+	// Move left, x-axis
+	if (SDL_JoystickGetAxis(joy, 0) < -JOYSTICK_DEAD_ZONE){
+		if (!RAnalogTrigger) {
+			RAnalogTrigger = true;
+			if (type == 2) {
+				if (!focusedOther) {
+					if (indexX > 0) {
+						indexX -= 1;
+					}
+				}
+				minusValues();
+			}
+		}
+	}
+	// Move right, x-axis
+	else if (SDL_JoystickGetAxis(joy, 0) > JOYSTICK_DEAD_ZONE){
+		if (!RAnalogTrigger) {
+			RAnalogTrigger = true;
+			if (type == 2) {
+				if (!focusedOther) {
+					if (indexX < maxIndexX) {
+						indexX += 1;
+					}
+				}
+				addValues();
+			}
+		}
+	}else{
+		RAnalogTrigger = false;
+	}
+	// joy range between -500 and 500, no moving
+	if (SDL_JoystickGetAxis(joy, 0)/30 >= -500 && SDL_JoystickGetAxis(joy, 0)/30 <= 500){
+		//
+	}
+
+	// Move up, y-axis
+	if (SDL_JoystickGetAxis(joy, 1) < -JOYSTICK_DEAD_ZONE){
+		if (!LAnalogTrigger) {
+			LAnalogTrigger = true;
+			if (indexX == 0) {
+				if (index > 0) {
+					index -= 1;
+				}
+			}
+			else if (indexX == 1 && !focusedOther) {
+				if (indexOther > 0) {
+					indexOther -= 1;
+				}
+			}
+		}
+	}
+	// Move down, y-axis
+	else if (SDL_JoystickGetAxis(joy, 1) > JOYSTICK_DEAD_ZONE){
+		if (!LAnalogTrigger) {
+			LAnalogTrigger = true;
+			if (indexX == 0) {
+				int typeShown;
+				if (type==0) {
+					typeShown=4;
+				}else if (type==2) {
+					typeShown=2;
+				}
+				if (index < typeShown) {
+					index += 1;
+				}
+			}
+			else if (indexX == 1 && !focusedOther) {
+				if (indexOther < maxIndexOther) {
+					indexOther += 1;
+				}
+			}
+		}
+	}else{
+		LAnalogTrigger = false;
+	}
+	// joy range between -500 and 500, no moving
+	if (SDL_JoystickGetAxis(joy, 1)/30 >= -500 && SDL_JoystickGetAxis(joy, 1)/30 <= 500){
+		//
+	}
+
+	//// Right Analog/////
+	// Face left, x-axis
+	if (SDL_JoystickGetAxis(joy, 3)/30 < -500){
+	//	moveLeft = true;
+	}
+	// Face right, x-axis
+	if (SDL_JoystickGetAxis(joy, 3)/30 > 500){
+	//	moveRight = true;
+	}
+	// Face up, y-axis
+	if (SDL_JoystickGetAxis(joy, 4)/30 < -500){
+	//	moveUp = true;
+	}
+	// Face down, y-axis
+	if (SDL_JoystickGetAxis(joy, 4)/30 > 500){
+	//	moveDown = true;
+	}
+
+	//// Triggers Analog/////
+	// Left Trigger
+	if (SDL_JoystickGetAxis(joy, 2) > -LTRIGGER_DEAD_ZONE){
+		//
+	}
+	// Right Trigger
+	if (SDL_JoystickGetAxis(joy, 5) > -RTRIGGER_DEAD_ZONE){
+		//
+	}
+	//// DPAD Triggers ////
+	if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_UP) {
+		key = 0;
+		if (indexX == 0) {
+			if (index > 0) {
+				index -= 1;
+			}
+		}
+		else if (indexX == 1 && !focusedOther) {
+			if (indexOther > 0) {
+				indexOther -= 1;
+			}
+		}
+	}
+	if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_DOWN) {
+		key = 0;
+		if (indexX == 0) {
+			int typeShown;
+			if (type==0) {
+				typeShown=4;
+			}else if (type==2) {
+				typeShown=2;
+			}
+
+			// how far the index can go
+			if (index < typeShown) {
+				index += 1;
+			}
+		}
+		else if (indexX == 1 && !focusedOther) {
+			if (indexOther < maxIndexOther) {
+				indexOther += 1;
+			}
+		}
+	}
+	if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_LEFT) {
+		key = 0;
+		if (type == 2) {
+			if (!focusedOther) {
+				if (indexX > 0) {
+					indexX -= 1;
+				}
+			}
+			minusValues();
+		}
+	}
+	if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_RIGHT) {
+		key = 0;
+		if (type == 2) {
+			if (!focusedOther) {
+				if (indexX < maxIndexX) {
+					indexX += 1;
+				}
+			}
+			addValues();
+		}
+	}
+
+	if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_LEFTUP) {
+		//
+	}
+	else if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_RIGHTUP) {
+		//
+	}
+	else if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_LEFTDOWN) {
+		//
+	}
+	else if (SDL_JoystickGetHat(joy, 0) == SDL_HAT_RIGHTDOWN) {
+		//
+	}
+
+	// Xbox 360 Controls
+	if (e->type == SDL_JOYBUTTONDOWN && e->jbutton.state == SDL_PRESSED && e->jbutton.which == 0){
+		key = 0;
+		switch(e->jbutton.button){
+		case SDL_CONTROLLER_BUTTON_DPAD_UP:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_A:
+			A = true;
+			if (indexOther < 7) {
+				if (indexX == 1) {
+					if (focusedOther) {
+						focusedOther = false;
+					}else{
+						focusedOther = true;
+					}
+				}
+			}
+			break;
+		case SDL_CONTROLLER_BUTTON_B:
+			focusedOther = false;
+			break;
+		case SDL_CONTROLLER_BUTTON_X:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_Y:
+			//
+			break;
+		}
+	}else if (e->type == SDL_JOYBUTTONUP && e->jbutton.state == SDL_RELEASED && e->jbutton.which == 0){
+		switch(e->jbutton.button){
+		case SDL_CONTROLLER_BUTTON_DPAD_UP:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_DOWN:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_A:
+			A = false;
+			if (indexX == 0) {
+				// PauseMenu
+				if (type==0)
+				{
+					if (index==0) {
+						pauseLoop 	= false;
+					}
+					// Enter Settings
+					else if (index==2) {
+						// Change type
+						type = 2;
+						// Change options
+						title[0].name = "AUDIO";
+						title[1].name = "VIDEO";
+						title[2].name = "BACK";
+						HIGHLIGHT_INDEX = -1;
+					}
+					// Exit To Main Menu
+					else if (index==3) {
+						optionsResult	= Back;
+						pauseLoop 		= false;
+						//gameLoop 		= false;
+						//selection 	= 0;
+					}
+					// Exit To Desktop
+					else if (index==4) {
+						optionsResult	= Exit;
+						pauseLoop 		= false;
+						//gameLoop 	= false;
+						//selection = -1;
+					}
+				}
+				// SubMenu
+				else if (type==2) {
+					// Press other buttons
+					if (index==0) {
+						HIGHLIGHT_INDEX = 0;
+					}else if (index==1) {
+						HIGHLIGHT_INDEX = 1;
+					}else if (index==2) {
+						// Change type
+						type = 0;
+
+						// Change options
+						title[0].name = "RESUME";
+						title[1].name = "TBA";
+						title[2].name = "SETTINGS";
+						title[3].name = "EXIT MAIN MENU";
+						title[4].name = "EXIT TO DESKTOP";
+						HIGHLIGHT_INDEX = -1;
+					}
+				}
+			}
+			else if (indexX == 1) {
+				if (type==2) {
+					// Press apply buttons
+					if (indexOther==7) {
+						actionApplyAudio();
+					}else if (indexOther==8) {
+						actionApplyVideo(gWindow);
+					}
+				}
+			}
+			else if (indexX == 2) {
+				if (type==2) {
+					actionKeep();
+				}
+			}
+			else if (indexX == 3) {
+				if (type==2) {
+					actionRevert(gWindow);
+				}
+			}
+			break;
+		case SDL_CONTROLLER_BUTTON_B:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_X:
+			//
+			break;
+		case SDL_CONTROLLER_BUTTON_Y:
+			//
+			break;
+		}
+	}
+}
+
+void Options::minusValues() {
+	if (focusedOther) {
+		if (indexOther == 0) {
+			bar[indexOther].value -= 10;
+		}
+		else if (indexOther == 1) {
+			bar[indexOther].value -= 8;
+		}
+		else if (indexOther == 2) {
+			bar[indexOther].value -= 8;
+		}
+		else if (indexOther == 3) {
+			if (bar[indexOther].value > 1) {
+				bar[indexOther].value -= 1;
+			}
+		}
+		else if (indexOther == 4) {
+			bar[indexOther].value -= 1;
+		}
+		else if (indexOther == 5) {
+			bar[indexOther].value -= 1;
+		}
+		else if (indexOther == 6) {
+			bar[indexOther].value -= 1;
+		}
+		// fix going over
+		if (bar[indexOther].value < 0) {
+			bar[indexOther].value = 0;
+		}
+	}
+}
+
+void Options::addValues() {
+	if (focusedOther) {
+		if (indexOther == 0) {
+			bar[indexOther].value += 10;
+			if (bar[indexOther].value > 128) { bar[indexOther].value = 128; }
+		}
+		else if (indexOther == 1) {
+			bar[indexOther].value += 8;
+			if (bar[indexOther].value > 128) { bar[indexOther].value = 128; }
+		}
+		else if (indexOther == 2) {
+			bar[indexOther].value += 8;
+			if (bar[indexOther].value > 128) { bar[indexOther].value = 128; }
+		}
+		else if (indexOther == 3) {
+			bar[indexOther].value += 1;
+			if (bar[indexOther].value > 5) { bar[indexOther].value = 5; }
+		}
+		else if (indexOther == 4) {
+			bar[indexOther].value += 1;
+			if (bar[indexOther].value > 1) { bar[indexOther].value = 1; }
+		}
+		else if (indexOther == 5) {
+			bar[indexOther].value += 1;
+			if (bar[indexOther].value > 1) { bar[indexOther].value = 1; }
+		}
+		else if (indexOther == 6) {
+			bar[indexOther].value += 1;
+			if (bar[indexOther].value > 1) { bar[indexOther].value = 1; }
+		}
+	}
+}
+
+void Options::actionApplyAudio() {
+	// Apply new Bar Settings and new SFX Bar Settings
+	applyCustomAudioCFG(bar[1].value*(bar[0].value*0.01), bar[2].value*(bar[0].value*0.01));
+	// player preview of new settings
+	Mix_PlayChannel(-1, sLazer, 0);
+	// Display confirm prompt
+	confirm			= true;
+	timer 			= revertSettingsTimer;
+	button = "a";
+}
+
+void Options::actionApplyVideo(LWindow &gWindow) {
+	// Apply new Video Settings
+	gWindow.applySettings(bar[3].value, bar[4].value, bar[5].value, bar[6].value);
+	// Display confirm prompt
+	confirm			= true;
+	timer 			= revertSettingsTimer;
+	button = "v";
+}
+
+void Options::actionKeep() {
+	indexX = 1;
+	// file name .cfg
+	std::string temps;
+	// file data
+	std::stringstream tempss;
+	// Turn off confirm prompt
+	confirm 		= false;
+	timer 			= revertSettingsTimer;
+	// Keep new Audio Settings
+	if (button=="a") {
+		MASTER_VOL		= bar[0].value;
+		MUSIC_VOL		= bar[1].value;
+		SFX_VOL			= bar[2].value;
+		temps = "cfg/audio.cfg";
+		tempss << MASTER_VOL << " "
+			   << MUSIC_VOL  << " "
+			   << SFX_VOL;
+		// Save Audio Settings
+		saveAudioCFG();
+	}
+	// Keep new Video Settings
+	if (button=="v") {
+		RESOLUTION		= bar[3].value;
+		ANTI_ALIAS		= bar[4].value;
+		VSYNC			= bar[5].value;
+		FULLSCREEN		= bar[6].value;
+
+		temps = "cfg/video.cfg";
+		tempss << RESOLUTION << " "
+			   << ANTI_ALIAS << " "
+			   << VSYNC 	 << " "
+			   << FULLSCREEN;
+		// Save Video Settings
+		saveVideoCFG();
+	}
+	// save .cfg file
+	std::ofstream fileSettings;
+	fileSettings.open( temps.c_str() );
+		fileSettings << tempss.str().c_str();
+	fileSettings.close();
+}
+
+void Options::actionRevert(LWindow &gWindow) {
+	indexX = 1;
+	// Turn off confirm prompt
+	confirm 		= false;
+	timer 			= revertSettingsTimer;
+
+	// Revert to old Bar Settings
+	if (button=="a") {
+		applyOldAudioCFG();
+		// player preview of new settings
+		Mix_PlayChannel(-1, sLazer, 0);
+		bar[0].value	= MASTER_VOL;
+		bar[1].value	= MUSIC_VOL;
+		bar[2].value	= SFX_VOL;
+	}
+
+	// Revert to old Video Settings
+	if (button=="v") {
+		bar[3].value	= RESOLUTION;
+		bar[4].value	= ANTI_ALIAS;
+		bar[5].value	= VSYNC;
+		bar[6].value	= FULLSCREEN;
+		gWindow.applySettings(RESOLUTION, ANTI_ALIAS, VSYNC, FULLSCREEN);
+	}
 }

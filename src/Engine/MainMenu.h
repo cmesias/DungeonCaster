@@ -8,8 +8,8 @@
 #ifndef MAINMENU_H_
 #define MAINMENU_H_
 
-#include "LTexture.h"
 #include "Helper.h"
+#include "LTexture.h"
 #include "Options.h"
 
 #include <fstream>
@@ -40,8 +40,23 @@ public:
 	// Free resources
 	void Free();
 
+	// Render
 	void Render(SDL_Renderer *gRenderer);
+
 private:
+	SDL_Joystick *joy=NULL;
+
+	// JoyStick controls
+	void updateJoystick(SDL_Renderer *gRenderer, LWindow &gWindow, SDL_Event *e, MainMenu::MenuResult &result);
+
+	bool A;									// XBOX a button
+	bool LAnalogTrigger;					// this will let us use the joystick as a trigger rather than an axis
+	const int JOYSTICK_DEAD_ZONE = 8000;
+	const int LTRIGGER_DEAD_ZONE = 25000;
+	const int RTRIGGER_DEAD_ZONE = 25000;
+	int joyStickID;
+	double LAngle;
+	double RAngle;
 	/* Main Menu items
 	 * 0: New Game
 	 * 1: How To Play

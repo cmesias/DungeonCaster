@@ -171,10 +171,16 @@ public:	// Mutator functions
 	void setTarget(float *newTargetX, float *newTargetY, int newTargetID);
 
 	// Add health
-	void addHealth(float newAmount);
+	void addHealth(float amount);
 
 	// Add mana
-	void addMana(float newAmount);
+	void addMana(float amount);
+
+	// Minus health
+	void minusHealth(float amount);
+
+	// Minus health
+	void minusMana(float amount);
 
 public:	// Accessor functions
 

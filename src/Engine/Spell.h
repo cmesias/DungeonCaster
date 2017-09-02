@@ -538,7 +538,7 @@ public:	// Variables
 	void Blaze() {
 		displayName = "Blaze", type = 3;
 		projectiles = 5, scope = 360.0;
-		occurances = 5;
+		occurances = 21;
 		minSize = 4, maxSize = 4;
 		minSpe = 1.1, maxSpe = 1.1;
 		damage = 13, color = {200,30,20};
@@ -549,19 +549,19 @@ public:	// Variables
 		decay = false, decaySpe = 0.0;
 		trail = false, trailRate = 0.0, trailColor = {200,30,20};
 		trailMinSize = 1, trailMaxSize = 6;
-		manaCost = 45;
+		manaCost = 60;
 		activate = false;
-		increAngle = 0, increAngleMax = 90.0,  rate = 1,
-		maxDuration = 60*1, currentDuration = 60*1,
-		timerBeforeMoving = 60*1+20, goTowardsTarget = false;
-		spawnsAwayFromCaster = true, distanceW = 10, distanceH = 0;
+		increAngle = 0, increAngleMax = 45.0,  rate = 1,
+		maxDuration = 60, currentDuration = 60,
+		timerBeforeMoving = 0, goTowardsTarget = false;
+		spawnsAwayFromCaster = true, distanceW = 0, distanceH = 0;
 		// These are specifically used only by Character.cpp class
 		cooldownTimer = 60; baseCooldown = 60, cooldown = false;
 		_spawnType = Spell::OnMouse;
 		_targetType = Spell::TowardsDefault;
 		incrementing = false, increment = 0, castDelay = 1;
 		playSFXBeforeMoving = false;
-		for (int i = 0; i<=maxDuration; i+= 20){
+		for (int i = 0; i<=maxDuration; i+= 5){
 			frames.push_back(i);
 		}
 		bounces = 0;

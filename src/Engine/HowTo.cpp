@@ -1,5 +1,5 @@
 /*
- * TestRoom.cpp
+ * HowTo.cpp
  *
  *  Created on: Aug 22, 2017
  *      Author: Carl
@@ -12,10 +12,10 @@
 #include <vector>
 #include <SDL2/SDL.h>
 
-#include "TestRoom.h"
+#include "HowTo.h"
 
 
-void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestResult &result, int &levelToLoad) {
+void HowTo::Show(LWindow &gWindow, SDL_Renderer *gRenderer, HowTo::HowToResult &result) {
 
 	// particle
 	static Particle part;
@@ -36,8 +36,7 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 	quit = false;
 	gFont 	= TTF_OpenFont("resource/fonts/PressStart2P.ttf", 18);
 	gTexture.loadFromFile(gRenderer, "resource/gfx/test.png");
-	gLightBG.loadFromFile(gRenderer, "resource/gfx/light_bg.png");
-	gLight.loadFromFile(gRenderer, "resource/gfx/light.png");
+	gHowToPlay.loadFromFile(gRenderer, "resource/gfx/how-to-play.png");
 	gDialogueBox.loadFromFile(gRenderer, "resource/gfx/dialogue-box.png");
 	gTargetTexture.createBlank( gRenderer, screenWidth, screenHeight, SDL_TEXTUREACCESS_TARGET );
 	sTyping = Mix_LoadWAV("sounds/snd_typing.wav");
@@ -125,28 +124,7 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 
 			// Controller button down
 			if (event.type == SDL_JOYBUTTONDOWN){
-				// if dialogue did not complete, render the rest of the dialogue before going to the next one
-				if (letters < dialogue[dialogueIndex].size()) {
-					// Clear dialogue
-					dialogueToRender.str(std::string());
-					// Get max length for current dialogue
-					letters = dialogue[dialogueIndex].size();
-					// Get current dialogue for rendering
-					dialogueToRender << dialogue[dialogueIndex];
-				}
-				// Go to next dialogue
-				else{
-					if (dialogueIndex < dialogue.size()-1) {
-						letters = 0;
-						dialogueToRender.str(std::string());
-						dialogueIndex++;
-					}else{
-						showDialogue = false;
-						levelToLoad = 1;
-						result = StartGame;
-						return;
-					}
-				}
+
 			}
 
 			// Key Pressed
@@ -168,29 +146,6 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 					break;
 				case SDLK_RETURN:				// Cycle through dialogue
 
-					// if dialogue did not complete, render the rest of the dialogue before going to the next one
-					if (letters < dialogue[dialogueIndex].size()) {
-						// Clear dialogue
-						dialogueToRender.str(std::string());
-						// Get max length for current dialogue
-						letters = dialogue[dialogueIndex].size();
-						// Get current dialogue for rendering
-						dialogueToRender << dialogue[dialogueIndex];
-					}
-					// Go to next dialogue
-					else{
-						if (dialogueIndex < dialogue.size()-1) {
-							letters = 0;
-							dialogueToRender.str(std::string());
-							dialogueIndex++;
-						}else{
-							showDialogue = false;
-							levelToLoad = 1;
-							result = StartGame;
-							return;
-						}
-					}
-
 					break;
 				case SDLK_ESCAPE:
 					result = Back;
@@ -206,28 +161,6 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 			}
 			// Mouse Pressed
 			if (event.type == SDL_MOUSEBUTTONDOWN) {
-				// if dialogue did not complete, render the rest of the dialogue before going to the next one
-				if (letters < dialogue[dialogueIndex].size()) {
-					// Clear dialogue
-					dialogueToRender.str(std::string());
-					// Get max length for current dialogue
-					letters = dialogue[dialogueIndex].size();
-					// Get current dialogue for rendering
-					dialogueToRender << dialogue[dialogueIndex];
-				}
-				// Go to next dialogue
-				else{
-					if (dialogueIndex < dialogue.size()-1) {
-						letters = 0;
-						dialogueToRender.str(std::string());
-						dialogueIndex++;
-					}else{
-						showDialogue = false;
-						levelToLoad = 1;
-						result = StartGame;
-						return;
-					}
-				}
 				if (event.button.button == SDL_BUTTON_LEFT) {
 					/*part.spawnParticleAngle(particle, "none", 3,
 							mx - 4/2,
@@ -252,6 +185,13 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 				}
 				if (event.button.button == SDL_BUTTON_RIGHT) {
 
+				}
+			}
+			if (event.type == SDL_JOYBUTTONDOWN && event.jbutton.state == SDL_PRESSED && event.jbutton.which == 0){
+				switch(event.jbutton.button){
+				case SDL_CONTROLLER_BUTTON_B:
+					result = Back;
+					break;
 				}
 			}
 		}
@@ -347,7 +287,10 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 			//gTargetTexture.setBlendMode(SDL_BLENDMODE_MOD);
 			gTargetTexture.render( gRenderer, 0, 0, screenWidth, screenHeight);
 
-			if (showDialogue) {
+			// render instructions picture
+			gHowToPlay.render(gRenderer, 0, 0, screenWidth, screenHeight);
+
+			/*if (showDialogue) {
 				if ( letters < dialogue[dialogueIndex].size() ) {
 					timer += rate;
 					if (timer > 60) {
@@ -366,9 +309,9 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 				//gDialogueBox.render(gRenderer, x, y - 9 - 2, 50, 9);
 				//gDialogueBox.render(gRenderer, x, y, 262, 24);
 
-				renderDialogText(gRenderer, "Genia",
+				renderDialogText(gRenderer, "Jacky The Jacker",
 								 temps.c_str(), indicator.c_str(),
-							     x, y, 21, 26,
+							     x, y, 21, 24,
 							     x, y, screenWidth-8, 24,
 							     {255,255,255}, {255,255,255},
 							     {18,18,18}, {200,100,250},
@@ -376,7 +319,7 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 							     gFont, gFont, gText,
 								 1000,  true);
 
-			}
+			}*/
 
 		// Update screen
 		SDL_RenderPresent(gRenderer);
@@ -391,13 +334,12 @@ void TestRoom::Show(LWindow &gWindow, SDL_Renderer *gRenderer, TestRoom::TestRes
 	free();
 }
 
-void TestRoom::free() {
+void HowTo::free() {
 	// Free resources
 	TTF_CloseFont(gFont);
 	gFont = NULL;
 	gText.free();
-	gLightBG.free();
-	gLight.free();
+	gHowToPlay.free();
 	gTexture.free();
 	gTargetTexture.free();
 	gDialogueBox.free();

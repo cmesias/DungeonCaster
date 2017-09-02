@@ -16,6 +16,9 @@
 #include "Engine/ActSelection.h"
 #include "Engine/PlayGame.h"
 #include "Engine/TestRoom.h"
+#include "Engine/ThankYou.h"
+#include "Engine/Credits.h"
+#include "Engine/HowTo.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -176,6 +179,16 @@ void Game::GameLoop()
 				ShowTestRoom(gWindow, gRenderer, levelToLoad);
 				break;
 			}
+		case Game::ShowingThankYouPage:							// Test Room
+			{
+				ShowThankYouPage(gWindow, gRenderer);
+				break;
+			}
+		case Game::ShowingCredits:							// Test Room
+			{
+				ShowCredits(gWindow, gRenderer);
+				break;
+			}
 		case Game::Exiting:									// Quit
 			{
 				IsExiting();
@@ -188,7 +201,12 @@ void Game::GameLoop()
 			}
 		case Game::CreditScene:								// Test
 			{
-				//
+				ShowCredits(gWindow, gRenderer);
+				break;
+			}
+		case Game::ShowingHowToPlay:								// Test
+			{
+				ShowHowToPlay(gWindow, gRenderer);
 				break;
 			}
 		case Game::Uninitialized:							// Test
@@ -238,17 +256,20 @@ void Game::ShowMenu() {
 		//_gameState = Game::ShowingPlayGame;
 		//_gameState = Game::ShowingActSelection;
 		//_gameState = Game::ShowingCustomizeCharacter;
-		_gameState = Game::ShowingActSelection;
+		//_gameState = Game::ShowingActSelection;
+		_gameState = Game::ShowingTestRoom;
+		//_gameState = Game::ShowingThankYouPage;
+		//_gameState = Game::ShowingPlayGame;
+		//_gameState = Game::ShowingPlayGame;
 		break;
 	case MainMenu::HowToPlay:				// Menu returned 'Load', LoadGame()
-		//_gameState = Game::LoadGameScene;
-		_gameState = Game::ShowingTestRoom;
+		_gameState = Game::ShowingHowToPlay;
 		break;
 	case MainMenu::Options:					// Menu returned 'Options', Options()
 	//	_gameState = Game::OptionScene;
 		break;
 	case MainMenu::Credits:					// Menu returned 'Credits', Credits()
-	//	_gameState = Game::CreditScene;
+		_gameState = Game::CreditScene;
 		break;
 	case MainMenu::Nothing:
 		//
@@ -324,6 +345,9 @@ void Game::ShowPlayGame(int levelToLoad) {
 	// Do something on Main Menu return
 	switch(result)
 	{
+	case PlayGame::ShowingThankYouPage:				// Back (to Main Menu)
+		_gameState = Game::ShowingThankYouPage;
+		break;
 	case PlayGame::Back:				// Back (to Main Menu)
 		_gameState = Game::ShowingMenu;
 		break;
@@ -370,6 +394,92 @@ void Game::ShowTestRoom(LWindow &gWindow, SDL_Renderer *gRenderer, int &levelToL
 		break;
 	}
 }
+
+void Game::ShowThankYouPage(LWindow &gWindow, SDL_Renderer *gRenderer) {
+	// Play Room Music
+	Mix_PlayMusic( sRelaxingInterlude, -1);
+	// Create Main Menu
+	ThankYou thankYou;
+	// Show Main Menu
+	ThankYou::ThankYouResult result;
+	thankYou.Show(gWindow, gRenderer, result);
+	// Do something on Main Menu return
+	switch(result)
+	{
+	case ThankYou::StartGame:			// Start a certain scene/level
+		//
+		break;
+	case ThankYou::Nothing:				// Nothing
+		//
+		break;
+	case ThankYou::Exit:				// Exit Game
+		Mix_HaltMusic();
+		_gameState = Game::Exiting;
+		break;
+	case ThankYou::Back:				// Back
+		Mix_HaltMusic();
+		_gameState = Game::ShowingMenu;
+		break;
+	}
+}
+
+void Game::ShowCredits(LWindow &gWindow, SDL_Renderer *gRenderer) {
+	// Play Room Music
+	Mix_PlayMusic( sRelaxingInterlude, -1);
+	// Create Main Menu
+	Credits credits;
+	// Show Main Menu
+	Credits::CreditsResult result;
+	credits.Show(gWindow, gRenderer, result);
+	// Do something on Main Menu return
+	switch(result)
+	{
+	case Credits::StartGame:			// Start a certain scene/level
+		//
+		break;
+	case Credits::Nothing:				// Nothing
+		//
+		break;
+	case Credits::Exit:				// Exit Game
+		Mix_HaltMusic();
+		_gameState = Game::Exiting;
+		break;
+	case Credits::Back:				// Back
+		Mix_HaltMusic();
+		_gameState = Game::ShowingMenu;
+		break;
+	}
+}
+
+void Game::ShowHowToPlay(LWindow &gWindow, SDL_Renderer *gRenderer) {
+	// Play Room Music
+	Mix_PlayMusic( sRelaxingInterlude, -1);
+	// Create Main Menu
+	HowTo howTo;
+	// Show Main Menu
+	HowTo::HowToResult result;
+	howTo.Show(gWindow, gRenderer, result);
+	// Do something on Main Menu return
+	switch(result)
+	{
+	case HowTo::StartGame:			// Start a certain scene/level
+		//
+		break;
+	case HowTo::Nothing:				// Nothing
+		//
+		break;
+	case HowTo::Exit:				// Exit Game
+		Mix_HaltMusic();
+		_gameState = Game::Exiting;
+		break;
+	case HowTo::Back:				// Back
+		Mix_HaltMusic();
+		_gameState = Game::ShowingMenu;
+		break;
+	}
+}
+
+
 
 
 Game::GameState Game::_gameState = Uninitialized;

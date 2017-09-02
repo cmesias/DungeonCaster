@@ -481,8 +481,8 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Mix
 									// If we are incrementing
 									else{
 									}
-									finalAngle = (monster[i].angle) + h - monster[i].spell[ monster[i].rJ ].scope/2;
 									finalAngle = (monster[i].angle) + h;
+									finalAngle -= monster[i].spell[ monster[i].rJ ].scope/2;
 									finalAngle += monster[i].spell[ monster[i].rJ ].increAngle;
 									finalAngle -= monster[i].spell[ monster[i].rJ ].increAngleMax/2;
 									radians = ( M_PI/180) * (finalAngle);
@@ -763,12 +763,14 @@ void Monster::Update(Monster monster[], Particle &part, Particle particle[], Mix
 			// This is not Monster movement, this is velocity
 			// if the Monster gets knocked backed from another force
 
-			// monster death
-			if (monster[i].health <= 0)
-			{
-				//player.score += 20;
-				monster[i].alive = false;
-				count--;
+			// monster death ( we don't do the Dragon Boss's death here, we do it in PlayGame.cpp
+			if (monster[i].type != 12) {
+				if (monster[i].health <= 0)
+				{
+					//player.score += 20;
+					monster[i].alive = false;
+					count--;
+				}
 			}
 
 			// monster circle collision check with other zombies
@@ -997,7 +999,7 @@ void Monster::RenderGUI(SDL_Renderer *gRenderer, Monster monster[], int camx, in
 	for (int i = 0; i < max; i++) {
 		if (monster[i].alive && monster[i].onScreen){
 			// if monster is being selected by Target
-			if (i == playerIdSelected) {
+			if (i == -1) {
 				SDL_Rect tempRect = {monster[i].x - camx, monster[i].y - camy, 16, 16};
 				SDL_SetRenderDrawColor(gRenderer, 200, 50, 60, 255);
 				SDL_RenderDrawRect(gRenderer, &tempRect);
@@ -1200,10 +1202,10 @@ void Monster::SetSpells(Monster monster[], int i) {
 								0, false) );*/
 
 
-		//monster[i].spell.push_back( Spell("Fire Dance") );
-		//monster[i].spell.push_back( Spell("Fire Blast") );
+		monster[i].spell.push_back( Spell("Fire Dance") );
+		monster[i].spell.push_back( Spell("Fire Blast") );
 		monster[i].spell.push_back( Spell("Ice Blast") );
-		//monster[i].spell.push_back( Spell("Lightning") );
+		monster[i].spell.push_back( Spell("Lightning") );
 
 
 		/*monster[i].spell.push_back( Spell("Fire Blast V", 3,

@@ -44,6 +44,18 @@ void SplashScreen::Show(LWindow &gWindow, SDL_Renderer *gRenderer, SplashScreen:
 
 			// Handle window events
 			gWindow.handleEvent(gRenderer, event);
+			// Controller button down
+			if (event.type == SDL_JOYBUTTONDOWN){
+				if (alpha != 255) {
+					alpha = 255;
+					fadeOut = false;
+					fade = false;
+				}else{
+					result = Play;
+					free();
+					return;
+				}
+			}
 
 			// Key Pressed
 			if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {

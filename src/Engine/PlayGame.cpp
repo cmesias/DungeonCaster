@@ -383,8 +383,6 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 	// Renders from different classes
 	Updates.push_back ( );*/
 
-
-
 	// While loop
 	while (!quit) {
 
@@ -406,11 +404,12 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 			}else{
 				// Key Pressed
 				if (event.type == SDL_KEYDOWN && event.key.repeat == 0) {
+					SDL_ShowCursor(SDL_TRUE);
 
 					// Local controls
 					switch (event.key.keysym.sym) {
 					case SDLK_q:
-						if (!editor) {
+						if (shift) {
 							ResetLevel(part, particles);
 						}
 						break;
@@ -427,19 +426,19 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 						ctrl = true;
 						break;
 					case SDLK_h:
-						debug = (!debug);
+					//	debug = (!debug);
 						break;
 					case SDLK_y:
-						camlock = (!camlock);
+						//camlock = (!camlock);
 						break;
 					case SDLK_p:
-						if (editor) {
+						/*if (editor) {
 							editor = false;
 							camlock = true;
 						}else{
 							editor = true;
 							camlock = false;
-						}
+						}*/
 						break;
 					case SDLK_m:
 						if (editor) {
@@ -452,7 +451,7 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 						}
 						break;
 					case SDLK_s:
-						if (editor && !shift) {
+						/*if (editor && !shift) {
 							// Editor visual message
 							std::stringstream tempss;
 							tempss << "Saving level data...";
@@ -488,7 +487,7 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 							tempss.str(std::string());
 							tempss << "Finished saving.";
 							tex.spawn(text, 0, 0, 0.0, 0.0, 255, tempss.str().c_str());
-						}
+						}*/
 						break;
 					case SDLK_ESCAPE:
 						start(gWindow, gRenderer);
@@ -502,7 +501,7 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 						{
 							//
 						}
-						editorOnKeyDown(event.key.keysym.sym, part, particles);
+						//editorOnKeyDown(event.key.keysym.sym, part, particles);
 					}
 					/* Player Controls */
 					else{
@@ -537,7 +536,7 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 						{
 							//
 						}
-						editorOnKeyUp(event.key.keysym.sym);
+						//editorOnKeyUp(event.key.keysym.sym);
 					}
 					/* Player Controls */
 					else{
@@ -545,6 +544,18 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 						player1.OnKeyUp(event.key.keysym.sym);
 						//player.OnKeyUp(player, event.key.keysym.sym);
 					} // end editor
+				}
+
+				if (event.type == SDL_JOYBUTTONDOWN && event.jbutton.state == SDL_PRESSED && event.jbutton.which == 0){
+					key = 0;
+					switch(event.jbutton.button){
+					case SDL_CONTROLLER_BUTTON_START:
+						start(gWindow, gRenderer);
+						break;
+					//case 5:				// Right Shoulder Button
+					//	ResetLevel(part, particles);
+					//	break;
+					}
 				}
 				//////////////////////////////////////
 
@@ -568,22 +579,34 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 				// Mouse Released
 				mouseReleased(event);
 
+				if (event.type == SDL_MOUSEMOTION) {
+					SDL_ShowCursor(SDL_TRUE);
+				}
+				// switch key if controller moved
+				if (event.type == SDL_JOYAXISMOTION) {
+					SDL_ShowCursor(SDL_FALSE);
+				}
+				// Controller button down
+				if (event.type == SDL_JOYBUTTONDOWN){
+					SDL_ShowCursor(SDL_FALSE);
+				}
+
 				// Customize Character results
 				switch (optionsResult)  {
-				case Back:				// Exit to Main Menu
+				case Options::Back:				// Exit to Main Menu
 					quit = true;
 					break;
-				case Nothing:
+				case Options::Nothing:
 					//
 					break;
-				case StartGame:
+				case Options::StartGame:
 					//
 					break;
-				case ShowingMenu:
+				case Options::ShowingMenu:
 					//
 					break;
-				case Exit:				// Exit Desktop
-					result = Exit;
+				case Options::Exit:				// Exit Desktop
+					result = PlayGame::Exit;
 					quit = true;
 					break;
 				}
@@ -654,6 +677,12 @@ void PlayGame::Show(LWindow &gWindow, SDL_Renderer *gRenderer, PlayGame::Result 
 
 			/// Render Player GUI
 			RenderGUI(gRenderer);
+
+			// quit playing game, go to thank you scene
+			if (playerStateLevel == 3) {
+				result = ShowingThankYouPage;
+				quit = true;
+			}
 
 		// Update screen
 		SDL_RenderPresent(gRenderer);
@@ -912,7 +941,7 @@ void PlayGame::Update(LWindow &gWindow, SDL_Renderer *gRenderer, Particle &part,
 								  (bmy - camy) * (bmy - camy));
 
 			// Camera target
-			float vX, vY;
+			float vX = 0, vY = 0;
 			if (distance > 0.5){
 				vX 	= 2 * (10*distance/600) * (bmx - camx) / distance;
 				vY 	= 2 * (10*distance/600) * (bmy - camy) / distance;
@@ -1181,6 +1210,26 @@ void PlayGame::RenderLights(SDL_Renderer *gRenderer, Particle &part, Particle pa
 										  newWidth, newHeight);
 
 			}
+			// Torch 1
+			else if (item[i].id == 2) {
+				gLight.setColor(222, 222, 100);
+				int newWidth = item[i].w*4.2 + dimSize;
+				int newHeight = item[i].h*4.2 + dimSize;
+				gLight.render( gRenderer, item[i].x2 - newWidth/2 - camx,
+										  item[i].y2 - newHeight/2 - camy,
+										  newWidth, newHeight);
+
+			}
+			// Torch 2
+			else if (item[i].id == 3) {
+				gLight.setColor(222, 222, 100);
+				int newWidth = item[i].w*4.2 + dimSize;
+				int newHeight = item[i].h*4.2 + dimSize;
+				gLight.render( gRenderer, item[i].x2 - newWidth/2 - camx,
+										  item[i].y2 - newHeight/2 - camy,
+										  newWidth, newHeight);
+
+			}
 		}
 	}
 }
@@ -1261,7 +1310,7 @@ void PlayGame::RenderDebug(SDL_Renderer *gRenderer, Particle &part, Particle par
 		tempRect = {0-camx, 0-camy, tl.levelWidth, tl.levelHeight};
 		SDL_SetRenderDrawColor(gRenderer, 0, 255, 0, 255);
 		SDL_RenderDrawRect(gRenderer, &tempRect);
-		//player1.RenderDebug(gRenderer, camx, camy, gFont);
+		player1.RenderDebug(gRenderer, camx, camy, gFont);
 	}	// end debug
 }
 
@@ -1356,35 +1405,29 @@ void PlayGame::RenderText(SDL_Renderer *gRenderer, LWindow &gWindow, Particle &p
 	}*/
 
 
-	for (double j=0; j<player1.spell.size(); j += 1) {
+	/*for (double j=0; j<player1.spell.size(); j += 1) {
 		std::stringstream tempss;
-		/*tempss  << player1.spell[j].activate 		 << " "
-				<< player1.spell[j].cooldown 		 << " "
-				<< player1.spell[j].cooldownTimer    << " "
-				<< player1.spell[j].baseCooldown     << " "
-				<< player1.spell[j].currentDuration  << " "
-				<< player1.spell[j].maxDuration;*/
 		tempss  << player1.casting		 << " "  << player1.frame		 << " "  << player1.frameTimer		 << " ";
 		gText.setAlpha(255);
 		gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont);
 		gText.render(gRenderer, player1.x - camx,
 				player1.y-gText.getHeight()/2 - camy,
 				gText.getWidth()/4, gText.getHeight()/4);
-	}
+	}*/
 
 	// Particle debug text info
 	for (int i = 0; i < mon.max; i++) {
 		if (monster[i].alive) {
 
-			/*
-			std::stringstream tempss;
-			tempss <<monster[i].increAngle;
+
+			/*std::stringstream tempss;
+			tempss <<monster[i].type;
 			gText.setAlpha(255);
 			gText.loadFromRenderedText(gRenderer, tempss.str().c_str(), {255,255,255}, gFont);
 			gText.render(gRenderer, monster[i].x - camx,
 					monster[i].y-gText.getHeight()/2 - camy,
-					gText.getWidth()/4, gText.getHeight()/4);
-					*/
+					gText.getWidth()/4, gText.getHeight()/4);*/
+
 
 			/*tempss.str(std::string());
 			tempss << "currentDuration: " << monster[i].currentDuration
@@ -1745,8 +1788,8 @@ void PlayGame::RenderGUI(SDL_Renderer *gRenderer) {
 
 	// Render XBOX buttons
 	for (int i=0; i<4; i++) {
-		gXboxButtons.setAlpha(215);
-		gXboxButtons.render(gRenderer, 5+i*(8 + 3), 5, 8, 8, &rXboxButtons[i]);
+	//	gXboxButtons.setAlpha(215);
+	//	gXboxButtons.render(gRenderer, 5+i*(8 + 3), 5, 8, 8, &rXboxButtons[i]);
 	}
 
 	// Render cursor
@@ -1769,47 +1812,47 @@ void PlayGame::RenderGUI(SDL_Renderer *gRenderer) {
 
 	// Render left-side of status bar (the one with the circle
 	int posW = 30;
-	gGUI.render(gRenderer, screenWidth - 21 - 5 - posW, 5, 21, 16, &rGUI[0] );
+	gGUI.render(gRenderer, 5, screenHeight - 16 - 5, 21, 16, &rGUI[0] );
 	// render the individual background bars of the status bars
 	for (int i=0; i<10; i++) {
-		float x = screenWidth - 5 - posW;
+		float x = 5 + 21;
 		if (i == 0) {
-			gGUI.render(gRenderer, x + i * 2, 5 + 1, 2, 14, &rGUI[1] );
+			gGUI.render(gRenderer, x + i * 2, screenHeight - 14 - 6, 2, 14, &rGUI[1] );
 		}else{
-			gGUI.render(gRenderer, x + i * 2, 5 + 1, 2, 14, &rGUI[2] );
+			gGUI.render(gRenderer, x + i * 2, screenHeight - 14 - 6, 2, 14, &rGUI[2] );
 		}
 	}
 	// render the individual health bars based on Player's health
 	for (int i=0; i<( (10*player1.health)/player1.maxHealth ); i++) {
-		float x = screenWidth - 5 - posW;
+		float x = 5 + 21;
 		if (i == 0) {
-			gGUI.render(gRenderer, x + i * 2, 5 + 1, 2, 4, &rHealthBar[0] );
+			gGUI.render(gRenderer, x + i * 2, screenHeight - 20, 2, 4, &rHealthBar[0] );
 		}else{
-			gGUI.render(gRenderer, x + i * 2, 5 + 1, 2, 4, &rHealthBar[1] );
+			gGUI.render(gRenderer, x + i * 2, screenHeight - 20, 2, 4, &rHealthBar[1] );
 		}
 	}
 	// render the individual mana bars based on Player's mana bar
 	for (int i=0; i<( (10*player1.mana)/player1.maxMana ); i++) {
-		float x = screenWidth - 5 - posW;
+		float x = 5 + 21;
 		if (i == 0) {
-			gGUI.render(gRenderer, x + i * 2, 10 + 1, 2, 4, &rManaBar[0] );
+			gGUI.render(gRenderer, x + i * 2, screenHeight - 15, 2, 4, &rManaBar[0] );
 		}else{
-			gGUI.render(gRenderer, x + i * 2, 10 + 1, 2, 4, &rManaBar[1] );
+			gGUI.render(gRenderer, x + i * 2, screenHeight - 15, 2, 4, &rManaBar[1] );
 		}
 	}
 	// render the individual mana bars based on Player's Green Bar
 	for (int i=0; i<( (10*500)/500 ); i++) {
-		float x = screenWidth - 5 - posW;
+		float x = 5 + 21;
 		if (i == 0) {
-			gGUI.render(gRenderer, x + i * 2, 15 + 1, 2, 4, &rGreenGar[0] );
+			gGUI.render(gRenderer, x + i * 2, screenHeight - 10, 2, 4, &rGreenGar[0] );
 		}else{
-			gGUI.render(gRenderer, x + i * 2, 15 + 1, 2, 4, &rGreenGar[1] );
+			gGUI.render(gRenderer, x + i * 2, screenHeight - 10, 2, 4, &rGreenGar[1] );
 		}
 	}
 
 	// render the right-side of the health bar
-	float x = screenWidth - 5 - posW;
-	gGUI.render(gRenderer, x + 10 * 2, 5, 8, 16, &rGUI[3] );
+	float x = 5 + 21 + 10*2;
+	gGUI.render(gRenderer, x, screenHeight - 16 - 5, 8, 16, &rGUI[3] );
 
 	// Render reticle
 	if (player1.controls == 0) {
@@ -1834,9 +1877,9 @@ void PlayGame::checkCollisionParticleMonster(Particle &part, Particle particles[
 								// reduce monster health
 								monster[j].health -= particles[i].damage;
 								// apply knockback effect
-								knockbackEffect(particles[i].x, particles[i].y, particles[i].w, particles[i].h,
-												monster[j].x, monster[j].y, monster[j].w, monster[j].h,
-												monster[j].velX, monster[j].velY, randDouble(0.1, 0.3));
+								////knockbackEffect(particles[i].x, particles[i].y, particles[i].w, particles[i].h,
+								//				monster[j].x, monster[j].y, monster[j].w, monster[j].h,
+								//				monster[j].velX, monster[j].velY, randDouble(0.1, 0.3));
 								// spawn blood particle effect
 								for (double h=0.0; h< 360.0; h+=rand() % 10 + 10){
 									int rands = rand() % 4 + 2;
@@ -2073,7 +2116,7 @@ void PlayGame::checkCollisionParticlePlayer(Particle &part, Particle particles[]
 							// play sound effect
 							Mix_PlayChannel(-1, sPlayerHurt, 0);
 							// reduce player health
-							player1.health -= particles[i].damage;
+							//player1.minusHealth(particles[i].damage);
 							// remove particle
 							part.Remove(particles, i);
 							// Spawn damage effect on Player
@@ -2831,6 +2874,18 @@ void PlayGame::UpdateMonsterPlayer(SDL_Renderer *gRenderer) {
 	}	// end check for Monsters
 
 	for (int i = 0; i < mon.max; i++) {
+		// if a boss dies, drop a key
+		if (monster[i].alive) {
+			if (monster[i].type == 12) {
+				if (monster[i].health <= 0) {
+					// spawn item
+					obj.Spawn(item, monster[i].x+monster[i].w/2-8, monster[i].y+monster[i].h/2-8, 16, 16, 0);
+					//player.score += 20;
+					monster[i].alive = false;
+					mon.count--;
+				}
+			}
+		}
 		if (monster[i].alive && monster[i].collision) {
 			//if (monster[i].alive && monster[i].collision && monster[i].hasVision) {
 			//if (monster[i].alive && monster[i].alert && monster[i].distance > 48 && monster[i].distance < 100 && monster[i].collision) {

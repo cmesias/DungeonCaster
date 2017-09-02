@@ -9,8 +9,9 @@
 #define SPLASHSCREEN_H_
 
 #include "Helper.h"
+#include "JoyStick.h"
 
-class SplashScreen : public Helper {
+class SplashScreen : public Helper, public JoyStick {
 public:
 	enum SplashResult { Nothing, Exit, Play };
 	void Show(LWindow &gWindow, SDL_Renderer *gRenderer, SplashScreen::SplashResult &result);

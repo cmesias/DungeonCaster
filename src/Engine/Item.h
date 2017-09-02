@@ -43,6 +43,7 @@ public:	// Core functions
 
 	// Spawn
 	void Spawn(Item item[], float x, float y, float w , float h);
+	void Spawn(Item item[], float x, float y, float w , float h, int id);
 
 	// Update
 	void Update(Item item[], int mouseX, int mouseY, int mx, int my, int camx, int camy);
