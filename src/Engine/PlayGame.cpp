@@ -2116,7 +2116,7 @@ void PlayGame::checkCollisionParticlePlayer(Particle &part, Particle particles[]
 							// play sound effect
 							Mix_PlayChannel(-1, sPlayerHurt, 0);
 							// reduce player health
-							//player1.minusHealth(particles[i].damage);
+							player1.minusHealth(particles[i].damage);
 							// remove particle
 							part.Remove(particles, i);
 							// Spawn damage effect on Player
